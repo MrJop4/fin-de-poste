@@ -462,7 +462,7 @@ const AMELIOS = {
   vip: { nom: "Carte VIP", img: "cartevip", max: 2, base: 150, desc: n => `Commence chaque partie avec une carte au hasard par niveau (actuellement ${n}).` },
 };
 const prixAmelio = (id, n) => Math.round(AMELIOS[id].base * Math.pow(1.6, n) / 5) * 5;
-let SAVE = { banque: 0, amelio: {}, persos: ["preparateur"], perso: "preparateur", lieux: ["quai"], lieu: "quai", test: true, amelioTest: {} };
+let SAVE = { banque: 0, amelio: {}, persos: ["preparateur"], perso: "preparateur", lieux: ["quai"], lieu: "quai", test: false, amelioTest: {} };
 try { const v = JSON.parse(lsGet("poste-sauvegarde") || "null"); if (v && typeof v === "object") SAVE = Object.assign(SAVE, v) } catch (e) { }
 if (!SAVE.amelio || typeof SAVE.amelio !== "object") SAVE.amelio = {};
 if (!Array.isArray(SAVE.persos) || !SAVE.persos.includes("preparateur")) SAVE.persos = ["preparateur"].concat(Array.isArray(SAVE.persos) ? SAVE.persos : []);
@@ -470,6 +470,9 @@ if (!PERSOS[SAVE.perso]) SAVE.perso = "preparateur";
 if (!Array.isArray(SAVE.lieux) || !SAVE.lieux.includes("quai")) SAVE.lieux = ["quai"].concat(Array.isArray(SAVE.lieux) ? SAVE.lieux : []);
 if (!LIEUX[SAVE.lieu]) SAVE.lieu = "quai";
 if (!SAVE.amelioTest || typeof SAVE.amelioTest !== "object") SAVE.amelioTest = {};
+/* mode test : désactivé pour les joueurs ; on l'active seulement en ouvrant le jeu avec #test à la fin de l'adresse */
+SAVE.test = location.hash === "#test";
+if (!SAVE.test) { if (!SAVE.persos.includes(SAVE.perso)) SAVE.perso = "preparateur"; if (!SAVE.lieux.includes(SAVE.lieu)) SAVE.lieu = "quai" }
 const sauver = () => lsSet("poste-sauvegarde", JSON.stringify(SAVE));
 /* mode test : tout est débloqué et gratuit, sans toucher à la vraie progression (achats et améliorations à part) */
 const aPerso = id => SAVE.test || SAVE.persos.includes(id);
@@ -1671,7 +1674,7 @@ function ouvrirVestiaire(depuis) { retourVers = depuis; $(depuis).hidden = true;
 function dessinerVestiaire() {
   $("banque").textContent = SAVE.banque;
   $("modeTest").textContent = SAVE.test ? "Mode test : tout est débloqué (clic pour jouer pour de vrai)" : "Progression réelle (clic pour tout débloquer)";
-  $("modeTest").classList.toggle("on", SAVE.test); $("raz").hidden = !SAVE.test;
+  $("modeTest").classList.toggle("on", SAVE.test); $("raz").hidden = !SAVE.test; $("modeTest").hidden = !SAVE.test;
   $("lieux").innerHTML = Object.entries(LIEUX).map(([id, L]) => {
     const a = aLieu(id), actif = lieuActif() === id, peut = a || SAVE.banque >= L.prix;
     const etat = actif ? "Choisi" : a ? "Choisir" : "Débloquer : " + L.prix + " €";
