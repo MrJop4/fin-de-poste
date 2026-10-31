@@ -1,5 +1,11 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Fin de Poste</title>
+<meta name="theme-color" content="#ff7410">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone-192.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap">
@@ -81,9 +87,35 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .cadenas { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-6deg); font-family: var(--display); font-size: 24px; color: #fff; background: var(--rouge); border: 3px solid var(--encre); border-radius: 12px; padding: 6px 14px 3px; box-shadow: 4px 4px 0 var(--encre); white-space: nowrap; }
 .compteur { text-align: center; font-size: 14px; color: var(--encre); margin-top: 6px; }
 @media (max-width: 760px) {
-  .acc { grid-template-columns: 1fr; justify-items: center; }
-  .acc-g { align-items: center; order: 2; } .acc-d { order: 1; }
-  .logo { text-align: center; }
+  .acc { grid-template-columns: 1fr; justify-items: center; gap: 14px; }
+  .acc-g { display: contents; }
+  .logo { order: 0; text-align: center; margin: 4px 0 10px; } .acc-dw { order: 1; } .lieu-sel { order: 2; } #jouer { order: 3; } .acc-g > .boutons { order: 4; } .puces { order: 5; justify-content: center; }
+  .logo .l1 { font-size: 34px; } .logo .l2 { font-size: 66px; } .sticker { position: relative; right: auto; bottom: auto; display: inline-block; font-size: 13px; margin-top: 8px; transform: rotate(4deg); }
+  .carte-perso { width: min(160px, 42vw); padding: 7px; }
+  .carte-perso img { aspect-ratio: 432 / 430; }
+  .acc { align-content: start; }
+  .carte-perso .nom { font-size: 21px; } .carte-perso .court { font-size: 13px; }
+  .fleche.grande { width: 44px; height: 44px; font-size: 28px; }
+  .lieu-sel .nom { min-width: 0; width: 56vw; max-width: 230px; } .lieu-sel .nom b { font-size: 18px; }
+  .btn.go { font-size: 28px; padding: 8px 46px; } .btn { font-size: 19px; padding: 7px 16px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  /* téléphone couché : deux colonnes, en plus petit */
+  .acc { grid-template-columns: minmax(0, 1fr) auto; gap: 18px; }
+  .acc-g { display: flex; gap: 9px; }
+  .logo { margin: 0 0 8px; } .logo .l1 { font-size: 26px; } .logo .l2 { font-size: 50px; }
+  .sticker { position: relative; right: auto; bottom: auto; display: inline-block; font-size: 11px; margin-top: 4px; transform: rotate(4deg); }
+  .carte-perso { width: 150px; padding: 6px; } .carte-perso img { aspect-ratio: 432 / 360; }
+  .carte-perso .nom { font-size: 18px; margin-top: 6px; } .carte-perso .court { font-size: 12px; }
+  .btn.go { font-size: 22px; padding: 5px 30px; } .btn { font-size: 16px; padding: 5px 12px; }
+  .lieu-sel { padding: 4px 6px; } .lieu-sel .nom b { font-size: 16px; } .lieu-sel .nom small { font-size: 12px; }
+  .fleche { width: 34px; height: 34px; font-size: 22px; } .fleche.grande { width: 40px; height: 40px; }
+  /* cartes de niveau : trois colonnes basses */
+  .cartes { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px; }
+  #cartes .carte { flex-direction: column !important; }
+  #cartes .carte .art, #cartes .carte .bandeau { width: 100% !important; height: 72px !important; min-height: 0 !important; }
+  .carte strong { font-size: 17px; } .carte .txt { font-size: 12px; } .carte .tag { font-size: 10px; }
+  h2 { font-size: 30px; } .panneau { gap: 10px; } .voile { padding-block: 10px; }
 }
 
 /* ---- aide ---- */
@@ -127,8 +159,30 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .bilan span { background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); padding: 8px 16px; font-size: 15px; min-width: 110px; }
 .bilan b { display: block; font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1.1; }
 .fin-art { width: 180px; aspect-ratio: 432 / 400; object-fit: cover; object-position: 50% 25%; border: 4px solid var(--encre); border-radius: 14px; box-shadow: 6px 6px 0 var(--encre); transform: rotate(-3deg); }
-.pc { display: none; }
-@media (max-width: 700px), (pointer: coarse) and (hover: none) { .pc { display: inline-block; } .cartes { grid-template-columns: 1fr; } .carte .art, .carte .bandeau { height: 90px; } }
+.tactile { display: none; }
+.btn-pause { display: none; pointer-events: auto; cursor: pointer; width: 44px; height: 44px; border-radius: 12px; border: 3px solid var(--encre); background: var(--papier); color: var(--encre); font: 400 20px/1 var(--display); box-shadow: 3px 3px 0 var(--encre); }
+.droite { display: flex; align-items: center; gap: 10px; }
+body, canvas { touch-action: none; -webkit-tap-highlight-color: transparent; }
+.voile { touch-action: pan-y; }
+button { touch-action: manipulation; }
+@media (pointer: coarse) {
+  .clavier { display: none !important; } .tactile { display: inline; }
+  .btn-pause { display: grid; place-items: center; }
+}
+@media (max-width: 700px) {
+  .row { font-size: 15px; } .row .temps { font-size: 30px; }
+  .armes span { font-size: 11px; padding: 1px 6px; }
+  /* cartes de niveau en bandes horizontales : image à gauche, texte à droite */
+  .cartes { grid-template-columns: 1fr; gap: 12px; }
+  #cartes .carte { flex-direction: row; align-items: stretch; }
+  #cartes .carte .art, #cartes .carte .bandeau { width: 96px; height: auto; min-height: 104px; flex: none; font-size: 15px; }
+  .carte strong { font-size: 20px; } .carte .txt { font-size: 14px; }
+  .grille { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .grille .carte .art { height: 96px; }
+  h2 { font-size: 40px; }
+  .fin-art { width: 130px; }
+  #niveau .panneau { padding-top: 70px; }
+}
 @media (prefers-reduced-motion: reduce) { .carte, .xpbar i, .carte-perso, .btn { transition: none; } }
 </style>
 
@@ -136,7 +190,7 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 
 <div class="hud" id="hud" hidden>
   <div class="xpbar"><i id="xp"></i></div>
-  <div class="row"><span>Niveau <b id="niv">1</b></span><span class="temps" id="temps">10:00</span><span><b id="kills">0</b> colis · <b id="argent">0</b> €</span></div>
+  <div class="row"><span>Niveau <b id="niv">1</b></span><span class="temps" id="temps">10:00</span><span class="droite"><span><b id="kills">0</b> colis · <b id="argent">0</b> €</span><button class="btn-pause" id="btnPause" aria-label="Pause">II</button></span></div>
   <div class="armes" id="armes"></div>
 </div>
 
@@ -152,9 +206,9 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
       <button class="btn go" id="jouer">Jouer</button>
       <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="aide">Comment jouer ?</button></div>
       <div class="puces" id="puces"></div>
-      <div class="touches-mini"><kbd>Q</kbd><kbd>D</kbd> perso · <kbd>Z</kbd><kbd>S</kbd> lieu · <kbd>Espace</kbd> jouer <span class="pc">· se joue au clavier</span></div>
+      <div class="touches-mini clavier"><kbd>Q</kbd><kbd>D</kbd> perso · <kbd>Z</kbd><kbd>S</kbd> lieu · <kbd>Espace</kbd> jouer</div>
     </div>
-    <div>
+    <div class="acc-dw">
       <div class="acc-d">
         <button class="fleche grande" id="persoPrec" aria-label="Personnage précédent">‹</button>
         <div class="carte-perso" id="cartePerso"><img id="persoImg" alt=""><div class="nom" id="persoNom"></div><div class="court" id="persoCourt"></div><span class="arme" id="persoArme"></span><div class="cadenas" id="persoCadenas" hidden></div></div>
@@ -168,7 +222,7 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 <div class="voile" id="aideJeu" hidden>
   <div class="feuille">
     <h3>Comment jouer</h3>
-    <div class="regle"><span class="ico">🕹️</span><span><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> pour bouger. Tes outils tapent tout seuls.</span></div>
+    <div class="regle"><span class="ico">🕹️</span><span><span class="clavier"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> pour bouger.</span><span class="tactile">Pose ton pouce et glisse pour bouger.</span> Tes outils tapent tout seuls.</span></div>
     <div class="regle"><span class="ico">🏷️</span><span>Ramasse les étiquettes pour monter de niveau et choisir une carte.</span></div>
     <div class="regle"><span class="ico">🚨</span><span>Lumière rouge = une transpalette arrive. Dégage !</span></div>
     <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
@@ -182,7 +236,7 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
   <div class="panneau">
     <h2>Niveau <span id="nivTitre">2</span> !</h2>
     <div class="cartes" id="cartes"></div>
-    <div class="aide"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</div>
+    <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
   </div>
 </div>
 
@@ -202,7 +256,7 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 </div>
 
 <div class="voile" id="pause" hidden>
-  <div class="panneau"><h2>Pause café</h2><button class="btn go" id="reprendre">Reprendre</button><div class="aide"><kbd>Échap</kbd> pour reprendre</div></div>
+  <div class="panneau"><h2>Pause café</h2><button class="btn go" id="reprendre">Reprendre</button><button class="btn" id="abandon">Quitter la partie</button><div class="aide clavier"><kbd>Échap</kbd> pour reprendre</div></div>
 </div>
 
 <div class="voile" id="fin" hidden>
@@ -218,7 +272,14 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 (() => {
 const cv = document.getElementById("jeu"), cx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1;
-function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0) }
+let ZOOM = 1;
+const TACTILE = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+function resize() {
+  DPR = Math.min(TACTILE ? 1.75 : 2, window.devicePixelRatio || 1);
+  ZOOM = Math.max(.7, Math.min(1, Math.min(innerWidth, innerHeight) / 560));
+  W = innerWidth / ZOOM; H = innerHeight / ZOOM;
+  cv.width = Math.round(innerWidth * DPR); cv.height = Math.round(innerHeight * DPR); cx.setTransform(DPR * ZOOM, 0, 0, DPR * ZOOM, 0, 0);
+}
 addEventListener("resize", resize); resize();
 
 const $ = id => document.getElementById(id);
@@ -322,6 +383,8 @@ const armeDispo = id => !ARMES[id].perso || aPerso(ARMES[id].perso);
 const LL = () => LIEUX[(S && S.lieu) || "quai"];
 
 let S = null, enJeu = false, enPause = false, choix = false, last = 0;
+/* joystick : on pose le doigt n'importe où, on glisse dans la direction voulue */
+const JOY = { actif: false, id: null, ox: 0, oy: 0, x: 0, y: 0 }, JOY_R = 55;
 const keys = new Set();
 
 function nouvellePartie() {
@@ -558,7 +621,7 @@ function transpalettes(dt) {
     const h = tp.ax === "h";
     const touche = (x, y, r) => h ? Math.abs(x - tp.x) < TP_LONG + r && Math.abs(y - tp.y) < TP_LARG + r : Math.abs(y - tp.y) < TP_LONG + r && Math.abs(x - tp.x) < TP_LARG + r;
     if (p.inv <= 0 && touche(p.x, p.y, p.r)) {
-      p.hp -= tp.deg; p.inv = .8; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 });
+      p.hp -= tp.deg; p.inv = .8; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }); vibrer(60);
       if (h) p.y += (p.y >= tp.y ? 1 : -1) * 30; else p.x += (p.x >= tp.x ? 1 : -1) * 30;
     }
     // elle écrase aussi les colis sur son passage (les semis encaissent seulement le choc)
@@ -581,8 +644,9 @@ function maj(dt) {
   if (keys.has("KeyW") || keys.has("ArrowUp")) my--;
   if (keys.has("KeyS") || keys.has("ArrowDown")) my++;
   const vit = p.vit * (p.boost > 0 ? 1.4 : 1); p.boost -= dt;
-  let tx = 0, ty = 0;
-  if (mx || my) { const n = Math.hypot(mx, my); tx = mx / n * vit; ty = my / n * vit; p.dir = Math.atan2(my, mx); p.pas += dt * 10 }
+  let tx = 0, ty = 0, force = 1;
+  if (JOY.actif) { const jx = JOY.x - JOY.ox, jy = JOY.y - JOY.oy, jd = Math.hypot(jx, jy); if (jd > 6) { mx = jx; my = jy; force = Math.min(1, jd / JOY_R) } }
+  if (mx || my) { const n = Math.hypot(mx, my); tx = mx / n * vit * force; ty = my / n * vit * force; p.dir = Math.atan2(my, mx); p.pas += dt * 10 * force }
   const lis = Math.min(1, (LL().glisse ? 2.4 : 40) * dt); p.vx += (tx - p.vx) * lis; p.vy += (ty - p.vy) * lis;
   p.x += p.vx * dt; p.y += p.vy * dt;
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
@@ -679,7 +743,7 @@ function ouvrirChoix() {
     const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
     return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span></span></button>`;
   }).join("");
-  choix = true; $("niveau").hidden = false;
+  choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
   sel = 0; setTimeout(majSel, 30);
 }
 function prendre(i) {
@@ -1060,7 +1124,15 @@ function dessiner() {
   cx.font = "600 13px 'Nunito', sans-serif"; cx.textAlign = "center";
   for (const t of S.textes) { cx.fillStyle = `rgba(255,236,170,${t.t / .6})`; cx.fillText(t.v, X(t.x), Y(t.y)) }
   // annonce
-  if (annonceT > 0) { cx.font = "36px 'Luckiest Guy', Impact, sans-serif"; cx.fillStyle = `rgba(255,194,26,${Math.min(1, annonceT)})`; cx.fillText(annonceTxt, W / 2, H * .28) }
+  if (annonceT > 0) { cx.font = "36px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 6; cx.strokeStyle = `rgba(23,19,15,${Math.min(1, annonceT)})`; cx.strokeText(annonceTxt, W / 2, H * .28, W - 40); cx.fillStyle = `rgba(255,194,26,${Math.min(1, annonceT)})`; cx.fillText(annonceTxt, W / 2, H * .28, W - 40) }
+  // joystick tactile
+  if (JOY.actif && enJeu) {
+    const ox = JOY.ox / ZOOM, oy = JOY.oy / ZOOM, R = JOY_R / ZOOM;
+    let jx = (JOY.x - JOY.ox) / ZOOM, jy = (JOY.y - JOY.oy) / ZOOM; const jd = Math.hypot(jx, jy); if (jd > R) { jx *= R / jd; jy *= R / jd }
+    cx.fillStyle = "rgba(255,246,227,.12)"; cx.strokeStyle = "rgba(255,246,227,.45)"; cx.lineWidth = 3 / ZOOM;
+    cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill(); cx.stroke();
+    cx.fillStyle = "rgba(255,194,26,.85)"; cx.strokeStyle = "#17130f"; cx.beginPath(); cx.arc(ox + jx, oy + jy, R * .45, 0, 7); cx.fill(); cx.stroke();
+  }
 }
 
 function boucle(now) {
@@ -1080,7 +1152,7 @@ function demarrer() {
   { const a = rnd(0, 6.28); poserDecor(Math.cos(a) * 300, Math.sin(a) * 300, "cafe") }
   ["accueil", "fin", "niveau", "pause", "vestiaire", "aideJeu"].forEach(id => $(id).hidden = true); $("hud").hidden = false; last = performance.now(); majHud();
 }
-function basculerPause() { if (!enJeu || choix) return; enPause = !enPause; $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
+function basculerPause() { if (!enJeu || choix) return; enPause = !enPause; JOY.actif = false; $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
 addEventListener("keydown", e => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   // accueil : Q/D change de perso, Z/S de lieu, Espace lance la partie
@@ -1107,10 +1179,29 @@ addEventListener("keydown", e => {
 });
 addEventListener("keyup", e => keys.delete(e.code));
 addEventListener("blur", () => { keys.clear(); if (enJeu && !choix && !enPause) basculerPause() });
+document.addEventListener("visibilitychange", () => { if (document.hidden && enJeu && !choix && !enPause) basculerPause() });
+cv.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse" || !enJeu || enPause || choix || JOY.actif) return;
+  e.preventDefault(); JOY.actif = true; JOY.id = e.pointerId; JOY.ox = JOY.x = e.clientX; JOY.oy = JOY.y = e.clientY;
+  try { cv.setPointerCapture(e.pointerId) } catch (er) { }
+});
+cv.addEventListener("pointermove", e => {
+  if (!JOY.actif || e.pointerId !== JOY.id) return;
+  JOY.x = e.clientX; JOY.y = e.clientY;
+  // le socle suit le doigt quand on dépasse le bord, pour ne jamais avoir à relever le pouce
+  const dx = JOY.x - JOY.ox, dy = JOY.y - JOY.oy, d = Math.hypot(dx, dy);
+  if (d > JOY_R * 1.4) { const k = (d - JOY_R * 1.4) / d; JOY.ox += dx * k; JOY.oy += dy * k }
+});
+const lacher = e => { if (e.pointerId === JOY.id) { JOY.actif = false; JOY.id = null } };
+cv.addEventListener("pointerup", lacher); cv.addEventListener("pointercancel", lacher);
+$("btnPause").onclick = () => basculerPause();
+$("abandon").onclick = () => { if (!enJeu) return; enPause = false; $("pause").hidden = true; finir(false) };
+const vibrer = ms => { try { if (TACTILE && navigator.vibrate) navigator.vibrate(ms) } catch (e) { } };
 $("jouer").onclick = demarrer; $("rejouer").onclick = demarrer; $("reprendre").onclick = basculerPause;
 $("persoPrec").onclick = () => tourner(LP, "perso", -1); $("persoSuiv").onclick = () => tourner(LP, "perso", 1);
 $("lieuPrec").onclick = () => tourner(LLX, "lieu", -1); $("lieuSuiv").onclick = () => tourner(LLX, "lieu", 1);
 $("cartePerso").onclick = () => tourner(LP, "perso", 1);
+document.addEventListener("contextmenu", e => { if (TACTILE) e.preventDefault() });
 $("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = false; $("aideOk").focus() };
 $("aideOk").onclick = () => { $("aideJeu").hidden = true; $("accueil").hidden = false };
 $("versAccueil").onclick = () => { $("fin").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
