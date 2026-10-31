@@ -407,11 +407,11 @@ const OBJETS = {
 
 /* ---------- ennemis ---------- */
 const TYPES = {
-  crabe: { r: 11, hp: 10, vit: 62, deg: 6, xp: 1, coul: "#b98a52" },      /* carton mal fermé */
-  feu: { r: 9, hp: 6, vit: 112, deg: 5, xp: 1, coul: "#f2f0e6" },        /* bordereau qui s'envole */
-  noye: { r: 16, hp: 46, vit: 44, deg: 12, xp: 4, coul: "#c8a46a" },     /* palette qui tangue */
-  murene: { r: 13, hp: 26, vit: 88, deg: 9, xp: 2, coul: "#3d8bd9" },    /* diable fou */
-  leviathan: { r: 46, hp: 2400, vit: 52, deg: 26, xp: 60, coul: "#d63b2f", boss: true },  /* semi-remorque en retard */
+  crabe: { r: 11, hp: 10, vit: 46, deg: 6, xp: 1, coul: "#b98a52" },      /* carton mal fermé */
+  feu: { r: 9, hp: 6, vit: 80, deg: 5, xp: 1, coul: "#f2f0e6" },        /* bordereau qui s'envole */
+  noye: { r: 16, hp: 46, vit: 36, deg: 12, xp: 4, coul: "#c8a46a" },     /* palette qui tangue */
+  murene: { r: 13, hp: 26, vit: 66, deg: 9, xp: 2, coul: "#3d8bd9" },    /* diable fou */
+  leviathan: { r: 46, hp: 2400, vit: 44, deg: 26, xp: 60, coul: "#d63b2f", boss: true },  /* semi-remorque en retard */
 };
 
 /* ---------- entre les parties : caisse, vestiaire, personnages (sauvegardés dans le navigateur) ---------- */
@@ -516,7 +516,7 @@ function nouvellePartie() {
 function spawn(type, elite) {
   const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + 60;
   const L = LL(), mult = (1 + S.t / 135) * L.pv, hp = T.hp * mult * (elite ? 6 : 1);
-  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1), deg: T.deg * (1 + S.t / 400) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
+  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / 3000), deg: T.deg * (1 + S.t / 400) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
 }
 function vagues(dt) {
   const t = S.t, plafond = S.infini ? 16 + Math.min(14, (t - VICTOIRE) / 25) : 16;
@@ -895,13 +895,14 @@ function maj(dt) {
     }
     const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
     let vx = dx / d * e.vit, vy = dy / d * e.vit;
-    if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 40; vy += Math.sin(e.ph * 4) * 40 }
+    if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 30; vy += Math.sin(e.ph * 4) * 30 }
     if (p.givre && d < 140) { vx *= .55; vy *= .55 }
     const cxg = Math.floor(e.x / cell), cyg = Math.floor(e.y / cell);
     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
       const a = G.get(key(cxg + i, cyg + j)); if (!a) continue;
       for (const o of a) { if (o === e) continue; const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy), min = e.r + o.r; if (od > 0 && od < min) { const f = (min - od) / min * 140; vx += ox / od * f; vy += oy / od * f } }
     }
+    const vmax = e.vit * 1.25, vn = Math.hypot(vx, vy); if (vn > vmax) { vx *= vmax / vn; vy *= vmax / vn }
     e.x += (vx + e.kb.x * 60) * dt; e.y += (vy + e.kb.y * 60) * dt;
     if (murs) pousserHorsMurs(e, e.r);
     if (S.ev) contraindreEv(e);
