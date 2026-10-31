@@ -674,9 +674,9 @@ function ouvrirChoix() {
   if (!offres.length) offres = [{ id: "rhum", kind: "soin", l: 1 }];
   $("nivTitre").textContent = S.p.niv;
   $("cartes").innerHTML = offres.map((o, i) => {
-    const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : { nom: "Casse-croûte", desc: () => "Rend 40 points de vie." };
+    const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
     const tag = o.kind === "soin" ? "Soin" : o.l === 1 ? (o.kind === "arme" ? "Nouvel outil" : "Nouvel équipement") : "Niveau " + o.l;
-    const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind === "arme" ? ' style="object-position:50% 50%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
+    const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
     return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span></span></button>`;
   }).join("");
   choix = true; $("niveau").hidden = false;
@@ -1115,7 +1115,7 @@ $("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = fa
 $("aideOk").onclick = () => { $("aideJeu").hidden = true; $("accueil").hidden = false };
 $("versAccueil").onclick = () => { $("fin").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
 // précharger les illustrations pour que les cartes s'affichent sans attendre
-for (const n of new Set([...Object.values(ARMES), ...Object.values(PERSOS), ...Object.values(LIEUX), ...Object.values(OBJETS), ...Object.values(AMELIOS)].map(x => x.img).concat(["jourdepaie", "tetereposee"]).filter(Boolean))) { const im = new Image(); im.src = IMG(n) }
+for (const n of new Set([...Object.values(ARMES), ...Object.values(PERSOS), ...Object.values(LIEUX), ...Object.values(OBJETS), ...Object.values(AMELIOS)].map(x => x.img).concat(["jourdepaie", "tetereposee", "cassecroute"]).filter(Boolean))) { const im = new Image(); im.src = IMG(n) }
 
 /* ---------- vestiaire ---------- */
 let retourVers = "accueil";
