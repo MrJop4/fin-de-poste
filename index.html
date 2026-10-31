@@ -142,6 +142,9 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .carte.fini .prix { color: var(--vert); }
 .pips { display: flex; gap: 4px; } .pips i { width: 16px; height: 8px; border-radius: 3px; background: #d8ccb0; border: 1.5px solid var(--encre); } .pips i.on { background: var(--vert); }
 .aide { font-size: 15px; color: var(--papier); }
+.slots { font-size: 16px; color: var(--encre); background: var(--jaune); border: 3px solid var(--encre); border-radius: 999px; padding: 3px 14px; box-shadow: 3px 3px 0 var(--encre); margin-top: -6px; }
+.evo-hint { font-size: 12px; font-weight: 900; color: #8a5a00; background: #ffeaa0; border-radius: 6px; padding: 2px 6px; align-self: flex-start; }
+.armes span.evo { background: linear-gradient(90deg, #ffe14d, #ffb000); font-weight: 900; }
 
 /* ---- vestiaire ---- */
 #vestiaire { place-items: start center; background: rgba(15,11,6,.94); }
@@ -227,6 +230,7 @@ button { touch-action: manipulation; }
     <div class="regle"><span class="ico">🚨</span><span>Lumière rouge = une transpalette arrive. Dégage !</span></div>
     <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
     <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : dépense-la au vestiaire.</span></div>
+    <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un coffre = évolution !</span></div>
     <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes et c'est la fin du poste.</span></div>
     <div class="boutons"><button class="btn go" id="aideOk">C'est parti</button></div>
   </div>
@@ -235,6 +239,7 @@ button { touch-action: manipulation; }
 <div class="voile" id="niveau" hidden>
   <div class="panneau">
     <h2>Niveau <span id="nivTitre">2</span> !</h2>
+    <div class="slots" id="slots"></div>
     <div class="cartes" id="cartes"></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
   </div>
@@ -303,6 +308,18 @@ const ARMES = {
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
+/* évolutions, comme dans Vampire Survivors : arme au niveau max + son équipement associé, puis on ouvre un coffre (lâché par les colis « fragile » et les semis) */
+const EVOS = {
+  lanterne: { nom: "Scanner industriel", avec: "huile", desc: "Quatre rayons cyan qui balaient tout autour de toi." },
+  harpon: { nom: "Lame infinie", avec: "meule", desc: "Cinq cutters dorés qui traversent tout." },
+  corne: { nom: "Sirène d'évacuation", avec: "cire", desc: "Double onde rouge, énorme, qui fait tout reculer." },
+  sel: { nom: "Tornade de film", avec: "boussole", desc: "Huit rouleaux sur une orbite qui respire." },
+  fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Quatre palettes tombent à la fois, zone énorme." },
+  fourches: { nom: "Chariot fou", avec: "meule", desc: "Fourches dorées qui frappent dans les quatre directions." },
+  cle: { nom: "Caisse à outils", avec: "soupe", desc: "Six clés lancées en étoile tout autour de toi." },
+  talkie: { nom: "Réseau radio", avec: "huile", desc: "L'appel rebondit sur 12 colis, deux fois plus souvent." },
+};
+const NB_ARMES = 3, EVO = 7;
 const COUL_ARME = { lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
 const OBJETS = {
   bottes: { nom: "Chaussures de sécu", img: "cebien", max: 5, desc: () => "+8 % de vitesse de déplacement." },
@@ -342,9 +359,15 @@ const LIEUX = {
     sol: { fond: "#1b2933", joint: "rgba(160,220,255,.12)", allee: "rgba(120,210,255,.45)", texte: "FRIGO", tache: "rgba(220,240,255,.09)", miette: "rgba(220,240,255,.35)" },
     ombre: "5,14,24", gain: 1.3, pv: 1.15, spawn: 1, glisse: true, neige: true, tpCoul: "#9fd2ff", tpNom: "transpalette frigo", tpRate: 1,
     boss1: "Camion frigo à décharger !", boss2: "Deux camions frigo à quai", coul: { crabe: "#8ec9ec", feu: "#ffffff", noye: "#bfe9ff", murene: "#a7b2bd", leviathan: "#2f6fb0" } },
-  parking: { nom: "Parking poids lourds", img: "retardcamion", info: "Camionnettes · paie ×1,6", prix: 700, desc: "Au coucher du soleil, les camionnettes passent deux fois plus souvent. Cônes, pneus, caddies. Paie ×1,6.",
+  stockage: { nom: "Zone de stockage", img: "stocktampon", info: "Allées de racks · paie ×1,4", prix: 550, desc: "Des rangées de racks forment des allées : sers-t'en comme abri, mais gare aux impasses. Les transpalettes foncent dans les allées. Paie ×1,4.",
+    sol: { fond: "#25292e", joint: "rgba(0,0,0,.3)", allee: "rgba(255,194,26,.3)", texte: "ALLÉE", tache: "rgba(10,10,12,.3)", miette: "rgba(185,138,82,.45)" },
+    ombre: "10,12,16", gain: 1.4, pv: 1.2, spawn: 1.1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1.4,
+    murs: { type: "racks", cw: 720, ch: 250, w: 540, h: 62, trou: .14 },
+    boss1: "Un semi recule dans l'allée !", boss2: "Deux semis bloquent les allées", coul: {} },
+  parking: { nom: "Parking poids lourds", img: "retardcamion", info: "Remorques garées · paie ×1,6", prix: 700, desc: "Au coucher du soleil, entre les remorques garées. Les camionnettes foncent sur les voies de circulation. Cônes, pneus, caddies. Paie ×1,6.",
     sol: { fond: "#2d2723", joint: "rgba(0,0,0,.25)", allee: "rgba(240,238,230,.55)", texte: "PLACE", tache: "rgba(0,0,0,.32)", miette: "rgba(255,140,40,.4)" },
     ombre: "34,12,4", gain: 1.6, pv: 1.3, spawn: 1, tpCoul: "#f2f0e6", tpNom: "camionnette", tpRate: 1.8, van: true,
+    murs: { type: "remorques", cw: 150, ch: 470, w: 66, h: 250, trou: .2, horizontal: true },
     boss1: "Un porte-conteneur recule sans regarder !", boss2: "Deux porte-conteneurs en manœuvre", coul: { crabe: "#ff7a1a", feu: "#f2f0e6", noye: "#24262a", murene: "#b8bec6", leviathan: "#c0392b" } },
   promo: { nom: "Entrepôt des promos", img: "maouell", info: "Foule · paie ×2", prix: 1000, desc: "Semaine des promos : 35 % d'ennemis en plus, sous les néons. Colis express, robots de tri. Paie ×2.",
     sol: { fond: "#221a2e", joint: "rgba(255,255,255,.06)", allee: "rgba(255,70,190,.5)", texte: "ALLÉE", tache: "rgba(140,90,255,.13)", miette: "rgba(80,240,220,.35)" },
@@ -397,7 +420,7 @@ function nouvellePartie() {
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8 },
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4,
-    angleLampe: 0, angleSel: 0,
+    angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
   };
   const p = S.p;
   p.max = 100 + (P.vie || 0) + 10 * niv("vie"); p.hp = p.max;
@@ -445,6 +468,7 @@ const DECOR = {
 };
 const DECOR_IDS = Object.keys(DECOR);
 function poserDecor(x, y, kind) {
+  if (LL().murs) { let k = 0; while (dansMur(x, y, 30) && k++ < 12) { x += rnd(-120, 120); y += rnd(-120, 120) } if (dansMur(x, y, 30)) return }
   if (!kind) { const sac = ["cafe", "cafe", "cafe", "extincteur", "extincteur", "casier", "casier", "fontaine", "fontaine", "friandises"]; kind = sac[Math.floor(Math.random() * sac.length)] }
   const D = DECOR[kind], hp = D.hp * (1 + S.t / 300);
   S.ennemis.push({ type: "decor", decor: true, kind, x, y, r: D.r, hp, max: hp, vit: 0, deg: 0, xp: 0, coul: "#e4e2dc", boss: false, elite: false, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
@@ -503,7 +527,7 @@ function armes(dt) {
       const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
       if (d > port + e.r) continue;
       let da = Math.atan2(dy, dx) - S.angleLampe; da = Math.atan2(Math.sin(da), Math.cos(da));
-      for (const off of l >= 4 ? [0, Math.PI] : [0]) {
+      for (const off of l >= EVO ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : l >= 4 ? [0, Math.PI] : [0]) {
         let db = da - off; db = Math.atan2(Math.sin(db), Math.cos(db));
         if (Math.abs(db) < arc && (e.hit.l || 0) <= 0) { blesser(e, 8 + 5 * l, 0, 0); e.hit.l = .35 }
       }
@@ -513,17 +537,18 @@ function armes(dt) {
   if (A.harpon && (S.timers.harpon -= dt) <= 0) {
     const l = A.harpon; S.timers.harpon = (1.3 - .08 * l) * cd;
     const cibles = S.ennemis.filter(e => !e.decor).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
-    const n = 1 + Math.floor((l - 1) / 2);
+    const n = l >= EVO ? 5 : 1 + Math.floor((l - 1) / 2);
     for (let i = 0; i < n; i++) {
       const c = cibles[i % Math.max(1, cibles.length)]; let a = p.dir;
       if (c) a = Math.atan2(c.y - p.y, c.x - p.x) + (i >= cibles.length ? rnd(-.3, .3) : 0);
-      S.tirs.push({ x: p.x, y: p.y, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, a, t: 1.1, deg: 14 + 7 * l, perce: Math.floor(l / 2) + 1, deja: new Set() });
+      S.tirs.push({ x: p.x, y: p.y, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, a, t: 1.1, deg: 14 + 7 * l, perce: l >= EVO ? 99 : Math.floor(l / 2) + 1, deja: new Set(), evo: l >= EVO });
     }
   }
   // corne de brume
   if (A.corne && (S.timers.corne -= dt) <= 0) {
     const l = A.corne; S.timers.corne = (3.6 - .15 * l) * cd;
-    S.ondes.push({ x: p.x, y: p.y, r: 10, max: 90 + 22 * l, deg: 12 + 7 * l, deja: new Set() });
+    S.ondes.push({ x: p.x, y: p.y, r: 10, max: 90 + 22 * l + (l >= EVO ? 70 : 0), deg: 12 + 7 * l, deja: new Set(), evo: l >= EVO });
+    if (l >= EVO) S.ondes.push({ x: p.x, y: p.y, r: -110, max: 260, deg: 12 + 7 * l, deja: new Set(), evo: true });
   }
   for (const o of S.ondes) {
     o.r += 320 * dt; o.x = p.x; o.y = p.y;
@@ -532,7 +557,7 @@ function armes(dt) {
   S.ondes = S.ondes.filter(o => o.r < o.max);
   // cristaux de sel
   if (A.sel) {
-    const l = A.sel, n = l + 1, rr = 62 + 4 * l; S.angleSel += dt * 2.6;
+    const l = A.sel, n = l >= EVO ? 8 : l + 1, rr = l >= EVO ? 98 + 22 * Math.sin(S.t * 2.4) : 62 + 4 * l; S.angleSel += dt * (l >= EVO ? 3.4 : 2.6); S.selN = n; S.selR = rr;
     for (let i = 0; i < n; i++) {
       const a = S.angleSel + i * Math.PI * 2 / n, sx = p.x + Math.cos(a) * rr, sy = p.y + Math.sin(a) * rr;
       for (const e of S.ennemis) if ((e.hit["s" + i] || 0) <= 0 && Math.hypot(e.x - sx, e.y - sy) < e.r + 9) { blesser(e, 7 + 4 * l, (e.x - p.x) / 30, (e.y - p.y) / 30); e.hit["s" + i] = .5 }
@@ -542,8 +567,8 @@ function armes(dt) {
   if (A.fusee && (S.timers.fusee -= dt) <= 0) {
     const l = A.fusee; S.timers.fusee = (2.6 - .12 * l) * cd;
     const vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < W / 2 && Math.abs(e.y - p.y) < H / 2);
-    const n = l >= 5 ? 2 : 1;
-    for (let i = 0; i < n && vis.length; i++) { const c = vis[Math.floor(Math.random() * vis.length)]; S.fusees.push({ x: c.x, y: c.y, t: .6, r: 52 + 9 * l, deg: 22 + 11 * l }) }
+    const n = l >= EVO ? 4 : l >= 5 ? 2 : 1;
+    for (let i = 0; i < n && vis.length; i++) { const c = vis[Math.floor(Math.random() * vis.length)]; S.fusees.push({ x: c.x, y: c.y, t: .6, r: l >= EVO ? 125 : 52 + 9 * l, deg: 22 + 11 * l }) }
   }
   for (const f of S.fusees) if ((f.t -= dt) <= 0 && !f.boum) {
     f.boum = true;
@@ -554,6 +579,7 @@ function armes(dt) {
   // harpons en vol
   for (const h of S.tirs) {
     h.x += h.vx * dt; h.y += h.vy * dt; h.t -= dt;
+    if (LL().murs && dansMur(h.x, h.y, 3)) { h.t = 0; continue }
     for (const e of S.ennemis) { if (h.perce <= 0) break; if (h.deja.has(e)) continue; if (Math.hypot(e.x - h.x, e.y - h.y) < e.r + 6) { h.deja.add(e); h.perce--; blesser(e, h.deg, h.vx / 120, h.vy / 120) } }
   }
   S.tirs = S.tirs.filter(h => h.t > 0 && h.perce > 0);
@@ -561,7 +587,7 @@ function armes(dt) {
   // fourches : coup droit dans le sens de la marche
   if (A.fourches && (S.timers.fourches -= dt) <= 0) {
     const l = A.fourches; S.timers.fourches = (1.5 - .08 * l) * cd;
-    for (const off of l >= 4 ? [0, Math.PI] : [0]) S.coups.push({ a: p.dir + off, t: 0, len: 105 + 14 * l, w: 16 + 2 * l, deg: 16 + 8 * l, deja: new Set() });
+    for (const off of l >= EVO ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : l >= 4 ? [0, Math.PI] : [0]) S.coups.push({ a: p.dir + off, t: 0, len: 105 + 14 * l + (l >= EVO ? 30 : 0), w: 16 + 2 * l, deg: 16 + 8 * l, deja: new Set(), evo: l >= EVO });
   }
   for (const c of S.coups) {
     c.t += dt; const ext = Math.min(1, c.t / .1), ca = Math.cos(c.a), sa = Math.sin(c.a);
@@ -575,9 +601,9 @@ function armes(dt) {
   // clé à molette : boomerang
   if (A.cle && (S.timers.cle -= dt) <= 0) {
     const l = A.cle; S.timers.cle = (2.1 - .1 * l) * cd;
-    const n = 1 + Math.floor(l / 3), cible = proche(p.x, p.y, 600);
+    const n = l >= EVO ? 6 : 1 + Math.floor(l / 3), cible = proche(p.x, p.y, 600);
     const base = cible ? Math.atan2(cible.y - p.y, cible.x - p.x) : p.dir;
-    for (let i = 0; i < n; i++) { const a = base + (i - (n - 1) / 2) * .5; S.cles.push({ x: p.x, y: p.y, vx: Math.cos(a) * 640, vy: Math.sin(a) * 640, t: 0, rot: 0, deg: 12 + 6 * l, id: "k" + (S.cleId++ % 6) }) }
+    for (let i = 0; i < n; i++) { const a = l >= EVO ? base + i * Math.PI * 2 / n : base + (i - (n - 1) / 2) * .5; S.cles.push({ x: p.x, y: p.y, vx: Math.cos(a) * 640, vy: Math.sin(a) * 640, t: 0, rot: 0, deg: 12 + 6 * l, id: "k" + (S.cleId++ % 6), evo: l >= EVO }) }
   }
   for (const k of S.cles) {
     k.t += dt; k.rot += dt * 16;
@@ -588,22 +614,48 @@ function armes(dt) {
   S.cles = S.cles.filter(k => !k.fini && k.t < 3);
   // talkie-walkie : l'appel rebondit d'ennemi en ennemi
   if (A.talkie && (S.timers.talkie -= dt) <= 0) {
-    const l = A.talkie; S.timers.talkie = (2.3 - .14 * l) * cd;
+    const l = A.talkie; S.timers.talkie = (l >= EVO ? 1 : 2.3 - .14 * l) * cd;
     let cur = proche(p.x, p.y, 380); const deja = new Set(), pts = [{ x: p.x, y: p.y }];
-    for (let i = 0; i < 2 + l && cur; i++) { deja.add(cur); pts.push({ x: cur.x, y: cur.y }); blesser(cur, 15 + 7 * l, 0, 0); cur = proche(cur.x, cur.y, 170, deja) }
-    if (pts.length > 1) S.arcs.push({ pts, t: .32 });
+    for (let i = 0; i < (l >= EVO ? 12 : 2 + l) && cur; i++) { deja.add(cur); pts.push({ x: cur.x, y: cur.y }); blesser(cur, 15 + 7 * l, 0, 0); cur = proche(cur.x, cur.y, 170, deja) }
+    if (pts.length > 1) S.arcs.push({ pts, t: .32, evo: l >= EVO });
   }
   for (const a of S.arcs) a.t -= dt;
   S.arcs = S.arcs.filter(a => a.t > 0);
 }
 
+/* ---------- murs : une grille infinie de blocs (racks, remorques) ; chaque bloc est centré dans sa case, les bords de case sont des allées ---------- */
+function mursZone(x0, y0, x1, y1) {
+  const M = LL().murs; if (!M) return [];
+  const out = [];
+  for (let i = Math.floor(x0 / M.cw) - 1; i <= Math.floor(x1 / M.cw) + 1; i++) for (let j = Math.floor(y0 / M.ch) - 1; j <= Math.floor(y1 / M.ch) + 1; j++) {
+    if (hash(i * 7 + 3, j * 13 + 5) < M.trou) continue;
+    const x = i * M.cw + (M.cw - M.w) / 2, y = j * M.ch + (M.ch - M.h) / 2;
+    if (x > x1 || x + M.w < x0 || y > y1 || y + M.h < y0) continue;
+    out.push({ x, y, w: M.w, h: M.h, i, j });
+  }
+  return out;
+}
+function dansMur(x, y, r) { for (const m of mursZone(x - r, y - r, x + r, y + r)) { const nx = clamp(x, m.x, m.x + m.w), ny = clamp(y, m.y, m.y + m.h); if (Math.hypot(x - nx, y - ny) < r) return true } return false }
+function pousserHorsMurs(o, r) {
+  for (const m of mursZone(o.x - r, o.y - r, o.x + r, o.y + r)) {
+    const nx = clamp(o.x, m.x, m.x + m.w), ny = clamp(o.y, m.y, m.y + m.h), dx = o.x - nx, dy = o.y - ny, d = Math.hypot(dx, dy);
+    if (d >= r) continue;
+    if (d > 0) { o.x += dx / d * (r - d); o.y += dy / d * (r - d) }
+    else {   // centre dans le mur : sortir par le côté le plus proche
+      const g = o.x - m.x, dr = m.x + m.w - o.x, h = o.y - m.y, b = m.y + m.h - o.y, mn = Math.min(g, dr, h, b);
+      if (mn === g) o.x = m.x - r; else if (mn === dr) o.x = m.x + m.w + r; else if (mn === h) o.y = m.y - r; else o.y = m.y + m.h + r;
+    }
+  }
+}
+
 /* ---------- transpalettes folles : traversent l'écran en ligne droite, annoncées par une lumière rouge ---------- */
 const TP_ALERTE = 1.4, TP_LONG = 40, TP_LARG = 18;
 function lancerTranspa(vise) {
-  const p = S.p, h = Math.random() < .55, sens = Math.random() < .5 ? 1 : -1, v = 760 + Math.min(320, S.t * .6);
+  const M = LL().murs, p = S.p, h = M && M.horizontal ? true : Math.random() < .55, sens = Math.random() < .5 ? 1 : -1, v = 760 + Math.min(320, S.t * .6);
   const tp = { ax: h ? "h" : "v", sens, v, alerte: TP_ALERTE, parcours: 0, deja: new Set(), deg: 28 * (1 + S.t / 400), ph: Math.random() * 6 };
   if (h) { tp.y = vise ? p.y : p.y + rnd(-.38, .38) * H; tp.x = p.x - sens * (W / 2 + 90); tp.vx = sens * v; tp.vy = 0; tp.long = W + 300 }
   else { tp.x = vise ? p.x : p.x + rnd(-.38, .38) * W; tp.y = p.y - sens * (H / 2 + 90); tp.vx = 0; tp.vy = sens * v; tp.long = H + 300 }
+  if (M) { if (h) tp.y = Math.round(tp.y / M.ch) * M.ch; else tp.x = Math.round(tp.x / M.cw) * M.cw }   // calée au milieu d'une allée
   S.transpas.push(tp);
   if (!S.transpaVu) { S.transpaVu = true; annonce("Attention, " + LL().tpNom + " !") }
 }
@@ -649,11 +701,13 @@ function maj(dt) {
   if (mx || my) { const n = Math.hypot(mx, my); tx = mx / n * vit * force; ty = my / n * vit * force; p.dir = Math.atan2(my, mx); p.pas += dt * 10 * force }
   const lis = Math.min(1, (LL().glisse ? 2.4 : 40) * dt); p.vx += (tx - p.vx) * lis; p.vy += (ty - p.vy) * lis;
   p.x += p.vx * dt; p.y += p.vy * dt;
+  if (LL().murs) pousserHorsMurs(p, p.r);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
 
   vagues(dt); machines(dt); armes(dt); transpalettes(dt);
 
   // déplacement des ennemis + séparation (grille)
+  const murs = !!LL().murs;
   const G = new Map(), cell = 48, key = (x, y) => (x * 73856093) ^ (y * 19349663);
   for (const e of S.ennemis) { const k = key(Math.floor(e.x / cell), Math.floor(e.y / cell)); let a = G.get(k); if (!a) G.set(k, a = []); a.push(e) }
   for (const e of S.ennemis) {
@@ -670,6 +724,7 @@ function maj(dt) {
       for (const o of a) { if (o === e) continue; const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy), min = e.r + o.r; if (od > 0 && od < min) { const f = (min - od) / min * 140; vx += ox / od * f; vy += oy / od * f } }
     }
     e.x += (vx + e.kb.x * 60) * dt; e.y += (vy + e.kb.y * 60) * dt;
+    if (murs) pousserHorsMurs(e, e.r);
     e.kb.x *= Math.pow(.02, dt); e.kb.y *= Math.pow(.02, dt);
     if (d < e.r + p.r && p.inv <= 0) { p.hp -= e.deg; p.inv = .5; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }) }
     // trop loin derrière : on le replace devant (sauf boss)
@@ -683,7 +738,7 @@ function maj(dt) {
     const dx = p.x - g.x, dy = p.y - g.y, d = Math.hypot(dx, dy);
     if (d < p.aimant) g.att = true;
     if (g.att) { const v = 420 + (p.aimant - Math.min(d, p.aimant)) * 2; g.x += dx / (d || 1) * v * dt; g.y += dy / (d || 1) * v * dt }
-    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.coffre) { p.hp = Math.min(p.max, p.hp + 30); annonce("Pause café : +30 vie") } else gagnerXp(g.v) }
+    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.coffre) ouvrirCoffre(); else gagnerXp(g.v) }
   }
   S.gemmes = S.gemmes.filter(g => !g.pris);
   if (S.gemmes.length > 500) { const pieces = S.gemmes.filter(g => g.argent || g.coffre), autres = S.gemmes.filter(g => !g.argent && !g.coffre); S.gemmes = pieces.concat(autres.slice(-(500 - pieces.length))) }
@@ -704,6 +759,15 @@ function maj(dt) {
   majHud();
 }
 
+function evoPrete() { return Object.keys(S.armes).find(id => S.armes[id] === ARMES[id].max && (S.objets[EVOS[id].avec] || 0) > 0) }
+function ouvrirCoffre() {
+  const p = S.p, id = evoPrete();
+  p.hp = Math.min(p.max, p.hp + 30);
+  if (!id) return annonce("Casse-croûte : +30 vie");
+  S.armes[id] = EVO; majArmes(); annonce("★ " + EVOS[id].nom + " ★"); vibrer(120);
+  for (let i = 0; i < 36; i++) { const a = i / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: i % 2 ? "#ffe14d" : "#fff" }) }
+  S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
+}
 function gagnerXp(v) {
   const p = S.p; p.xp += v * p.xpm;
   if (p.xp >= p.next) { p.xp -= p.next; p.niv++; p.next = Math.round(6 + p.niv * 5.5 + Math.pow(p.niv, 1.6)); ouvrirChoix() }
@@ -714,7 +778,12 @@ let offres = [], sel = 0;
 function majSel() { $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); if (i === sel) b.focus({ preventScroll: true }) }) }
 function offresPossibles() {
   const pool = [];
-  for (const [id, a] of Object.entries(ARMES)) { const l = S.armes[id] || 0; if (l < a.max && (l > 0 || armeDispo(id))) pool.push({ id, kind: "arme", l: l + 1 }) }
+  const nb = Object.keys(S.armes).length;
+  for (const [id, a] of Object.entries(ARMES)) {
+    const l = S.armes[id] || 0;
+    if (l === 0 && (nb >= NB_ARMES || !armeDispo(id))) continue;   // emplacements pleins : les autres armes sortent du tirage
+    if (l < a.max) pool.push({ id, kind: "arme", l: l + 1 });
+  }
   for (const [id, o] of Object.entries(OBJETS)) { const l = S.objets[id] || 0; if (l < o.max) pool.push({ id, kind: "objet", l: l + 1 }) }
   return pool;
 }
@@ -741,8 +810,12 @@ function ouvrirChoix() {
     const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
     const tag = o.kind === "soin" ? "Soin" : o.l === 1 ? (o.kind === "arme" ? "Nouvel outil" : "Nouvel équipement") : "Niveau " + o.l;
     const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
-    return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span></span></button>`;
+    let indice = "";
+    if (o.kind === "arme") indice = `<span class="evo-hint">★ ${EVOS[o.id].nom} : niveau max + ${OBJETS[EVOS[o.id].avec].nom}</span>`;
+    else if (o.kind === "objet") { const w = Object.keys(S.armes).find(id => EVOS[id].avec === o.id && S.armes[id] < EVO); if (w) indice = `<span class="evo-hint">★ Fait évoluer : ${ARMES[w].nom}</span>` }
+    return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
+  const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ une évolution t'attend dans le prochain coffre !" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
   sel = 0; setTimeout(majSel, 30);
 }
@@ -758,7 +831,7 @@ $("cartes").addEventListener("click", e => { const b = e.target.closest(".carte"
 
 /* ---------- interface ---------- */
 function majArmes() {
-  const a = Object.entries(S.armes).map(([id, l]) => `<span>${ARMES[id].nom} ${l}</span>`), o = Object.entries(S.objets).map(([id, l]) => `<span>${OBJETS[id].nom} ${l}</span>`);
+  const a = Object.entries(S.armes).map(([id, l]) => l >= EVO ? `<span class="evo">★ ${EVOS[id].nom}</span>` : `<span>${ARMES[id].nom} ${l === ARMES[id].max ? "MAX" : l}</span>`), o = Object.entries(S.objets).map(([id, l]) => `<span>${OBJETS[id].nom} ${l}</span>`);
   $("armes").innerHTML = a.concat(o).join("");
 }
 function majHud() {
@@ -911,9 +984,39 @@ function dessinLieu(e, c, blanc, p) {
     }
   }
 }
+function dessinerMurs(camx, camy, X, Y) {
+  const M = LL().murs;
+  for (const m of mursZone(camx - 40, camy - 40, camx + W + 40, camy + H + 40)) {
+    const x = X(m.x), y = Y(m.y), hs = hash(m.i * 3 + 1, m.j * 5 + 2);
+    cx.fillStyle = "rgba(0,0,0,.35)"; cx.fillRect(x + 6, y + 8, m.w, m.h);
+    if (M.type === "racks") {
+      cx.fillStyle = "#1d3f66"; cx.fillRect(x, y, m.w, m.h);                                   /* plancher du rack */
+      const cs = ["#b98a52", "#c8a46a", "#a37744", "#d9b98a", "#8ec9ec", "#e8412c"];
+      for (let k = 0, u = 0; u < m.w - 10; k++) {                                              /* cartons et palettes posés dessus */
+        const lw = 34 + Math.floor(hash(m.i * 31 + k, m.j * 17) * 40), hh = hash(m.i + k * 7, m.j * 3 + k);
+        cx.fillStyle = cs[Math.floor(hh * cs.length)]; cx.fillRect(x + 6 + u, y + 8, Math.min(lw, m.w - 12 - u), m.h - 16);
+        cx.fillStyle = "rgba(0,0,0,.18)"; cx.fillRect(x + 6 + u, y + m.h - 14, Math.min(lw, m.w - 12 - u), 6);
+        cx.fillStyle = "rgba(240,225,190,.6)"; cx.fillRect(x + 6 + u + Math.min(lw, m.w - 12 - u) / 2 - 2, y + 8, 4, m.h - 16);
+        u += lw + 6;
+      }
+      cx.fillStyle = "#ff6a10"; cx.fillRect(x, y, m.w, 6); cx.fillRect(x, y + m.h - 6, m.w, 6);  /* lisses orange */
+      cx.fillStyle = "#2d6fb8"; for (let u = 0; u <= m.w - 8; u += 90) cx.fillRect(x + u, y - 2, 8, m.h + 4);   /* montants bleus */
+      cx.fillRect(x + m.w - 8, y - 2, 8, m.h + 4);
+      cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.strokeRect(x, y, m.w, m.h);
+    } else {
+      const coul = ["#f2f0e6", "#c0392b", "#3d8bd9", "#2fbf71", "#f2f0e6", "#ffc21a"][Math.floor(hs * 6)], cabine = hs > .5;
+      cx.fillStyle = coul; cx.fillRect(x, y, m.w, m.h);
+      cx.fillStyle = "rgba(0,0,0,.12)"; for (let k = 1; k < 8; k++) cx.fillRect(x, y + k * m.h / 8, m.w, 2);
+      cx.fillStyle = "#24262a"; if (cabine) cx.fillRect(x + 4, y - 46, m.w - 8, 44); else cx.fillRect(x + 4, y + m.h + 2, m.w - 8, 44);
+      cx.fillStyle = "#9fd2ff"; if (cabine) cx.fillRect(x + 10, y - 44, m.w - 20, 10); else cx.fillRect(x + 10, y + m.h + 34, m.w - 20, 10);
+      cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.strokeRect(x, y, m.w, m.h);
+    }
+  }
+}
 function dessiner() {
   const p = S.p, camx = p.x - W / 2, camy = p.y - H / 2, X = x => x - camx, Y = y => y - camy;
   sol(camx, camy);
+  if (LL().murs) dessinerMurs(camx, camy, X, Y);
   // étiquettes scannées (expérience) et casse-croûte
   for (const g of S.gemmes) {
     const x = X(g.x), y = Y(g.y); if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
@@ -923,7 +1026,7 @@ function dessiner() {
     cx.fillStyle = "#15171a"; for (let k = -4; k <= 4; k += 2) cx.fillRect(x + k, y - 2, k % 4 ? 1 : 1.5, 4);
   }
   // coups de klaxon
-  for (const o of S.ondes) { cx.strokeStyle = `rgba(255,194,26,${.55 * (1 - o.r / o.max)})`; cx.lineWidth = 5; cx.setLineDash([14, 8]); cx.beginPath(); cx.arc(X(o.x), Y(o.y), o.r, 0, 7); cx.stroke(); cx.setLineDash([]) }
+  for (const o of S.ondes) { if (o.r < 0) continue; cx.strokeStyle = o.evo ? `rgba(255,60,40,${.75 * (1 - o.r / o.max)})` : `rgba(255,194,26,${.55 * (1 - o.r / o.max)})`; cx.lineWidth = 5; cx.setLineDash([14, 8]); cx.beginPath(); cx.arc(X(o.x), Y(o.y), o.r, 0, 7); cx.stroke(); cx.setLineDash([]) }
   // ombre des palettes qui tombent
   for (const f of S.fusees) { const k = 1 - f.t / .6, x = X(f.x), y = Y(f.y); cx.fillStyle = `rgba(0,0,0,${.15 + .3 * k})`; cx.fillRect(x - f.r * .7, y - f.r * .5, f.r * 1.4, f.r); cx.strokeStyle = "rgba(255,90,31,.7)"; cx.lineWidth = 2; cx.strokeRect(x - f.r * .7, y - f.r * .5, f.r * 1.4, f.r) }
   // ennemis
@@ -1026,14 +1129,16 @@ function dessiner() {
     const ext = Math.min(1, c.t / .1), L2 = c.len * ext, al = 1 - Math.max(0, c.t - .12) / .1;
     cx.save(); cx.translate(X(p.x), Y(p.y)); cx.rotate(c.a); cx.globalAlpha = Math.max(0, al);
     cx.fillStyle = "rgba(255,194,26,.18)"; cx.fillRect(10, -c.w, L2, c.w * 2);
-    cx.fillStyle = "#5a5f66"; cx.fillRect(4, -c.w * .6 - 3, L2, 6); cx.fillRect(4, c.w * .6 - 3, L2, 6);
+    cx.fillStyle = c.evo ? "#d4a017" : "#5a5f66"; cx.fillRect(4, -c.w * .6 - 3, L2, 6); cx.fillRect(4, c.w * .6 - 3, L2, 6);
+    if (c.evo) { cx.fillStyle = "rgba(255,225,77,.25)"; cx.fillRect(10, -c.w * 1.3, L2, c.w * 2.6) }
     cx.fillStyle = "#cfd4da"; cx.fillRect(4, -c.w * .6 - 3, L2, 2); cx.fillRect(4, c.w * .6 - 3, L2, 2);
     cx.restore(); cx.globalAlpha = 1;
   }
   // clés à molette
   for (const k of S.cles) {
     cx.save(); cx.translate(X(k.x), Y(k.y)); cx.rotate(k.rot);
-    cx.fillStyle = "#b8bec6"; cx.fillRect(-11, -2.5, 18, 5);
+    if (k.evo) { cx.scale(1.35, 1.35); cx.shadowColor = "#ffb000"; cx.shadowBlur = 10 }
+    cx.fillStyle = k.evo ? "#ffc21a" : "#b8bec6"; cx.fillRect(-11, -2.5, 18, 5);
     cx.beginPath(); cx.arc(9, 0, 6, 0, 7); cx.fill(); cx.fillStyle = "#2a2c30"; cx.fillRect(9, -2, 7, 4);
     cx.fillStyle = "#3d8bd9"; cx.fillRect(-11, -2.5, 8, 5);
     cx.restore();
@@ -1041,7 +1146,7 @@ function dessiner() {
   // appels de talkie
   for (const a of S.arcs) {
     const al = a.t / .32; cx.lineCap = "round";
-    for (const [lw, col] of [[7, `rgba(255,194,26,${.35 * al})`], [2.5, `rgba(255,248,210,${al})`]]) {
+    for (const [lw, col] of a.evo ? [[10, `rgba(80,200,255,${.4 * al})`], [3, `rgba(225,250,255,${al})`]] : [[7, `rgba(255,194,26,${.35 * al})`], [2.5, `rgba(255,248,210,${al})`]]) {
       cx.strokeStyle = col; cx.lineWidth = lw; cx.beginPath(); cx.moveTo(X(a.pts[0].x), Y(a.pts[0].y));
       for (let i = 1; i < a.pts.length; i++) {
         const A0 = a.pts[i - 1], B = a.pts[i];
@@ -1053,9 +1158,10 @@ function dessiner() {
     cx.lineCap = "butt";
   }
   // cutters
-  for (const h of S.tirs) { const x = X(h.x), y = Y(h.y); cx.save(); cx.translate(x, y); cx.rotate(S.t * 18); cx.fillStyle = "#ffc21a"; cx.fillRect(-7, -3, 10, 6); cx.fillStyle = "#cfd4da"; cx.fillRect(3, -2, 6, 4); cx.restore() }
+  for (const h of S.tirs) { const x = X(h.x), y = Y(h.y); cx.save(); cx.translate(x, y); cx.rotate(S.t * 18); if (h.evo) { cx.scale(1.7, 1.7); cx.shadowColor = "#ffd447"; cx.shadowBlur = 12 } cx.fillStyle = h.evo ? "#ffe14d" : "#ffc21a"; cx.fillRect(-7, -3, 10, 6); cx.fillStyle = h.evo ? "#fff" : "#cfd4da"; cx.fillRect(3, -2, 6, 4); cx.restore() }
   // rouleaux de film étirable
-  if (S.armes.sel) { const n = S.armes.sel + 1, rr = 62 + 4 * S.armes.sel; for (let i = 0; i < n; i++) { const a = S.angleSel + i * Math.PI * 2 / n, x = X(p.x) + Math.cos(a) * rr, y = Y(p.y) + Math.sin(a) * rr; cx.fillStyle = "rgba(210,235,255,.35)"; cx.beginPath(); cx.arc(x, y, 10, 0, 7); cx.fill(); cx.strokeStyle = "rgba(230,245,255,.8)"; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = "#7a5230"; cx.beginPath(); cx.arc(x, y, 3.5, 0, 7); cx.fill() } }
+  if (S.armes.sel && S.armes.sel >= EVO && S.selR) { cx.strokeStyle = "rgba(230,245,255,.18)"; cx.lineWidth = 16; cx.beginPath(); cx.arc(X(p.x), Y(p.y), S.selR, 0, 7); cx.stroke() }
+  if (S.armes.sel) { const n = S.selN || S.armes.sel + 1, rr = S.selR || 62 + 4 * S.armes.sel; for (let i = 0; i < n; i++) { const a = S.angleSel + i * Math.PI * 2 / n, x = X(p.x) + Math.cos(a) * rr, y = Y(p.y) + Math.sin(a) * rr; cx.fillStyle = "rgba(210,235,255,.35)"; cx.beginPath(); cx.arc(x, y, 10, 0, 7); cx.fill(); cx.strokeStyle = "rgba(230,245,255,.8)"; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = "#7a5230"; cx.beginPath(); cx.arc(x, y, 3.5, 0, 7); cx.fill() } }
   // effets
   for (const f of S.fx) {
     if (f.boum) { const x = X(f.x), y = Y(f.y), k = f.t / .3; cx.fillStyle = `rgba(138,106,60,${k})`; cx.fillRect(x - f.boum * .7, y - f.boum * .5, f.boum * 1.4, f.boum); cx.fillStyle = `rgba(200,164,106,${k})`; for (let q = 0; q < 3; q++) cx.fillRect(x - f.boum * .7, y - f.boum * .5 + q * f.boum * .4, f.boum * 1.4, f.boum * .15); cx.strokeStyle = `rgba(255,194,26,${k})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(x, y, f.boum * (1.3 - f.t), 0, 7); cx.stroke() }
@@ -1110,11 +1216,12 @@ function dessiner() {
   // rayon de la douchette
   if (S.armes.lanterne) {
     const port = 110 + 16 * S.armes.lanterne, arc = .32 + .03 * S.armes.lanterne;
-    for (const off of S.armes.lanterne >= 4 ? [0, Math.PI] : [0]) {
+    const evoL = S.armes.lanterne >= EVO, C1 = evoL ? "80,240,220" : "255,59,48";
+    for (const off of evoL ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : S.armes.lanterne >= 4 ? [0, Math.PI] : [0]) {
       const a = S.angleLampe + off, lg = cx.createRadialGradient(px, py, 8, px, py, port);
-      lg.addColorStop(0, "rgba(255,59,48,.38)"); lg.addColorStop(1, "rgba(255,59,48,0)");
+      lg.addColorStop(0, `rgba(${C1},.42)`); lg.addColorStop(1, `rgba(${C1},0)`);
       cx.fillStyle = lg; cx.beginPath(); cx.moveTo(px, py); cx.arc(px, py, port, a - arc, a + arc); cx.closePath(); cx.fill();
-      cx.strokeStyle = "rgba(255,80,70,.9)"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(px, py); cx.lineTo(px + Math.cos(a) * port, py + Math.sin(a) * port); cx.stroke();
+      cx.strokeStyle = evoL ? "rgba(200,255,250,.95)" : "rgba(255,80,70,.9)"; cx.lineWidth = evoL ? 3 : 2; cx.beginPath(); cx.moveTo(px, py); cx.lineTo(px + Math.cos(a) * port, py + Math.sin(a) * port); cx.stroke();
     }
   }
   // vie
