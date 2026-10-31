@@ -935,7 +935,7 @@ function maj(dt) {
     for (const e of S.ennemis) if (!e.decor) { const dd = Math.hypot(e.x - p.x, e.y - p.y) || 1; if (dd < 260) { e.kb.x += (e.x - p.x) / dd * 14; e.kb.y += (e.y - p.y) / dd * 14 } }
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
   }
-  if (p.hp <= 0) return finir(false);
+  if (p.hp <= 0) return mortJoueur();
   if (S.t >= VICTOIRE && !S.infini) return finir(true);
   majHud();
 }
@@ -1329,7 +1329,7 @@ function dessinerObjectif() {
   cx.fillStyle = "#d8ccb0"; cx.fillRect(x + 14, y + 33, w - 28, 8);
   cx.fillStyle = ev.id === "fourriere" ? "#e8412c" : prog < .3 ? "#e8412c" : "#2fbf71"; cx.fillRect(x + 14, y + 33, (w - 28) * Math.max(0, prog), 8);
 }
-function dessiner() {
+function dessinerJeu() {
   const p = S.p, camx = p.x - W / 2, camy = p.y - H / 2, X = x => x - camx, Y = y => y - camy;
   sol(camx, camy);
   if (LL().murs) dessinerMurs(camx, camy, X, Y);
@@ -1504,9 +1504,11 @@ function dessiner() {
   if (p.givre) { const ga = cx.createRadialGradient(X(p.x), Y(p.y), 20, X(p.x), Y(p.y), 140); ga.addColorStop(0, "rgba(160,220,255,.16)"); ga.addColorStop(1, "rgba(160,220,255,0)"); cx.fillStyle = ga; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, 0, 7); cx.fill(); cx.strokeStyle = "rgba(190,235,255,.35)"; cx.setLineDash([6, 8]); cx.lineWidth = 2; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, S.t, S.t + 6.28); cx.stroke(); cx.setLineDash([]) }
   // préparateur : gilet orange à bandes, casquette
   const px = X(p.x), py = Y(p.y), bob = Math.sin(p.pas) * 1.5;
-  cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(px, py + 13, 11, 4, 0, 0, 7); cx.fill();
+  if (S.mort) { const St = MORTS[S.mort.v]; if (St.sous) { cx.save(); cx.translate(px, py); St.sous(S.mort, S.mort.t); cx.restore() } }
+  else { cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(px, py + 13, 11, 4, 0, 0, 7); cx.fill() }
   const PP = PERSOS[S.perso] || PERSOS.preparateur;
-  if (!(p.inv > 0 && Math.floor(p.inv * 20) % 2)) {
+  if (S.mort) joueurMort(px, py, PP);
+  else if (!(p.inv > 0 && Math.floor(p.inv * 20) % 2)) {
     cx.fillStyle = PP.gilet; cx.beginPath(); cx.ellipse(px, py + bob, 11, 13, 0, 0, 7); cx.fill();
     cx.fillStyle = "#e9eef2"; cx.fillRect(px - 11, py + 2 + bob, 22, 3); cx.fillRect(px - 11, py + 7 + bob, 22, 2);
     cx.fillStyle = "#e3b98f"; cx.beginPath(); cx.arc(px, py - 9 + bob, 7, 0, 7); cx.fill();
@@ -1574,11 +1576,274 @@ function dessiner() {
   }
 }
 
+/* ---------- mort du joueur : arrêt sur image, puis une animation tirée au hasard ---------- */
+const MORT_STYLES = ["explosion", "case", "ko", "vire", "trappe", "crepe", "fantome"];
+const mClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const mEase = k => 1 - Math.pow(1 - mClamp(k, 0, 1), 3);
+const mBack = k => { k = mClamp(k, 0, 1); return 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2) };
+function mBulle(texte, x, y, r, k, c1 = "#ffc21a", c2 = "#e8412c") {
+  const s = mBack(k); if (s <= 0 || k <= 0) return;
+  cx.save(); cx.translate(x, y); cx.scale(s, s); cx.rotate(-.12);
+  cx.beginPath(); for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2, rr = i % 2 ? r * .72 : r; cx.lineTo(Math.cos(a) * rr * 1.35, Math.sin(a) * rr) } cx.closePath();
+  cx.fillStyle = c1; cx.fill(); cx.lineWidth = 4; cx.strokeStyle = "#17130f"; cx.stroke();
+  cx.font = `${r * .62}px 'Luckiest Guy', Impact, sans-serif`; cx.textAlign = "center"; cx.textBaseline = "middle";
+  cx.lineWidth = 8; cx.strokeStyle = "#17130f"; cx.strokeText(texte, 0, 3); cx.fillStyle = c2; cx.fillText(texte, 0, 3);
+  cx.textBaseline = "alphabetic"; cx.restore();
+}
+function mEtoile(x, y, r) { cx.beginPath(); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? r * .45 : r; cx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) } cx.closePath(); cx.fillStyle = "#ffe14d"; cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = "#17130f"; cx.stroke() }
+function mTampon(k, texte = "ARRÊT DE TRAVAIL") {
+  if (k <= 0) return;
+  const s = 1 + 2.2 * (1 - mEase(k * 2.2)), a = mClamp(k * 5, 0, 1);
+  cx.save(); cx.globalAlpha = a; cx.translate(W / 2, H * .5); cx.rotate(-.14); cx.scale(s, s);
+  const w = Math.min(460, W * .86), h = w * .26;
+  cx.fillStyle = "rgba(255,246,227,.94)"; cx.fillRect(-w / 2, -h / 2, w, h);
+  cx.lineWidth = 6; cx.strokeStyle = "#e8412c"; cx.strokeRect(-w / 2, -h / 2, w, h); cx.lineWidth = 2; cx.strokeRect(-w / 2 + 9, -h / 2 + 9, w - 18, h - 18);
+  cx.font = `${h * .46}px 'Luckiest Guy', Impact, sans-serif`; cx.textAlign = "center"; cx.textBaseline = "middle"; cx.fillStyle = "#e8412c"; cx.fillText(texte, 0, 4, w - 40);
+  cx.textBaseline = "alphabetic"; cx.restore();
+}
+const MORTS = {
+  explosion: {
+    tampon: 1.6, flash: 1,
+    vitesse: t => t < .45 ? 0 : t < 1.4 ? .35 : .15,
+    zoom: t => t < .45 ? 1 + .3 * mEase(t / .45) : 1.3 - .15 * mEase((t - .45) / .8),
+    maj(M, t) {
+      if (t < .45 || M.boum) return;
+      M.boum = true; M.cache = true; M.shake = 1;
+      const PP = PERSOS[S.perso] || PERSOS.preparateur, cs = [PP.gilet, PP.gilet, "#e9eef2", "#e3b98f", "#ffc21a"];
+      for (let i = 0; i < 22; i++) { const a = rnd(0, 6.28), v = rnd(140, 420); M.pieces.push({ x: 0, y: 0, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, r: rnd(0, 6), vr: rnd(-14, 14), w: rnd(5, 11), h: rnd(4, 8), c: cs[i % cs.length], g: 600 }) }
+      M.pieces.push({ x: 0, y: -12, vx: 60, vy: -520, r: 0, vr: 9, casque: PP.casque, g: 700 });
+      for (let i = 0; i < 40; i++) { const a = rnd(0, 6.28), v = rnd(80, 360); M.fx.push({ x: 0, y: 0, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: rnd(.3, .7), c: Math.random() < .5 ? "#ffe14d" : "#fff", s: rnd(2, 4) }) }
+      for (let i = 0; i < 10; i++) { const a = rnd(0, 6.28); M.fx.push({ x: Math.cos(a) * 10, y: Math.sin(a) * 10, vx: Math.cos(a) * 40, vy: Math.sin(a) * 40 - 20, t: rnd(.8, 1.3), fumee: true, s: rnd(14, 26) }) }
+      const p = S.p; for (const e of S.ennemis) if (!e.decor) { const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1; if (d < 500) { const f = (e.boss ? 2 : 9) / (1 + d / 120); e.kb.x += dx / d * f; e.kb.y += dy / d * f } }
+    },
+    dessus(M, t) { if (t >= .45) mBulle("BAM !", W * .5 + 60, H * .3, Math.min(70, W * .12), (t - .45) / .25) },
+  },
+  case: {
+    tampon: 1.5, flash: .7,
+    vitesse: () => 0,
+    zoom: t => 1 + .7 * mEase(t / .7),
+    gris: t => mEase(t / .5),
+    maj() { },
+    dessus(M, t) {
+      const k = mEase((t - .25) / .45); if (k <= 0) return;
+      const m = 18 + (1 - k) * 60, bw = W - m * 2, bh = H - m * 2;
+      cx.save(); cx.globalAlpha = k;
+      cx.fillStyle = "rgba(0,0,0,.55)"; cx.beginPath(); cx.rect(0, 0, W, H); cx.rect(m, m, bw, bh); cx.fill("evenodd");
+      cx.lineWidth = 7; cx.strokeStyle = "#fff6e3"; cx.strokeRect(m, m, bw, bh); cx.lineWidth = 3; cx.strokeStyle = "#17130f"; cx.strokeRect(m - 4, m - 4, bw + 8, bh + 8);
+      const cw = Math.min(300, bw * .6); cx.fillStyle = "#ffc21a"; cx.fillRect(m, m, cw, 40); cx.strokeRect(m, m, cw, 40);
+      cx.fillStyle = "#17130f"; cx.font = "800 17px 'Nunito', sans-serif"; cx.textAlign = "left"; cx.textBaseline = "middle"; cx.fillText(LL().nom ? "Ce soir-là, " + LL().nom.toLowerCase() + "…" : "Ce soir-là, quai 7…", m + 12, m + 21, cw - 20);
+      cx.textBaseline = "alphabetic"; cx.restore();
+      if (t > .7) {
+        cx.save(); cx.globalAlpha = mClamp((t - .7) * 4, 0, 1); cx.strokeStyle = "rgba(255,246,227,.35)"; cx.lineWidth = 2;
+        for (let i = 0; i < 26; i++) { const a = i / 26 * 6.28, r0 = Math.min(W, H) * .22, r1 = Math.max(W, H); cx.beginPath(); cx.moveTo(W / 2 + Math.cos(a) * r0, H / 2 + Math.sin(a) * r0); cx.lineTo(W / 2 + Math.cos(a) * r1, H / 2 + Math.sin(a) * r1); cx.stroke() }
+        cx.restore();
+        mBulle("NOOON !", W / 2 + 70, H / 2 - 60, Math.min(52, W * .1), (t - .8) / .25, "#fff6e3", "#17130f");
+      }
+    },
+  },
+  ko: {
+    tampon: 2, flash: .8,
+    vitesse: t => t < .4 ? 0 : .12,
+    zoom: t => 1 + .55 * mEase((t - .2) / .9),
+    maj(M, t) {
+      if (t > .4) { const k = mClamp((t - .4) / .7, 0, 1); M.rot = mEase(k) * Math.PI * 4.5; M.chute = Math.sin(k * Math.PI) * -3 }
+      if (t > 1.1) {
+        M.rot = Math.PI / 2; const k = mClamp((t - 1.1) / .25, 0, 1); M.ecrase = 1 - .25 * Math.sin(k * Math.PI); M.yeuxX = true; M.sansCasque = true;
+        if (!M.casquePart) { M.casquePart = true; M.shake = .5; M.pieces.push({ x: 0, y: -12, vx: -140, vy: -360, r: 0, vr: -10, casque: (PERSOS[S.perso] || PERSOS.preparateur).casque, g: 800 }) }
+      }
+    },
+    dessus(M, t) {
+      const z = MORTS.ko.zoom(t);
+      if (t > 1.2) for (let i = 0; i < 3; i++) { const a = t * 4 + i * 2.09; mEtoile(W / 2 + Math.cos(a) * 22 * z - 10 * z, H / 2 - 6 * z + Math.sin(a) * 7 * z, 6 * z) }
+      if (t > 1.15) mBulle("K.O.", W / 2 - 80, H * .3, Math.min(64, W * .12), (t - 1.15) / .25, "#fff6e3", "#e8412c");
+    },
+  },
+};
+function mEcran(x, y) { const M = S.mort, St = MORTS[M.v], z = St.zoom(M.t), c = St.cam ? St.cam(M.t) : [0, 0]; return [W / 2 + (x - c[0]) * z, H / 2 + (y - c[1]) * z] }
+function mPatron(x, y, pas, doigt) {
+  cx.save(); cx.translate(x, y + Math.abs(Math.sin(pas * 9)) * -2); cx.scale(1.25, 1.25);
+  cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(0, 15, 12, 4, 0, 0, 7); cx.fill();
+  cx.fillStyle = "#3b3f4a"; cx.beginPath(); cx.ellipse(0, 1, 12, 14, 0, 0, 7); cx.fill();
+  cx.fillStyle = "#fff"; cx.beginPath(); cx.moveTo(-4, -11); cx.lineTo(4, -11); cx.lineTo(0, 0); cx.fill();
+  cx.fillStyle = "#e8412c"; cx.beginPath(); cx.moveTo(-1.5, -9); cx.lineTo(1.5, -9); cx.lineTo(2, 2); cx.lineTo(0, 5); cx.lineTo(-2, 2); cx.fill();
+  if (doigt) { cx.strokeStyle = "#3b3f4a"; cx.lineWidth = 5; cx.lineCap = "round"; cx.beginPath(); cx.moveTo(-8, -3); cx.lineTo(-20, -6); cx.stroke(); cx.strokeStyle = "#e3b98f"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(-21, -6); cx.lineTo(-27, -7); cx.stroke(); cx.lineCap = "butt" }
+  else { cx.fillStyle = "#f2f0e6"; cx.fillRect(7, -4, 9, 12); cx.fillStyle = "#6d4c2a"; cx.fillRect(9, -6, 5, 2) }
+  cx.fillStyle = "#e3b98f"; cx.beginPath(); cx.arc(0, -15, 8, 0, 7); cx.fill();
+  cx.fillStyle = "#9a9a9a"; cx.beginPath(); cx.arc(-7, -16, 3, 0, 7); cx.arc(7, -16, 3, 0, 7); cx.fill();
+  cx.fillStyle = "#3a2a1a"; cx.fillRect(-5, -13, 10, 2.5);
+  cx.strokeStyle = "#15171a"; cx.lineWidth = 1.6; cx.beginPath(); cx.moveTo(-5, -19); cx.lineTo(-1.5, -17.5); cx.moveTo(5, -19); cx.lineTo(1.5, -17.5); cx.stroke();
+  cx.restore();
+}
+function mTranspalette(x, y, t) {
+  cx.save(); cx.translate(x, y);
+  cx.fillStyle = "rgba(0,0,0,.35)"; cx.fillRect(-26, 12, 80, 6);
+  cx.fillStyle = "#8a929c"; cx.fillRect(12, -10, 46, 6); cx.fillRect(12, 6, 46, 6);
+  cx.fillStyle = "#ffc21a"; cx.fillRect(-28, -16, 42, 32); cx.strokeStyle = "#17130f"; cx.lineWidth = 2.5; cx.strokeRect(-28, -16, 42, 32);
+  cx.fillStyle = "#17130f"; cx.fillRect(-24, -12, 16, 24); cx.fillStyle = "#ff7410"; cx.fillRect(-20, -6, 8, 12);
+  const on = Math.sin(t * 30) > 0; cx.fillStyle = on ? "#ff2a1a" : "#7a1a10"; cx.beginPath(); cx.arc(-2, 0, 5, 0, 7); cx.fill();
+  if (on) { const g = cx.createRadialGradient(-2, 0, 2, -2, 0, 60); g.addColorStop(0, "rgba(255,40,20,.45)"); g.addColorStop(1, "rgba(255,40,20,0)"); cx.fillStyle = g; cx.beginPath(); cx.arc(-2, 0, 60, 0, 7); cx.fill() }
+  cx.strokeStyle = "rgba(255,246,227,.5)"; cx.lineWidth = 3; for (let i = 0; i < 4; i++) { cx.beginPath(); cx.moveTo(-40 - i * 4, -12 + i * 8); cx.lineTo(-80 - i * 14, -12 + i * 8); cx.stroke() }
+  cx.restore();
+}
+function mTexte(txt, x, y, a = 1) { cx.save(); cx.globalAlpha = a; cx.font = "800 18px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeStyle = "#17130f"; cx.strokeText(txt, x, y); cx.fillStyle = "#fff6e3"; cx.fillText(txt, x, y); cx.restore() }
+const TROU = 125;
+Object.assign(MORTS, {
+  vire: {
+    tampon: 4.1, flash: .5, texte: "LICENCIÉ",
+    vitesse: t => t < .4 ? 0 : .15,
+    zoom: t => 1 + .5 * mEase(t / 1.4),
+    cam: () => [15, 0],
+    pos: t => 230 - 185 * mEase((t - .5) / 1.2),
+    maj(M, t) { M.triste = t > 2.1; M.carton = t > 2.3; if (t > 2.5) M.px = -mEase((t - 2.5) / 1.6) * 90 },
+    monde(M, t) { if (t > .5) mPatron(MORTS.vire.pos(t), 0, t < 1.7 ? t : 0, t > 1.8 && t < 4) },
+    dessus(M, t) {
+      if (t > 1.8) { const [x, y] = mEcran(MORTS.vire.pos(t), -26); mBulle("T'ES VIRÉ !", x + 40, y - 40, Math.min(58, W * .1), (t - 1.8) / .25, "#fff6e3", "#e8412c") }
+      if (t > 2.6 && t < 3.4) { const [x, y] = mEcran(M.px, -24); mTexte("… d'accord.", x, y - 16) }
+    },
+  },
+  trappe: {
+    tampon: 2.7, flash: .6, texte: "PORTÉ DISPARU",
+    vitesse: t => t < .45 ? 0 : .2,
+    zoom: t => 1 + .4 * mEase(t / 1.2),
+    cam: t => [TROU * .5 * mEase((t - .3) / 1), 0],
+    maj(M, t) {
+      if (t > .45 && t < 1.25) { const k = (t - .45) / .8; M.px = TROU * k * k; M.rot = k * 9 }
+      if (t >= 1.25) { M.px = TROU; const k = mClamp((t - 1.25) / .8, 0, 1); M.taille = 1 - k; M.rot = 9 + k * 14; if (k >= 1) M.cache = true }
+      if (t > 2.2 && !M.clonk) { M.clonk = true; M.shake = .4 }
+    },
+    sous(M, t) {
+      const r = 26 * mEase(t / .4); cx.fillStyle = "rgba(10,10,14,.75)"; cx.beginPath(); cx.ellipse(-4, 6, r * 1.3, r * .7, .1, 0, 7); cx.fill();
+      cx.fillStyle = "rgba(120,90,200,.25)"; cx.beginPath(); cx.ellipse(-8, 3, r * .5, r * .2, .1, 0, 7); cx.fill();
+      const o = t < 2.2 ? mEase((t - .4) / .4) : 1 - mEase((t - 2.2) / .15), x = TROU;
+      cx.fillStyle = "#ffc21a"; cx.fillRect(x - 24, -18, 48, 36); cx.fillStyle = "#17130f"; for (let i = -24; i < 24; i += 8) { cx.beginPath(); cx.moveTo(x + i, -18); cx.lineTo(x + i + 4, -18); cx.lineTo(x + i - 4, 18); cx.lineTo(x + i - 8, 18); cx.fill() }
+      cx.fillStyle = "#050507"; cx.fillRect(x - 19, -13, 38, 26);
+      cx.fillStyle = "#5c616b"; cx.fillRect(x - 19, -13, 38, 26 * (1 - o)); cx.strokeStyle = "#3a3e46"; cx.lineWidth = 1; for (let i = 1; i < 4; i++) { cx.beginPath(); cx.moveTo(x - 19, -13 + 26 * (1 - o) * i / 4); cx.lineTo(x + 19, -13 + 26 * (1 - o) * i / 4); cx.stroke() }
+    },
+    dessus(M, t) {
+      if (t > 1.25 && t < 2.3) { const [x, y] = mEcran(TROU, 0), k = t - 1.25; cx.save(); cx.textAlign = "center"; cx.fillStyle = "#fff6e3"; cx.strokeStyle = "#17130f"; cx.lineWidth = 5;
+        const txt = "AAAAaaaah…"; for (let i = 0; i < txt.length; i++) { const f = 34 * (1 - i / txt.length * .75); cx.font = `${f}px 'Luckiest Guy', Impact, sans-serif`; const xx = x - 120 + i * 26, yy = y - 60 - Math.sin(i * .8 + t * 8) * 6; if (i / txt.length < k * 1.5) { cx.strokeText(txt[i], xx, yy); cx.fillText(txt[i], xx, yy) } } cx.restore() }
+      if (t > 2.2) { const [x, y] = mEcran(TROU, 0); mBulle("CLONK", x + 50, y - 50, Math.min(44, W * .09), (t - 2.2) / .2, "#fff6e3", "#17130f") }
+    },
+  },
+  crepe: {
+    tampon: 2.3, flash: .4, texte: "ACCIDENT DE TRAVAIL",
+    vitesse: t => t < .45 ? 0 : t < 1.3 ? .5 : .15,
+    zoom: t => 1 + .35 * mEase(t / .6),
+    pos: t => -420 + 900 * mClamp((t - .7) / .55, 0, 1),
+    maj(M, t) {
+      if (MORTS.crepe.pos(t) > -10 && !M.plat) {
+        M.plat = true; M.ecrase = .3; M.yeuxX = true; M.sansCasque = true; M.shake = 1;
+        M.pieces.push({ x: 0, y: -12, vx: 380, vy: -300, r: 0, vr: 14, casque: (PERSOS[S.perso] || PERSOS.preparateur).casque, g: 700 });
+        const p = S.p; for (const e of S.ennemis) if (!e.decor && Math.abs(e.y - p.y) < 40 && e.x - p.x > -10 && e.x - p.x < 500) { e.kb.x += rnd(5, 10); e.kb.y += rnd(-5, 5) }
+      }
+      if (M.plat && t > 2) M.ecrase = .3 + Math.max(0, Math.sin((t - 2) * 12)) * .04 * Math.max(0, 1 - (t - 2));
+    },
+    monde(M, t) {
+      if (M.plat) { const x1 = Math.min(MORTS.crepe.pos(t) - 20, 600); cx.fillStyle = "rgba(15,15,18,.6)"; for (const yy of [-10, 7]) for (let x = -300; x < x1; x += 7) cx.fillRect(x, yy, 4, 4) }
+      if (t > .65 && t < 1.4) mTranspalette(MORTS.crepe.pos(t), 0, t);
+    },
+    dessus(M, t) {
+      if (t < .7) { const k = Math.sin(t * 30) > 0 ? .35 : .1; const g = cx.createLinearGradient(0, 0, W * .35, 0); g.addColorStop(0, `rgba(255,30,20,${k})`); g.addColorStop(1, "rgba(255,30,20,0)"); cx.fillStyle = g; cx.fillRect(0, 0, W, H) }
+      if (t > .3 && t < .8) mBulle("TÛT TÛT !", W * .2, H * .25, Math.min(42, W * .08), (t - .3) / .15, "#fff6e3", "#e8412c");
+      if (M.plat) mBulle("SPLATCH !", W / 2 + 40, H * .3, Math.min(66, W * .12), (t - .95) / .25);
+    },
+  },
+  fantome: {
+    tampon: 3.9, flash: .6, texte: "FIN DE POSTE",
+    vitesse: t => t < .4 ? 0 : .12,
+    zoom: t => 1 + .45 * mEase(t / 1.2),
+    cam: t => [25, -45 * mEase((t - .6) / 1.4)],
+    ame(t) {
+      if (t < 2.4) { const k = mEase((t - .7) / 1.4); return [62 * k + Math.sin(t * 4) * 6 * (1 - k), -82 * k] }
+      if (t < 2.9) return [62, -82];
+      const k = mEase((t - 2.9) / 1.2); return [62 - 20 * k, -82 - 220 * k];
+    },
+    maj(M, t) { if (t > .4) { M.rot = Math.PI / 2; M.yeuxX = true; if (!M.tombe) { M.tombe = true; M.shake = .3 } } },
+    monde(M, t) {
+      if (t > 1.3) { cx.save(); cx.globalAlpha = mClamp((t - 1.3) * 3, 0, 1); cx.translate(92, -82);
+        cx.fillStyle = "#c9ccd2"; cx.fillRect(-10, -16, 20, 30); cx.strokeStyle = "#17130f"; cx.lineWidth = 2; cx.strokeRect(-10, -16, 20, 30);
+        cx.fillStyle = t > 2.4 && t < 3.4 ? "#3fae4a" : "#17130f"; cx.fillRect(-7, -12, 14, 8);
+        cx.fillStyle = "#6d6457"; cx.fillRect(-6, 2, 12, 2); cx.fillRect(-1, 8, 2, 14); cx.restore() }
+      if (t < .7) return;
+      const [x, y] = MORTS.fantome.ame(t); cx.save(); cx.translate(x, y); cx.globalAlpha = .82;
+      cx.strokeStyle = "#ffe14d"; cx.lineWidth = 2.5; cx.beginPath(); cx.ellipse(0, -21, 8, 2.5, 0, 0, 7); cx.stroke();
+      const b = Math.sin(t * 14) * .5; cx.fillStyle = "#fff"; cx.beginPath(); cx.ellipse(-12, -2, 9, 4, -.5 + b, 0, 7); cx.fill(); cx.beginPath(); cx.ellipse(12, -2, 9, 4, .5 - b, 0, 7); cx.fill();
+      cx.fillStyle = "#eef2ff"; cx.beginPath(); cx.arc(0, -6, 9, Math.PI, 0); cx.lineTo(9, 10); for (let i = 0; i < 4; i++) cx.lineTo(9 - (i + .5) * 4.5, 10 + (i % 2 ? 0 : 4) + Math.sin(t * 10 + i) * 1.5); cx.lineTo(-9, 10); cx.closePath(); cx.fill();
+      cx.fillStyle = (PERSOS[S.perso] || PERSOS.preparateur).casque; cx.beginPath(); cx.arc(0, -11, 7, Math.PI, 0); cx.fill();
+      cx.fillStyle = "#17130f"; cx.beginPath(); cx.arc(-3, -5, 1.5, 0, 7); cx.arc(3, -5, 1.5, 0, 7); cx.fill();
+      if (t > 3) { cx.strokeStyle = "#eef2ff"; cx.lineWidth = 3; cx.lineCap = "round"; const w = Math.sin(t * 12) * .5; cx.beginPath(); cx.moveTo(8, 0); cx.lineTo(16 + Math.cos(w) * 3, -8 - Math.sin(w) * 3); cx.stroke(); cx.lineCap = "butt" }
+      cx.restore();
+    },
+    dessus(M, t) {
+      if (t > 2.4 && t < 3.6) { const [x, y] = mEcran(92, -100); mBulle("BIP !", x + 40, y - 30, Math.min(40, W * .08), (t - 2.4) / .2, "#fff6e3", "#3fae4a") }
+      if (t > 3.1) { const [x, y] = mEcran(...MORTS.fantome.ame(t)); mTexte("Bonne soirée !", x, y - 34, mClamp((3.9 - t) * 3, 0, 1)) }
+    },
+  },
+});
+function mortJoueur() {
+  const v = MORT_STYLES[Math.floor(Math.random() * MORT_STYLES.length)];
+  S.mort = { v, t: 0, pieces: [], fx: [], shake: 0, flash: MORTS[v].flash, rot: 0, ecrase: 1, chute: 0, px: 0, py: 0, taille: 1 };
+  $("hud").hidden = true; JOY.actif = false; annonceT = 0; keys.clear();
+}
+function finirMort() { if (!S.mort || S.mort.fini) return; S.mort.fini = true; finir(false) }
+function majMort(dt) {
+  const M = S.mort; if (M.fini) return;
+  const St = MORTS[M.v]; M.t += dt; St.maj(M, M.t);
+  const v = St.vitesse(M.t), k = v || .15;
+  for (const e of S.ennemis) if (!e.decor) { e.x += e.kb.x * 60 * dt * v; e.y += e.kb.y * 60 * dt * v; e.kb.x *= Math.pow(.02, dt * v); e.kb.y *= Math.pow(.02, dt * v) }
+  for (const p of M.pieces) { p.vy += p.g * dt * k; p.x += p.vx * dt * k; p.y += p.vy * dt * k; p.r += p.vr * dt * k }
+  for (const f of M.fx) { f.t -= dt; f.x += f.vx * dt; f.y += f.vy * dt; if (f.fumee) { f.vx *= .96; f.vy *= .96 } }
+  M.fx = M.fx.filter(f => f.t > 0);
+  M.shake = Math.max(0, M.shake - dt * 1.8); M.flash = Math.max(0, M.flash - dt * 4);
+  if (M.t > St.tampon + 1.5) finirMort();
+}
+function joueurMort(px, py, PP) {
+  const M = S.mort; if (M.cache) return;
+  const blanc = M.t < .45 && Math.floor(M.t * 16) % 2 === 0;
+  cx.save(); cx.translate(px + M.px, py + M.py + M.chute * 10);
+  if (M.taille > .05) { cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(0, 13, 11 * M.taille, 4 * M.taille, 0, 0, 7); cx.fill() }
+  cx.rotate(M.rot); cx.scale(M.taille * (1 + (1 - M.ecrase) * (M.plat ? 1.6 : .6)), M.taille * M.ecrase);
+  cx.fillStyle = blanc ? "#fff" : PP.gilet; cx.beginPath(); cx.ellipse(0, 0, 11, 13, 0, 0, 7); cx.fill();
+  cx.fillStyle = blanc ? "#fff" : "#e9eef2"; cx.fillRect(-11, 2, 22, 3); cx.fillRect(-11, 7, 22, 2);
+  cx.fillStyle = blanc ? "#fff" : "#e3b98f"; cx.beginPath(); cx.arc(0, -9, 7, 0, 7); cx.fill();
+  if (!M.sansCasque) { cx.fillStyle = blanc ? "#fff" : PP.casque; cx.beginPath(); cx.arc(0, -12, 7, Math.PI, 0); cx.fill(); cx.fillRect(0, -13, 8, 3) }
+  if (M.yeuxX) { cx.strokeStyle = "#15171a"; cx.lineWidth = 1.6; for (const ox of [-3, 3]) { cx.beginPath(); cx.moveTo(ox - 1.6, -10.6); cx.lineTo(ox + 1.6, -7.4); cx.moveTo(ox + 1.6, -10.6); cx.lineTo(ox - 1.6, -7.4); cx.stroke() } }
+  if (M.triste) { cx.fillStyle = "#15171a"; cx.fillRect(-4, -9, 2, 1.5); cx.fillRect(2, -9, 2, 1.5) }
+  if (M.carton) { cx.fillStyle = "#b98a52"; cx.fillRect(-10, -2, 20, 13); cx.strokeStyle = "#7a5530"; cx.lineWidth = 1.5; cx.strokeRect(-10, -2, 20, 13);
+    cx.fillStyle = "#3fae4a"; cx.beginPath(); cx.ellipse(-4, -6, 3, 5, -.4, 0, 7); cx.fill(); cx.beginPath(); cx.ellipse(1, -7, 3, 5, .4, 0, 7); cx.fill();
+    cx.fillStyle = "#fff"; cx.fillRect(3, -4, 6, 5); cx.fillStyle = "#e8412c"; cx.fillRect(4, -3, 4, 1) }
+  cx.restore();
+}
+function dessiner() {
+  const M = S.mort; if (!M) return dessinerJeu();
+  const St = MORTS[M.v], t = M.t, z = St.zoom(t), sh = M.shake * 14, cam = St.cam ? St.cam(t) : [0, 0];
+  cx.save(); cx.translate(W / 2 + rnd(-1, 1) * sh, H / 2 + rnd(-1, 1) * sh); cx.scale(z, z); cx.translate(-W / 2 - cam[0], -H / 2 - cam[1]);
+  dessinerJeu();
+  if (St.monde) { cx.save(); cx.translate(W / 2, H / 2); St.monde(M, t); cx.restore() }
+  for (const p of M.pieces) { cx.save(); cx.translate(W / 2 + p.x, H / 2 + p.y); cx.rotate(p.r); if (p.casque) { cx.fillStyle = p.casque; cx.beginPath(); cx.arc(0, 0, 8, Math.PI, 0); cx.fill(); cx.fillRect(0, -1, 9, 3) } else { cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h) } cx.restore() }
+  for (const f of M.fx) {
+    if (f.fumee) { cx.globalAlpha = mClamp(f.t, 0, .6); cx.fillStyle = "#cfc6b4"; cx.beginPath(); cx.arc(W / 2 + f.x, H / 2 + f.y, f.s * (1.4 - f.t * .4), 0, 7); cx.fill() }
+    else { cx.globalAlpha = mClamp(f.t * 3, 0, 1); cx.fillStyle = f.c; cx.beginPath(); cx.arc(W / 2 + f.x, H / 2 + f.y, f.s, 0, 7); cx.fill() }
+  }
+  cx.globalAlpha = 1; cx.restore();
+  const g = St.gris ? St.gris(t) : 0;
+  if (g > 0) {
+    cx.save(); cx.globalCompositeOperation = "saturation"; cx.globalAlpha = g; cx.fillStyle = "#808080"; cx.fillRect(0, 0, W, H); cx.restore();
+    cx.save(); cx.globalAlpha = g * .22; cx.fillStyle = "#000"; for (let y = 0; y < H; y += 7) for (let x = (y / 7) % 2 ? 3.5 : 0; x < W; x += 7) { cx.beginPath(); cx.arc(x, y, 1.3, 0, 7); cx.fill() } cx.restore();
+  } else { const vg = cx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .25, W / 2, H / 2, Math.max(W, H) * .7); vg.addColorStop(0, "rgba(232,65,44,0)"); vg.addColorStop(1, `rgba(140,20,10,${.45 * mClamp(t * 2, 0, 1)})`); cx.fillStyle = vg; cx.fillRect(0, 0, W, H) }
+  if (M.flash > 0) { cx.fillStyle = `rgba(255,255,255,${M.flash * .85})`; cx.fillRect(0, 0, W, H) }
+  St.dessus(M, t);
+  if (St.vitesse(t) === 0 && M.v !== "case" && t < .5) { cx.fillStyle = "rgba(23,19,15,.75)"; cx.fillRect(16, 16, 22, 54); cx.fillRect(46, 16, 22, 54) }
+  if (t > St.tampon) { cx.fillStyle = `rgba(23,19,15,${.45 * mClamp((t - St.tampon) * 3, 0, 1)})`; cx.fillRect(0, 0, W, H); mTampon((t - St.tampon) / .9, St.texte) }
+  if (t > .8 && !M.fini) { cx.font = "800 14px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "rgba(255,246,227,.7)"; cx.fillText(TACTILE ? "Touche l'écran pour passer" : "Espace pour passer", W / 2, H - 18) }
+}
+
 function boucle(now) {
   requestAnimationFrame(boucle);
   if (!S) return;
   const dt = Math.min(.05, (now - last) / 1000 || 0); last = now;
-  if (enJeu && !enPause && !choix) maj(dt);
+  if (S.mort) majMort(dt);
+  else if (enJeu && !enPause && !choix) maj(dt);
   dessiner();
 }
 
@@ -1609,9 +1874,11 @@ function dessinerInventaire() {
     return `<div class="inv-carte"><img src="${IMG(O.img)}" alt=""><div><strong>${O.nom}</strong>${pips(l, O.max)}<span class="niv-txt">${O.desc()}</span>${info}</div></div>`;
   }).join("") : `<div class="inv-carte vide"><div><strong>Aucun équipement</strong><span class="niv-txt">Les équipements débloquent les évolutions de tes outils.</span></div></div>`;
 }
-function basculerPause() { if (!enJeu || choix) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
+function basculerPause() { if (!enJeu || choix || S.mort) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
 addEventListener("keydown", e => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
+  // pendant l'animation de mort, une touche la passe (pas tout de suite, pour ne pas la sauter sans le vouloir)
+  if (S && S.mort && !S.mort.fini) { if (!e.repeat && S.mort.t > .8 && ["Space", "Enter", "Escape", "NumpadEnter"].includes(e.code)) finirMort(); return }
   // accueil : Q/D change de perso, Z/S de lieu, Espace lance la partie
   if (!enJeu && !$("accueil").hidden && $("aideJeu").hidden) {
     if (["KeyA", "ArrowLeft"].includes(e.code)) return tourner(LP, "perso", -1);
@@ -1642,6 +1909,7 @@ addEventListener("keyup", e => keys.delete(e.code));
 addEventListener("blur", () => { keys.clear(); if (enJeu && !choix && !enPause) basculerPause() });
 document.addEventListener("visibilitychange", () => { if (document.hidden && enJeu && !choix && !enPause) basculerPause() });
 cv.addEventListener("pointerdown", e => {
+  if (S && S.mort && !S.mort.fini) { e.preventDefault(); if (S.mort.t > .8) finirMort(); return }
   if (e.pointerType === "mouse" || !enJeu || enPause || choix || JOY.actif) return;
   e.preventDefault(); JOY.actif = true; JOY.id = e.pointerId; JOY.ox = JOY.x = e.clientX; JOY.oy = JOY.y = e.clientY;
   try { cv.setPointerCapture(e.pointerId) } catch (er) { }
