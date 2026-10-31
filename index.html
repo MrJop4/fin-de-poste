@@ -175,8 +175,13 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .pack-jeu .pack-corps { top: 16%; bottom: 0; border-top: 0; border-radius: 0 0 12px 12px; box-shadow: 6px 6px 0 var(--encre); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .pack-jeu .pk1 { font-family: var(--display); font-size: 15px; color: #fff; text-shadow: 2px 2px 0 var(--encre); }
 .pack-jeu .pk2 { font-family: var(--display); font-size: 30px; color: var(--jaune); transform: rotate(-6deg); text-shadow: 3px 3px 0 var(--encre), -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre); }
-#niveau.revel .carte { pointer-events: none; }
+#niveau.revel .carte { pointer-events: none; position: relative; z-index: 1; }
 #niveau.revel .aide { visibility: hidden; }
+#niveau .ouvrir { display: none; font-size: 17px; color: var(--encre); background: var(--jaune); border: 3px solid var(--encre); border-radius: 999px; padding: 5px 16px; box-shadow: 3px 3px 0 var(--encre); animation: pulse 1s ease-in-out infinite; }
+#niveau.attente .ouvrir { display: block; }
+#niveau.attente { cursor: pointer; }
+@keyframes pulse { 50% { transform: scale(1.06); } }
+.pack-jeu { width: 170px; height: 238px; }
 /* coffre : machine à sous */
 .mode-coffre .cartes { padding: 26px 50px 18px 18px; margin-top: 16px; }
 .levier-jeu { position: absolute; right: 12px; top: 18%; width: 12px; height: 55%; transform-origin: 50% 100%; z-index: 3; }
@@ -240,7 +245,7 @@ button { touch-action: manipulation; }
   .mode-coffre .cartes { padding: 26px 42px 14px 12px; }
   .levier-jeu { right: 9px; }
   .machine-jeu .fronton { font-size: 17px; }
-  .pack-jeu { width: 110px; height: 154px; }
+  .pack-jeu { width: 140px; height: 196px; }
   .carte strong { font-size: 20px; } .carte .txt { font-size: 14px; }
   .grille { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .grille .carte .art { height: 96px; }
@@ -303,6 +308,7 @@ button { touch-action: manipulation; }
   <div class="panneau">
     <h2 id="choixTitre">Niveau 2 !</h2>
     <div class="slots" id="slots"></div>
+    <div class="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
     <div class="cartes" id="cartes"></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
   </div>
@@ -986,10 +992,11 @@ function tirer(n) {
   const r = pool.slice(0, n); return r.length ? r : [{ id: "rhum", kind: "soin", l: 1 }];
 }
 /* animations de révélation : on peut toujours les passer d'un tap ou d'Espace */
-let revel = [], revelEnCours = false;
+let revel = [], revelEnCours = false, revelType = "", attenteOuverture = null;
+function ouvrirBooster() { if (attenteOuverture) { const r = attenteOuverture; attenteOuverture = null; r() } }
 const ani = (el, kf, o) => { const a = el.animate(kf, Object.assign({ fill: "both", easing: "cubic-bezier(.2,.8,.2,1)" }, o)); revel.push(a); return a.finished.catch(() => { }) };
 function passerRevel() { revel.forEach(a => { try { a.finish() } catch (e) { } }); }
-function finRevel() { revelEnCours = false; revel = []; $("niveau").classList.remove("revel"); majSel() }
+function finRevel() { revelEnCours = false; revelType = ""; revel = []; $("niveau").classList.remove("revel", "attente"); majSel() }
 function ouvrirChoix() {
   offres = tirer(3);
   $("choixTitre").textContent = "Niveau " + S.p.niv + " !";
@@ -1005,21 +1012,26 @@ function ouvrirChoix() {
 }
 /* montée de niveau : un booster tombe, se déchire, les 3 cartes en sortent (environ 1 s) */
 async function revelBooster() {
-  revelEnCours = true; revel = []; $("niveau").classList.add("revel");
+  revelEnCours = true; revelType = "booster"; revel = []; $("niveau").classList.add("revel");
   const zone = $("cartes"), boutons = [...zone.querySelectorAll(".carte")], zr = zone.getBoundingClientRect();
   const pack = document.createElement("div"); pack.className = "pack-jeu";
   pack.innerHTML = '<div class="pack-haut"></div><div class="pack-corps"><span class="pk1">FIN DE POSTE</span><span class="pk2">BOOSTER</span></div>';
   zone.appendChild(pack);
   boutons.forEach(b => b.style.opacity = 0);
-  await ani(pack, [{ transform: "translate(-50%,-50%) translateY(-60vh) rotate(-14deg)" }, { transform: "translate(-50%,-50%) rotate(-3deg)" }], { duration: 300, easing: "cubic-bezier(.3,1.45,.6,1)" });
-  await ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg)" }, { transform: "translate(-50%,-50%) rotate(3deg) translateY(-3px)" }, { transform: "translate(-50%,-50%) rotate(-2deg)" }], { duration: 180, fill: "none" });
-  ani(pack.querySelector(".pack-haut"), [{ transform: "none", opacity: 1 }, { transform: "translate(50px,-90px) rotate(35deg)", opacity: 0 }], { duration: 260 });
-  ani(pack, [{ opacity: 1, filter: "brightness(1)" }, { opacity: 1, filter: "brightness(2.4)", offset: .3 }, { opacity: 0, filter: "brightness(1)" }], { duration: 320 });
+  await ani(pack, [{ transform: "translate(-50%,-50%) translateY(-60vh) rotate(-14deg)" }, { transform: "translate(-50%,-50%) rotate(-3deg)" }], { duration: 420, easing: "cubic-bezier(.3,1.45,.6,1)" });
+  const tremble = pack.animate([{ transform: "translate(-50%,-50%) rotate(-3deg)" }, { transform: "translate(-50%,-50%) rotate(3deg) translateY(-4px) scale(1.03)" }, { transform: "translate(-50%,-50%) rotate(-3deg)" }], { duration: 520, iterations: Infinity, easing: "ease-in-out" });
+  $("niveau").classList.add("attente");
+  await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
+  $("niveau").classList.remove("attente"); tremble.cancel(); vibrer(30); pack.style.zIndex = 0;
+  // ouverture : la languette s'arrache, flash, les cartes jaillissent une par une en se retournant
+  ani(pack.querySelector(".pack-haut"), [{ transform: "none", opacity: 1 }, { transform: "translate(60px,-120px) rotate(40deg)", opacity: 0 }], { duration: 420 });
+  await ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg) scale(1)", filter: "brightness(1)" }, { transform: "translate(-50%,-50%) rotate(-3deg) scale(1.12)", filter: "brightness(2.6)" }], { duration: 260, easing: "ease-out" });
+  ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg) scale(1.12)", opacity: 1 }, { transform: "translate(-50%,-50%) translateY(40vh) rotate(8deg) scale(.9)", opacity: 0 }], { duration: 520, delay: 200 });
   const cxp = zr.left + zr.width / 2, cyp = zr.top + zr.height / 2;
   await Promise.all(boutons.map((b, i) => {
     const r = b.getBoundingClientRect(), dx = cxp - (r.left + r.width / 2), dy = cyp - (r.top + r.height / 2);
     b.style.opacity = "";
-    return ani(b, [{ transform: `translate(${dx}px,${dy}px) scale(.4) rotateY(90deg)`, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 420, delay: 60 + i * 90, easing: "cubic-bezier(.25,1.35,.5,1)", fill: "none" });
+    return ani(b, [{ transform: `translate(${dx}px,${dy}px) scale(.35) rotateY(180deg)`, opacity: 0 }, { transform: `translate(${dx * .2}px,${dy * .2 - 30}px) scale(1.08) rotateY(60deg)`, opacity: 1, offset: .55 }, { transform: "none", opacity: 1 }], { duration: 640, delay: i * 170, easing: "cubic-bezier(.25,1.2,.5,1)", fill: "none" });
   }));
   pack.remove(); finRevel();
 }
@@ -1042,7 +1054,7 @@ function ouvrirCoffre() {
   sel = id ? 1 : 0; revelMachine();
 }
 async function revelMachine() {
-  revelEnCours = true; revel = []; $("niveau").classList.add("revel");
+  revelEnCours = true; revelType = "machine"; revel = []; $("niveau").classList.add("revel");
   const zone = $("cartes"), m = zone.querySelector(".machine-jeu");
   await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
   ani(m.querySelector(".levier-jeu"), [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 380, fill: "none" });
@@ -1059,7 +1071,7 @@ async function revelMachine() {
 }
 function prendre(i) {
   const o = offres[i]; if (!o || !choix) return;
-  if (revelEnCours) return passerRevel();
+  if (revelEnCours) return;
   const p = S.p;
   if (o.kind === "evo") {
     S.armes[o.id] = EVO; annonce("★ " + EVOS[o.id].nom + " ★"); vibrer(120);
@@ -1071,7 +1083,8 @@ function prendre(i) {
   if (p.xp >= p.next) gagnerXp(0);
 }
 $("cartes").addEventListener("mousemove", e => { const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
-$("cartes").addEventListener("click", e => { if (revelEnCours) return passerRevel(); const b = e.target.closest(".carte"); if (b) prendre(+b.dataset.i) });
+$("niveau").addEventListener("pointerdown", e => { if (attenteOuverture) { e.preventDefault(); ouvrirBooster() } else if (revelEnCours && revelType === "machine") passerRevel() });
+$("cartes").addEventListener("click", e => { if (revelEnCours) return; const b = e.target.closest(".carte"); if (b) prendre(+b.dataset.i) });
 
 /* ---------- interface ---------- */
 function majArmes() {
@@ -1605,7 +1618,10 @@ addEventListener("keydown", e => {
   }
   if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
   if (e.code === "Escape" || e.code === "KeyP") return basculerPause();
-  if (choix && revelEnCours && (e.code === "Space" || e.code === "Enter")) { e.preventDefault(); return passerRevel() }
+  if (choix && revelEnCours) {
+    if (e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); if (e.repeat) return; if (attenteOuverture) return ouvrirBooster(); if (revelType === "machine") return passerRevel() }
+    return;
+  }
   if (choix) {
     // choix de carte : ZQSD / flèches pour se déplacer, Espace ou Entrée pour valider (1 2 3 marchent toujours)
     if (/^(Digit|Numpad)[123]$/.test(e.code)) return prendre(+e.code.slice(-1) - 1);
