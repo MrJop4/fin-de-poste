@@ -40,7 +40,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .row .temps { font-family: var(--display); font-size: 38px; color: var(--jaune); text-shadow: 3px 3px 0 var(--encre), -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre); }
 .row span b { color: var(--jaune); }
 .armes { display: flex; gap: 6px; flex-wrap: wrap; }
-.armes span { font-size: 13px; padding: 2px 9px; border-radius: 8px; background: var(--papier); color: var(--encre); border: 2px solid var(--encre); box-shadow: 2px 2px 0 var(--encre); }
+.armes { align-items: center; gap: 7px; }
+.tuile { position: relative; width: 44px; height: 44px; border: 3px solid var(--encre); border-radius: 10px; background: var(--papier); box-shadow: 2px 2px 0 var(--encre); overflow: visible; }
+.tuile img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; border-radius: 7px; }
+.tuile b { position: absolute; right: -7px; bottom: -7px; min-width: 20px; height: 20px; padding: 0 4px; display: grid; place-items: center; font: 900 12px/1 var(--ui); color: var(--encre); background: var(--papier); border: 2px solid var(--encre); border-radius: 999px; }
+.tuile.objet { width: 36px; height: 36px; border-radius: 9px; } .tuile.objet b { min-width: 18px; height: 18px; font-size: 11px; }
+.tuile.max b { background: var(--vert); color: #fff; font-size: 9px; }
+.tuile.evo { border-color: #b37400; box-shadow: 0 0 0 2px var(--jaune), 2px 2px 0 var(--encre); } .tuile.evo b { background: var(--jaune); font-size: 13px; }
+.armes .sep { width: 2px; height: 30px; background: rgba(255,246,227,.35); border-radius: 2px; margin: 0 2px; }
 
 /* ---- voiles et boutons ---- */
 .voile { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(15,11,6,.78); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; overflow-y: auto; }
@@ -156,9 +163,10 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .recette .ok { background: #b9f3d2; } .recette .pret { background: var(--jaune); animation: clignote 1s steps(2) infinite; }
 @keyframes clignote { 50% { background: #fff3b8; } } .recette .ko { background: #eee2c6; color: #6d6457; }
 #pause { place-items: start center; }
+.lib-c { display: none; } @media (max-width: 700px) { .lib { display: none; } .lib-c { display: inline; } }
 .slots { font-size: 16px; color: var(--encre); background: var(--jaune); border: 3px solid var(--encre); border-radius: 999px; padding: 3px 14px; box-shadow: 3px 3px 0 var(--encre); margin-top: -6px; }
 .evo-hint { font-size: 12px; font-weight: 900; color: #8a5a00; background: #ffeaa0; border-radius: 6px; padding: 2px 6px; align-self: flex-start; }
-.armes span.evo { background: linear-gradient(90deg, #ffe14d, #ffb000); font-weight: 900; }
+
 
 /* ---- vestiaire ---- */
 #vestiaire { place-items: start center; background: rgba(15,11,6,.94); }
@@ -187,8 +195,10 @@ button { touch-action: manipulation; }
   .btn-pause { display: grid; place-items: center; }
 }
 @media (max-width: 700px) {
-  .row { font-size: 15px; } .row .temps { font-size: 30px; }
-  .armes span { font-size: 11px; padding: 1px 6px; }
+  .row { font-size: 14px; } .row .temps { font-size: 26px; }
+  .row > span { white-space: nowrap; } .row { gap: 8px; }
+  .tuile { width: 34px; height: 34px; border-width: 2px; } .tuile.objet { width: 26px; height: 26px; border-radius: 7px; } .armes { gap: 8px 6px; }
+  .tuile b { min-width: 17px; height: 17px; font-size: 10px; right: -6px; bottom: -6px; } .tuile.objet b { min-width: 15px; height: 15px; font-size: 9px; }
   /* cartes de niveau en bandes horizontales : image à gauche, texte à droite */
   .cartes { grid-template-columns: 1fr; gap: 12px; }
   #cartes .carte { flex-direction: row; align-items: stretch; }
@@ -207,7 +217,7 @@ button { touch-action: manipulation; }
 
 <div class="hud" id="hud" hidden>
   <div class="xpbar"><i id="xp"></i></div>
-  <div class="row"><span>Niveau <b id="niv">1</b></span><span class="temps" id="temps">10:00</span><span class="droite"><span><b id="kills">0</b> colis · <b id="argent">0</b> €</span><button class="btn-pause" id="btnPause" aria-label="Pause">II</button></span></div>
+  <div class="row"><span><span class="lib">Niveau </span><span class="lib-c">Niv. </span><b id="niv">1</b></span><span class="temps" id="temps">10:00</span><span class="droite"><span>📦 <b id="kills">0</b> · <b id="argent">0</b> €</span><button class="btn-pause" id="btnPause" aria-label="Pause">II</button></span></div>
   <div class="armes" id="armes"></div>
 </div>
 
@@ -789,7 +799,7 @@ function ouvrirCoffre() {
 }
 function gagnerXp(v) {
   const p = S.p; p.xp += v * p.xpm;
-  if (p.xp >= p.next) { p.xp -= p.next; p.niv++; p.next = Math.round(6 + p.niv * 5.5 + Math.pow(p.niv, 1.6)); ouvrirChoix() }
+  if (p.xp >= p.next) { p.xp -= p.next; p.niv++; p.next = Math.round(6 + 2 * p.niv + 1.4 * p.niv * p.niv); ouvrirChoix() }
 }
 
 /* ---------- montée de niveau ---------- */
@@ -850,8 +860,10 @@ $("cartes").addEventListener("click", e => { const b = e.target.closest(".carte"
 
 /* ---------- interface ---------- */
 function majArmes() {
-  const a = Object.entries(S.armes).map(([id, l]) => l >= EVO ? `<span class="evo">★ ${EVOS[id].nom}</span>` : `<span>${ARMES[id].nom} ${l === ARMES[id].max ? "MAX" : l}</span>`), o = Object.entries(S.objets).map(([id, l]) => `<span>${OBJETS[id].nom} ${l}</span>`);
-  $("armes").innerHTML = a.concat(o).join("");
+  const tuile = (img, nom, txt, cls) => `<span class="tuile ${cls}" title="${nom}"><img src="${IMG(img)}" alt="${nom}"><b>${txt}</b></span>`;
+  const a = Object.entries(S.armes).map(([id, l]) => l >= EVO ? tuile(ARMES[id].img, EVOS[id].nom, "★", "evo") : tuile(ARMES[id].img, ARMES[id].nom, l === ARMES[id].max ? "MAX" : l, "arme" + (l === ARMES[id].max ? " max" : "")));
+  const o = Object.entries(S.objets).map(([id, l]) => tuile(OBJETS[id].img, OBJETS[id].nom, l === OBJETS[id].max ? "MAX" : l, "objet" + (l === OBJETS[id].max ? " max" : "")));
+  $("armes").innerHTML = a.join("") + (o.length ? '<i class="sep"></i>' : "") + o.join("");
 }
 function majHud() {
   $("xp").style.width = (S.p.xp / S.p.next * 100).toFixed(1) + "%";
