@@ -231,15 +231,15 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v) } catch (e) { } };
 
 /* ---------- armes et objets ---------- */
 const ARMES = {
-  lanterne: { nom: "Douchette laser", max: 6, desc: l => l === 1 ? "Un rayon de scan tourne autour de toi et grille ce qu'il touche." : l === 4 ? "Deuxième rayon, dans le dos." : `Rayon plus long et plus fort (${8 + 5 * l} dégâts).` },
-  harpon: { nom: "Cutter", max: 6, desc: l => l === 1 ? "Lance un cutter sur l'ennemi le plus proche." : `${1 + Math.floor((l - 1) / 2)} cutter(s), traverse ${Math.floor(l / 2) + 1} ennemi(s).` },
-  corne: { nom: "Klaxon de transpalette", max: 6, desc: l => l === 1 ? "Un coup de klaxon repousse tout autour de toi." : `Onde plus large, ${12 + 7 * l} dégâts.` },
-  sel: { nom: "Rouleaux de film", max: 6, desc: l => l === 1 ? "Deux rouleaux de film étirable tournent autour de toi." : `${l + 1} rouleaux en orbite.` },
-  fusee: { nom: "Palette du rack", max: 6, desc: l => l === 1 ? "Une palette tombe du rack sur un ennemi." : `Chute plus large, ${22 + 11 * l} dégâts.` },
+  lanterne: { nom: "Douchette laser", img: "douchette", max: 6, desc: l => l === 1 ? "Un rayon de scan tourne autour de toi et grille ce qu'il touche." : l === 4 ? "Deuxième rayon, dans le dos." : `Rayon plus long et plus fort (${8 + 5 * l} dégâts).` },
+  harpon: { nom: "Cutter", img: "cutter", max: 6, desc: l => l === 1 ? "Lance un cutter sur l'ennemi le plus proche." : `${1 + Math.floor((l - 1) / 2)} cutter(s), traverse ${Math.floor(l / 2) + 1} ennemi(s).` },
+  corne: { nom: "Klaxon de transpalette", img: "klaxon", max: 6, desc: l => l === 1 ? "Un coup de klaxon repousse tout autour de toi." : `Onde plus large, ${12 + 7 * l} dégâts.` },
+  sel: { nom: "Rouleaux de film", img: "rouleaux", max: 6, desc: l => l === 1 ? "Deux rouleaux de film étirable tournent autour de toi." : `${l + 1} rouleaux en orbite.` },
+  fusee: { nom: "Palette du rack", img: "palette", max: 6, desc: l => l === 1 ? "Une palette tombe du rack sur un ennemi." : `Chute plus large, ${22 + 11 * l} dégâts.` },
   // armes liées aux persos : elles entrent dans les cartes quand le perso est débloqué
-  fourches: { nom: "Fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
-  cle: { nom: "Clé à molette", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
-  talkie: { nom: "Talkie-walkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
+  fourches: { nom: "Fourches", img: "fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
+  cle: { nom: "Clé à molette", img: "cle", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
+  talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
 const COUL_ARME = { lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
@@ -676,7 +676,7 @@ function ouvrirChoix() {
   $("cartes").innerHTML = offres.map((o, i) => {
     const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : { nom: "Casse-croûte", desc: () => "Rend 40 points de vie." };
     const tag = o.kind === "soin" ? "Soin" : o.l === 1 ? (o.kind === "arme" ? "Nouvel outil" : "Nouvel équipement") : "Niveau " + o.l;
-    const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt="">` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
+    const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind === "arme" ? ' style="object-position:50% 50%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
     return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span></span></button>`;
   }).join("");
   choix = true; $("niveau").hidden = false;
@@ -1115,7 +1115,7 @@ $("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = fa
 $("aideOk").onclick = () => { $("aideJeu").hidden = true; $("accueil").hidden = false };
 $("versAccueil").onclick = () => { $("fin").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
 // précharger les illustrations pour que les cartes s'affichent sans attendre
-for (const n of new Set([...Object.values(PERSOS), ...Object.values(LIEUX), ...Object.values(OBJETS), ...Object.values(AMELIOS)].map(x => x.img).concat(["jourdepaie", "tetereposee"]).filter(Boolean))) { const im = new Image(); im.src = IMG(n) }
+for (const n of new Set([...Object.values(ARMES), ...Object.values(PERSOS), ...Object.values(LIEUX), ...Object.values(OBJETS), ...Object.values(AMELIOS)].map(x => x.img).concat(["jourdepaie", "tetereposee"]).filter(Boolean))) { const im = new Image(); im.src = IMG(n) }
 
 /* ---------- vestiaire ---------- */
 let retourVers = "accueil";
