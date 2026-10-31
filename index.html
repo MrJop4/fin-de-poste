@@ -167,6 +167,33 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .lib-c { display: none; } @media (max-width: 700px) { .lib { display: none; } .lib-c { display: inline; } }
 .btn.infini { background: linear-gradient(90deg, #ff46be, #ffb000); color: #fff; text-shadow: 2px 2px 0 var(--encre); font-size: 26px; }
 .row .temps.infini { color: #ff6ad5; }
+/* booster des montées de niveau */
+#cartes { position: relative; perspective: 1000px; }
+.pack-jeu { position: absolute; left: 50%; top: 50%; width: 150px; height: 210px; z-index: 5; pointer-events: none; }
+.pack-jeu .pack-corps, .pack-jeu .pack-haut { position: absolute; left: 0; right: 0; border: 3px solid var(--encre); background: linear-gradient(120deg, #ff46be, #ffb000 40%, #50f0dc 70%, #ff46be); }
+.pack-jeu .pack-haut { top: 0; height: 16%; border-radius: 12px 12px 0 0; border-bottom: 3px dashed var(--encre); }
+.pack-jeu .pack-corps { top: 16%; bottom: 0; border-top: 0; border-radius: 0 0 12px 12px; box-shadow: 6px 6px 0 var(--encre); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.pack-jeu .pk1 { font-family: var(--display); font-size: 15px; color: #fff; text-shadow: 2px 2px 0 var(--encre); }
+.pack-jeu .pk2 { font-family: var(--display); font-size: 30px; color: var(--jaune); transform: rotate(-6deg); text-shadow: 3px 3px 0 var(--encre), -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre); }
+#niveau.revel .carte { pointer-events: none; }
+#niveau.revel .aide { visibility: hidden; }
+/* coffre : machine à sous */
+.mode-coffre .cartes { padding: 26px 18px 18px; margin-top: 16px; }
+.machine-jeu { position: absolute; inset: 0; background: #c0392b; border: 4px solid var(--encre); border-radius: 22px; box-shadow: 8px 8px 0 var(--encre); z-index: 0; }
+.machine-jeu .fronton { position: absolute; left: 50%; top: -22px; transform: translateX(-50%) rotate(-2deg); font-family: var(--display); font-size: 22px; color: var(--jaune); background: var(--encre); border-radius: 12px; padding: 5px 16px 1px; white-space: nowrap; box-shadow: 0 0 0 3px var(--jaune); z-index: 3; }
+.machine-jeu .ampoule { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: #ffe9a0; border: 2px solid var(--encre); }
+.machine-jeu .ampoule { top: 0; left: calc(4% + (var(--i) - 0) * 8.6%); transform: translate(-50%, -50%); }
+.machine-jeu .ampoule:nth-child(n+13) { top: 100%; left: calc(4% + (var(--i) - 11) * 8.6%); }
+.machine-jeu.fete .ampoule { animation: clignote 0.35s steps(2) infinite; }
+.machine-jeu.fete .ampoule:nth-child(2n) { animation-delay: .17s; }
+.mode-coffre .carte { position: relative; z-index: 1; }
+.fenetre-jeu { position: relative; display: block; height: 140px; overflow: hidden; border: 3px solid var(--encre); border-radius: 10px; background: #2a2c31; box-shadow: inset 0 8px 10px rgba(0,0,0,.35); }
+.bande-jeu { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+.bande-jeu img { display: block; width: 100%; height: 140px; object-fit: cover; object-position: 50% 50%; }
+.mode-coffre .carte .corps { opacity: 0; transition: opacity .25s; }
+.mode-coffre .carte.arrete .corps { opacity: 1; }
+.carte.evo-carte.arrete { background: linear-gradient(135deg, #fff3b8, #ffd24a); }
+.carte.evo-carte.arrete .fenetre-jeu { box-shadow: 0 0 0 4px #ffe14d, 0 0 26px #ffe14d; }
 .slots { font-size: 16px; color: var(--encre); background: var(--jaune); border: 3px solid var(--encre); border-radius: 999px; padding: 3px 14px; box-shadow: 3px 3px 0 var(--encre); margin-top: -6px; }
 .evo-hint { font-size: 12px; font-weight: 900; color: #8a5a00; background: #ffeaa0; border-radius: 6px; padding: 2px 6px; align-self: flex-start; }
 
@@ -206,6 +233,10 @@ button { touch-action: manipulation; }
   .cartes { grid-template-columns: 1fr; gap: 12px; }
   #cartes .carte { flex-direction: row; align-items: stretch; }
   #cartes .carte .art, #cartes .carte .bandeau { width: 96px; height: auto; min-height: 104px; flex: none; font-size: 15px; }
+  .mode-coffre #cartes .carte .fenetre-jeu, .mode-coffre #cartes .carte .bande-jeu img { width: 96px; height: 104px; flex: none; }
+  .mode-coffre .cartes { padding: 26px 12px 14px; }
+  .machine-jeu .fronton { font-size: 17px; }
+  .pack-jeu { width: 110px; height: 154px; }
   .carte strong { font-size: 20px; } .carte .txt { font-size: 14px; }
   .grille { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
   .grille .carte .art { height: 96px; }
@@ -266,7 +297,7 @@ button { touch-action: manipulation; }
 
 <div class="voile" id="niveau" hidden>
   <div class="panneau">
-    <h2>Niveau <span id="nivTitre">2</span> !</h2>
+    <h2 id="choixTitre">Niveau 2 !</h2>
     <div class="slots" id="slots"></div>
     <div class="cartes" id="cartes"></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
@@ -896,18 +927,11 @@ function maj(dt) {
 }
 
 function evoPrete() { return Object.keys(S.armes).find(id => S.armes[id] === ARMES[id].max && (S.objets[EVOS[id].avec] || 0) > 0) }
-function ouvrirCoffre() {
-  const p = S.p, id = evoPrete();
-  p.hp = Math.min(p.max, p.hp + 30);
-  if (!id) return annonce("Casse-croûte : +30 vie");
-  S.armes[id] = EVO; majArmes(); annonce("★ " + EVOS[id].nom + " ★"); vibrer(120);
-  for (let i = 0; i < 36; i++) { const a = i / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: i % 2 ? "#ffe14d" : "#fff" }) }
-  S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
-}
+
 const PALIER = 20;
 function gagnerXp(v) {
   const p = S.p; p.xp += v * p.xpm * (p.niv === PALIER ? 2 : 1);   // pendant le palier : expérience ×2
-  if (p.xp >= p.next) {
+  if (p.xp >= p.next && !choix) {
     p.xp -= p.next; p.niv++;
     p.next = Math.round((6 + 2 * p.niv + 1.4 * p.niv * p.niv) * (p.niv === PALIER ? 3 : 1));
     if (p.niv === PALIER) annonce("Palier ! Expérience ×2");
@@ -942,34 +966,107 @@ function appliquer(o) {
     if (o.id === "meule") p.deg *= 1.12;
   } else p.hp = Math.min(p.max, p.hp + 40);
 }
-function ouvrirChoix() {
+const CASSE_CROUTE = { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
+function infosCarte(o) {
+  if (o.kind === "evo") return { d: { nom: EVOS[o.id].nom, img: ARMES[o.id].img, desc: () => EVOS[o.id].desc }, tag: "★ Évolution", indice: "" };
+  const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : CASSE_CROUTE;
+  const tag = o.kind === "soin" ? "Soin" : o.l === 1 ? (o.kind === "arme" ? "Nouvel outil" : "Nouvel équipement") : "Niveau " + o.l;
+  let indice = "";
+  if (o.kind === "arme") indice = `<span class="evo-hint">★ ${EVOS[o.id].nom} : niveau max + ${OBJETS[EVOS[o.id].avec].nom}</span>`;
+  else if (o.kind === "objet") { const w = Object.keys(S.armes).find(id => EVOS[id].avec === o.id && S.armes[id] < EVO); if (w) indice = `<span class="evo-hint">★ Fait évoluer : ${ARMES[w].nom}</span>` }
+  return { d, tag, indice };
+}
+function tirer(n) {
   const pool = offresPossibles();
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]] }
-  offres = pool.slice(0, 3);
-  if (!offres.length) offres = [{ id: "rhum", kind: "soin", l: 1 }];
-  $("nivTitre").textContent = S.p.niv;
+  const r = pool.slice(0, n); return r.length ? r : [{ id: "rhum", kind: "soin", l: 1 }];
+}
+/* animations de révélation : on peut toujours les passer d'un tap ou d'Espace */
+let revel = [], revelEnCours = false;
+const ani = (el, kf, o) => { const a = el.animate(kf, Object.assign({ fill: "both", easing: "cubic-bezier(.2,.8,.2,1)" }, o)); revel.push(a); return a.finished.catch(() => { }) };
+function passerRevel() { revel.forEach(a => { try { a.finish() } catch (e) { } }); }
+function finRevel() { revelEnCours = false; revel = []; $("niveau").classList.remove("revel"); majSel() }
+function ouvrirChoix() {
+  offres = tirer(3);
+  $("choixTitre").textContent = "Niveau " + S.p.niv + " !";
+  $("niveau").classList.remove("mode-coffre");
   $("cartes").innerHTML = offres.map((o, i) => {
-    const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
-    const tag = o.kind === "soin" ? "Soin" : o.l === 1 ? (o.kind === "arme" ? "Nouvel outil" : "Nouvel équipement") : "Niveau " + o.l;
-    const visuel = d.img ? `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>` : `<span class="bandeau" style="--fond:${COUL_ARME[o.id] || "#2fbf71"}">${d.nom}</span>`;
-    let indice = "";
-    if (o.kind === "arme") indice = `<span class="evo-hint">★ ${EVOS[o.id].nom} : niveau max + ${OBJETS[EVOS[o.id].avec].nom}</span>`;
-    else if (o.kind === "objet") { const w = Object.keys(S.armes).find(id => EVOS[id].avec === o.id && S.armes[id] < EVO); if (w) indice = `<span class="evo-hint">★ Fait évoluer : ${ARMES[w].nom}</span>` }
+    const { d, tag, indice } = infosCarte(o);
+    const visuel = `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>`;
     return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
   const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ une évolution t'attend dans le prochain coffre !" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
-  sel = 0; setTimeout(majSel, 30);
+  sel = 0; revelBooster();
+}
+/* montée de niveau : un booster tombe, se déchire, les 3 cartes en sortent (environ 1 s) */
+async function revelBooster() {
+  revelEnCours = true; revel = []; $("niveau").classList.add("revel");
+  const zone = $("cartes"), boutons = [...zone.querySelectorAll(".carte")], zr = zone.getBoundingClientRect();
+  const pack = document.createElement("div"); pack.className = "pack-jeu";
+  pack.innerHTML = '<div class="pack-haut"></div><div class="pack-corps"><span class="pk1">FIN DE POSTE</span><span class="pk2">BOOSTER</span></div>';
+  zone.appendChild(pack);
+  boutons.forEach(b => b.style.opacity = 0);
+  await ani(pack, [{ transform: "translate(-50%,-50%) translateY(-60vh) rotate(-14deg)" }, { transform: "translate(-50%,-50%) rotate(-3deg)" }], { duration: 300, easing: "cubic-bezier(.3,1.45,.6,1)" });
+  await ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg)" }, { transform: "translate(-50%,-50%) rotate(3deg) translateY(-3px)" }, { transform: "translate(-50%,-50%) rotate(-2deg)" }], { duration: 180, fill: "none" });
+  ani(pack.querySelector(".pack-haut"), [{ transform: "none", opacity: 1 }, { transform: "translate(50px,-90px) rotate(35deg)", opacity: 0 }], { duration: 260 });
+  ani(pack, [{ opacity: 1, filter: "brightness(1)" }, { opacity: 1, filter: "brightness(2.4)", offset: .3 }, { opacity: 0, filter: "brightness(1)" }], { duration: 320 });
+  const cxp = zr.left + zr.width / 2, cyp = zr.top + zr.height / 2;
+  await Promise.all(boutons.map((b, i) => {
+    const r = b.getBoundingClientRect(), dx = cxp - (r.left + r.width / 2), dy = cyp - (r.top + r.height / 2);
+    b.style.opacity = "";
+    return ani(b, [{ transform: `translate(${dx}px,${dy}px) scale(.4) rotateY(90deg)`, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 420, delay: 60 + i * 90, easing: "cubic-bezier(.25,1.35,.5,1)", fill: "none" });
+  }));
+  pack.remove(); finRevel();
+}
+/* coffre : machine à sous, 3 rouleaux qui s'arrêtent bien cadrés ; si une évolution est prête, elle tombe au milieu */
+function ouvrirCoffre() {
+  const p = S.p; p.hp = Math.min(p.max, p.hp + 30);
+  if (choix) { S.coffresEnAttente = (S.coffresEnAttente || 0) + 1; return }
+  const id = evoPrete();
+  offres = tirer(id ? 2 : 3);
+  if (id) offres.splice(1, 0, { id, kind: "evo", l: EVO });
+  $("choixTitre").textContent = id ? "★ Jackpot ! ★" : "Coffre !";
+  $("niveau").classList.add("mode-coffre");
+  const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
+  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
+    const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
+    return `<button class="carte${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
+  }).join("");
+  $("slots").textContent = "+30 vie · choisis ta récompense";
+  choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
+  sel = id ? 1 : 0; revelMachine();
+}
+async function revelMachine() {
+  revelEnCours = true; revel = []; $("niveau").classList.add("revel");
+  const zone = $("cartes"), m = zone.querySelector(".machine-jeu");
+  await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
+  await Promise.all([...zone.querySelectorAll(".carte")].map((b, i) => {
+    const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
+    bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
+    return ani(bande, [{ transform: "translateY(0)", filter: "blur(0)" }, { transform: `translateY(${-n * h * .5}px)`, filter: "blur(2px)", offset: .5 }, { transform: `translateY(${-n * h}px)`, filter: "blur(0)" }], { duration: 900 + i * 420, easing: "cubic-bezier(.35,0,.25,1.04)" }).then(() => {
+      ani(b, [{ transform: "translateY(0)" }, { transform: "translateY(4px)" }, { transform: "translateY(0)" }], { duration: 150, fill: "none" });
+      b.classList.add("arrete");
+    });
+  }));
+  m.classList.add("fete"); vibrer(offres.some(o => o.kind === "evo") ? 120 : 40);
+  finRevel();
 }
 function prendre(i) {
   const o = offres[i]; if (!o || !choix) return;
+  if (revelEnCours) return passerRevel();
   const p = S.p;
-  appliquer(o);
+  if (o.kind === "evo") {
+    S.armes[o.id] = EVO; annonce("★ " + EVOS[o.id].nom + " ★"); vibrer(120);
+    for (let k = 0; k < 36; k++) { const a = k / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: k % 2 ? "#ffe14d" : "#fff" }) }
+    S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
+  } else appliquer(o);
   choix = false; $("niveau").hidden = true; majArmes(); last = performance.now();
+  if (S.coffresEnAttente > 0) { S.coffresEnAttente--; return ouvrirCoffre() }
   if (p.xp >= p.next) gagnerXp(0);
 }
 $("cartes").addEventListener("mousemove", e => { const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
-$("cartes").addEventListener("click", e => { const b = e.target.closest(".carte"); if (b) prendre(+b.dataset.i) });
+$("cartes").addEventListener("click", e => { if (revelEnCours) return passerRevel(); const b = e.target.closest(".carte"); if (b) prendre(+b.dataset.i) });
 
 /* ---------- interface ---------- */
 function majArmes() {
@@ -1375,8 +1472,8 @@ function dessiner() {
   if (S.armes.sel) { const n = S.selN || S.armes.sel + 1, rr = S.selR || 62 + 4 * S.armes.sel; for (let i = 0; i < n; i++) { const a = S.angleSel + i * Math.PI * 2 / n, x = X(p.x) + Math.cos(a) * rr, y = Y(p.y) + Math.sin(a) * rr; cx.fillStyle = "rgba(210,235,255,.35)"; cx.beginPath(); cx.arc(x, y, 10, 0, 7); cx.fill(); cx.strokeStyle = "rgba(230,245,255,.8)"; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = "#7a5230"; cx.beginPath(); cx.arc(x, y, 3.5, 0, 7); cx.fill() } }
   // effets
   for (const f of S.fx) {
-    if (f.boum) { const x = X(f.x), y = Y(f.y), k = f.t / .3; cx.fillStyle = `rgba(138,106,60,${k})`; cx.fillRect(x - f.boum * .7, y - f.boum * .5, f.boum * 1.4, f.boum); cx.fillStyle = `rgba(200,164,106,${k})`; for (let q = 0; q < 3; q++) cx.fillRect(x - f.boum * .7, y - f.boum * .5 + q * f.boum * .4, f.boum * 1.4, f.boum * .15); cx.strokeStyle = `rgba(255,194,26,${k})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(x, y, f.boum * (1.3 - f.t), 0, 7); cx.stroke() }
-    else if (f.mousse) { const k = f.t / .6, R = (1 - k) * 320; cx.strokeStyle = `rgba(240,245,250,${k * .8})`; cx.lineWidth = 18 * k + 2; cx.beginPath(); cx.arc(X(f.x), Y(f.y), R, 0, 7); cx.stroke() }
+    if (f.boum) { const x = X(f.x), y = Y(f.y), k = f.t / .3; cx.fillStyle = `rgba(138,106,60,${k})`; cx.fillRect(x - f.boum * .7, y - f.boum * .5, f.boum * 1.4, f.boum); cx.fillStyle = `rgba(200,164,106,${k})`; for (let q = 0; q < 3; q++) cx.fillRect(x - f.boum * .7, y - f.boum * .5 + q * f.boum * .4, f.boum * 1.4, f.boum * .15); cx.strokeStyle = `rgba(255,194,26,${k})`; cx.lineWidth = 3; cx.beginPath(); cx.arc(x, y, Math.max(.1, f.boum * (1.3 - f.t)), 0, 7); cx.stroke() }
+    else if (f.mousse) { const k = Math.min(1, Math.max(0, f.t / .6)), R = Math.max(.1, (1 - k) * 320); cx.strokeStyle = `rgba(240,245,250,${k * .8})`; cx.lineWidth = 18 * k + 2; cx.beginPath(); cx.arc(X(f.x), Y(f.y), R, 0, 7); cx.stroke() }
     else if (f.coup) { cx.strokeStyle = `rgba(255,90,31,${f.t * 3})`; cx.lineWidth = 4; cx.beginPath(); cx.arc(X(f.x), Y(f.y), 24, 0, 7); cx.stroke() }
     else { cx.fillStyle = f.c; cx.globalAlpha = f.t / .45; cx.fillRect(X(f.x) - 3, Y(f.y) - 2, 6, 4); cx.globalAlpha = 1 }
   }
@@ -1503,6 +1600,7 @@ addEventListener("keydown", e => {
   }
   if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
   if (e.code === "Escape" || e.code === "KeyP") return basculerPause();
+  if (choix && revelEnCours && (e.code === "Space" || e.code === "Enter")) { e.preventDefault(); return passerRevel() }
   if (choix) {
     // choix de carte : ZQSD / flèches pour se déplacer, Espace ou Entrée pour valider (1 2 3 marchent toujours)
     if (/^(Digit|Numpad)[123]$/.test(e.code)) return prendre(+e.code.slice(-1) - 1);
