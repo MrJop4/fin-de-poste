@@ -142,6 +142,20 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .carte.fini .prix { color: var(--vert); }
 .pips { display: flex; gap: 4px; } .pips i { width: 16px; height: 8px; border-radius: 3px; background: #d8ccb0; border: 1.5px solid var(--encre); } .pips i.on { background: var(--vert); }
 .aide { font-size: 15px; color: var(--papier); }
+.inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; width: 100%; text-align: left; }
+.inv-carte { display: flex; gap: 10px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); padding: 8px; }
+.inv-carte img { width: 76px; height: 92px; flex: none; object-fit: cover; object-position: 50% 40%; border: 2px solid var(--encre); border-radius: 8px; }
+.inv-carte > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.inv-carte strong { font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1; }
+.inv-carte.evo { background: linear-gradient(135deg, #fff3b8, #ffd96a); }
+.inv-carte.vide { background: transparent; color: var(--papier); border-style: dashed; border-color: var(--papier-2); box-shadow: none; min-height: 70px; }
+.niv-txt { font-size: 13px; color: inherit; opacity: .8; }
+.evo-titre { font-size: 12px; font-weight: 900; color: #8a5a00; }
+.recette { display: flex; flex-wrap: wrap; gap: 4px; }
+.recette span { font-size: 11px; font-weight: 900; border-radius: 6px; padding: 2px 6px; border: 1.5px solid var(--encre); }
+.recette .ok { background: #b9f3d2; } .recette .pret { background: var(--jaune); animation: clignote 1s steps(2) infinite; }
+@keyframes clignote { 50% { background: #fff3b8; } } .recette .ko { background: #eee2c6; color: #6d6457; }
+#pause { place-items: start center; }
 .slots { font-size: 16px; color: var(--encre); background: var(--jaune); border: 3px solid var(--encre); border-radius: 999px; padding: 3px 14px; box-shadow: 3px 3px 0 var(--encre); margin-top: -6px; }
 .evo-hint { font-size: 12px; font-weight: 900; color: #8a5a00; background: #ffeaa0; border-radius: 6px; padding: 2px 6px; align-self: flex-start; }
 .armes span.evo { background: linear-gradient(90deg, #ffe14d, #ffb000); font-weight: 900; }
@@ -261,7 +275,12 @@ button { touch-action: manipulation; }
 </div>
 
 <div class="voile" id="pause" hidden>
-  <div class="panneau"><h2>Pause café</h2><button class="btn go" id="reprendre">Reprendre</button><button class="btn" id="abandon">Quitter la partie</button><div class="aide clavier"><kbd>Échap</kbd> pour reprendre</div></div>
+  <div class="panneau large"><h2>Pause café</h2>
+    <div class="boutons"><button class="btn go" id="reprendre">Reprendre</button><button class="btn" id="abandon">Quitter la partie</button></div>
+    <div class="aide clavier"><kbd>Échap</kbd> pour reprendre</div>
+    <h3 id="invTitreA">Mes outils</h3><div class="inv" id="invArmes"></div>
+    <h3>Mon équipement</h3><div class="inv" id="invObjets"></div>
+  </div>
 </div>
 
 <div class="voile" id="fin" hidden>
@@ -1259,7 +1278,25 @@ function demarrer() {
   { const a = rnd(0, 6.28); poserDecor(Math.cos(a) * 300, Math.sin(a) * 300, "cafe") }
   ["accueil", "fin", "niveau", "pause", "vestiaire", "aideJeu"].forEach(id => $(id).hidden = true); $("hud").hidden = false; last = performance.now(); majHud();
 }
-function basculerPause() { if (!enJeu || choix) return; enPause = !enPause; JOY.actif = false; $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
+/* inventaire de la pause : niveau de chaque carte et où en est chaque évolution */
+function pips(n, max) { return `<span class="pips">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>` }
+function dessinerInventaire() {
+  const nb = Object.keys(S.armes).length;
+  $("invTitreA").textContent = "Mes outils (" + nb + " / " + NB_ARMES + ")";
+  $("invArmes").innerHTML = Object.entries(S.armes).map(([id, l]) => {
+    const A = ARMES[id], E = EVOS[id], O = OBJETS[E.avec], evo = l >= EVO, max = l >= A.max, aObj = (S.objets[E.avec] || 0) > 0;
+    const recette = evo ? `<span class="ok">★ Évoluée !</span>`
+      : `<span class="${max ? "ok" : "ko"}">${max ? "✓" : "○"} Niveau max</span><span class="${aObj ? "ok" : "ko"}">${aObj ? "✓" : "○"} ${O.nom}</span><span class="${max && aObj ? "pret" : "ko"}">${max && aObj ? "★ Prête : ouvre un coffre !" : "○ Un coffre"}</span>`;
+    return `<div class="inv-carte${evo ? " evo" : ""}"><img src="${IMG(A.img)}" alt=""><div><strong>${evo ? "★ " + E.nom : A.nom}</strong>${evo ? `<span class="niv-txt">${E.desc}</span>` : pips(l, A.max)}<span class="evo-titre">${evo ? "" : "Évolution : " + E.nom}</span><span class="recette">${recette}</span></div></div>`;
+  }).join("") + Array.from({ length: Math.max(0, NB_ARMES - nb) }, () => `<div class="inv-carte vide"><div><strong>Emplacement libre</strong><span class="niv-txt">Choisis un nouvel outil en montant de niveau.</span></div></div>`).join("");
+  const objs = Object.entries(S.objets);
+  $("invObjets").innerHTML = objs.length ? objs.map(([id, l]) => {
+    const O = OBJETS[id], lies = Object.keys(EVOS).filter(w => EVOS[w].avec === id), miens = lies.filter(w => S.armes[w] && S.armes[w] < EVO);
+    const info = miens.length ? `<span class="recette"><span class="ok">★ Fait évoluer : ${miens.map(w => ARMES[w].nom).join(", ")}</span></span>` : `<span class="niv-txt">Associé à : ${lies.map(w => ARMES[w].nom).join(", ") || "aucune arme"}</span>`;
+    return `<div class="inv-carte"><img src="${IMG(O.img)}" alt=""><div><strong>${O.nom}</strong>${pips(l, O.max)}<span class="niv-txt">${O.desc()}</span>${info}</div></div>`;
+  }).join("") : `<div class="inv-carte vide"><div><strong>Aucun équipement</strong><span class="niv-txt">Les équipements débloquent les évolutions de tes outils.</span></div></div>`;
+}
+function basculerPause() { if (!enJeu || choix) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
 addEventListener("keydown", e => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   // accueil : Q/D change de perso, Z/S de lieu, Espace lance la partie
