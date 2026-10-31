@@ -35,6 +35,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* ---- HUD ---- */
 .hud { position: fixed; inset: 0; pointer-events: none; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 8px; }
 .xpbar { height: 14px; border-radius: 8px; background: rgba(0,0,0,.55); border: 3px solid var(--encre); overflow: hidden; }
+.xpbar i.palier { background: linear-gradient(#fff3a0, #ffb000); }
 .xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(#5ff0a8, var(--vert)); transition: width .15s; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; font-weight: 900; font-size: 18px; text-shadow: 2px 2px 0 var(--encre), -1px -1px 0 var(--encre), 1px -1px 0 var(--encre), -1px 1px 0 var(--encre); font-variant-numeric: tabular-nums; }
 .row .temps { font-family: var(--display); font-size: 38px; color: var(--jaune); text-shadow: 3px 3px 0 var(--encre), -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre); }
@@ -255,6 +256,7 @@ button { touch-action: manipulation; }
     <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
     <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : dépense-la au vestiaire.</span></div>
     <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un coffre = évolution !</span></div>
+    <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
     <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes et c'est la fin du poste.</span></div>
     <div class="boutons"><button class="btn go" id="aideOk">C'est parti</button></div>
   </div>
@@ -384,21 +386,21 @@ const LIEUX = {
     sol: { fond: "#2a2c30", joint: "rgba(0,0,0,.28)", allee: "rgba(255,194,26,.55)", texte: "QUAI", tache: "rgba(10,10,12,.35)", miette: "rgba(185,138,82,.5)" },
     ombre: "10,11,13", gain: 1, pv: 1, spawn: 1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1,
     boss1: "Semi en retard au quai 7 !", boss2: "Deux semis arrivent en même temps", coul: {} },
-  frigo: { nom: "Chambre froide", img: "ludido", info: "Tu glisses · paie ×1,3", prix: 400, desc: "Sol verglacé : tu glisses. Bacs de surgelés, blocs de glace, camion frigo. Paie ×1,3.",
+  frigo: { nom: "Chambre froide", img: "ludido", info: "Tu glisses · paie ×1,3", ev: "glace", prix: 400, desc: "Sol verglacé : tu glisses. Bacs de surgelés, blocs de glace, camion frigo. Paie ×1,3.",
     sol: { fond: "#1b2933", joint: "rgba(160,220,255,.12)", allee: "rgba(120,210,255,.45)", texte: "FRIGO", tache: "rgba(220,240,255,.09)", miette: "rgba(220,240,255,.35)" },
     ombre: "5,14,24", gain: 1.3, pv: 1.15, spawn: 1, glisse: true, neige: true, tpCoul: "#9fd2ff", tpNom: "transpalette frigo", tpRate: 1,
     boss1: "Camion frigo à décharger !", boss2: "Deux camions frigo à quai", coul: { crabe: "#8ec9ec", feu: "#ffffff", noye: "#bfe9ff", murene: "#a7b2bd", leviathan: "#2f6fb0" } },
-  stockage: { nom: "Zone de stockage", img: "stocktampon", info: "Allées de racks · paie ×1,4", prix: 550, desc: "Des rangées de racks forment des allées : sers-t'en comme abri, mais gare aux impasses. Les transpalettes foncent dans les allées. Paie ×1,4.",
+  stockage: { nom: "Zone de stockage", img: "stocktampon", info: "Allées de racks · paie ×1,4", ev: "inventaire", prix: 550, desc: "Des rangées de racks forment des allées : sers-t'en comme abri, mais gare aux impasses. Les transpalettes foncent dans les allées. Paie ×1,4.",
     sol: { fond: "#25292e", joint: "rgba(0,0,0,.3)", allee: "rgba(255,194,26,.3)", texte: "ALLÉE", tache: "rgba(10,10,12,.3)", miette: "rgba(185,138,82,.45)" },
     ombre: "10,12,16", gain: 1.4, pv: 1.2, spawn: 1.1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1.4,
     murs: { type: "racks", cw: 720, ch: 250, w: 540, h: 62, trou: .14 },
     boss1: "Un semi recule dans l'allée !", boss2: "Deux semis bloquent les allées", coul: {} },
-  parking: { nom: "Parking poids lourds", img: "retardcamion", info: "Remorques garées · paie ×1,6", prix: 700, desc: "Au coucher du soleil, entre les remorques garées. Les camionnettes foncent sur les voies de circulation. Cônes, pneus, caddies. Paie ×1,6.",
+  parking: { nom: "Parking poids lourds", img: "retardcamion", info: "Remorques garées · paie ×1,6", ev: "fourriere", prix: 700, desc: "Au coucher du soleil, entre les remorques garées. Les camionnettes foncent sur les voies de circulation. Cônes, pneus, caddies. Paie ×1,6.",
     sol: { fond: "#2d2723", joint: "rgba(0,0,0,.25)", allee: "rgba(240,238,230,.55)", texte: "PLACE", tache: "rgba(0,0,0,.32)", miette: "rgba(255,140,40,.4)" },
     ombre: "34,12,4", gain: 1.6, pv: 1.3, spawn: 1, tpCoul: "#f2f0e6", tpNom: "camionnette", tpRate: 1.8, van: true,
     murs: { type: "remorques", cw: 150, ch: 470, w: 66, h: 250, trou: .2, horizontal: true },
     boss1: "Un porte-conteneur recule sans regarder !", boss2: "Deux porte-conteneurs en manœuvre", coul: { crabe: "#ff7a1a", feu: "#f2f0e6", noye: "#24262a", murene: "#b8bec6", leviathan: "#c0392b" } },
-  promo: { nom: "Entrepôt des promos", img: "maouell", info: "Foule · paie ×2", prix: 1000, desc: "Semaine des promos : 35 % d'ennemis en plus, sous les néons. Colis express, robots de tri. Paie ×2.",
+  promo: { nom: "Entrepôt des promos", img: "maouell", info: "Foule · paie ×2", ev: "venteflash", prix: 1000, desc: "Semaine des promos : 35 % d'ennemis en plus, sous les néons. Colis express, robots de tri. Paie ×2.",
     sol: { fond: "#221a2e", joint: "rgba(255,255,255,.06)", allee: "rgba(255,70,190,.5)", texte: "ALLÉE", tache: "rgba(140,90,255,.13)", miette: "rgba(80,240,220,.35)" },
     ombre: "16,6,26", gain: 2, pv: 1.5, spawn: 1.35, confettis: true, tpCoul: "#ff46be", tpNom: "transpalette", tpRate: 1.2,
     boss1: "Le semi des promos est là !", boss2: "Deux semis de promos !", coul: { crabe: "#b44cff", feu: "#e8f6ff", noye: "#d29a5a", murene: "#ff8a1f", leviathan: "#ff46be" } },
@@ -448,7 +450,7 @@ function nouvellePartie() {
     armes: { [P.arme]: 1 }, objets: {},
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8 },
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [],
-    transpas: [], transpaT: 35, transpaVu: false, decorT: 4,
+    transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
   };
   const p = S.p;
@@ -470,7 +472,7 @@ function spawn(type, elite) {
   S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1), deg: T.deg * (1 + S.t / 400) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
 }
 function vagues(dt) {
-  const t = S.t, taux = Math.min(16, 1.3 + t / 19) * LL().spawn;
+  const t = S.t, taux = Math.min(16, 1.3 + t / 19) * LL().spawn * (S.ev ? .4 : 1);
   S.spawnAcc += taux * dt;
   while (S.spawnAcc >= 1 && S.ennemis.length < 420) {
     S.spawnAcc--;
@@ -481,6 +483,7 @@ function vagues(dt) {
     if (t > 210 && r > .55 && r < .7) type = "murene";
     spawn(type, t > 90 && Math.random() < .006);
   }
+  if (S.ev) return;
   if (S.bossFaits === 0 && t >= 300) { spawn("leviathan"); S.bossFaits = 1; annonce(LL().boss1) }
   if (S.bossFaits === 1 && t >= 510) { spawn("leviathan"); spawn("leviathan"); S.bossFaits = 2; annonce(LL().boss2) }
 }
@@ -527,6 +530,90 @@ function casser(e) {
   else if (e.kind === "fontaine") { p.boost = 6; annonce("Fontaine : vitesse +40 % pendant 6 s") }
 }
 
+/* ---------- moments spéciaux : un par lieu (sauf le quai), vers 3:20 ----------
+   glace      : un anneau de blocs de glace se resserre, il faut le casser (comme le mur de fleurs de Vampire Survivors)
+   inventaire : les allées sont bouclées, il faut survivre 40 s à une avalanche de colis
+   fourriere  : des cônes t'enferment avec un porte-conteneur, il faut le détruire
+   venteflash : enfermé avec 6 présentoirs promo, il faut les casser en 30 s */
+const EV_T = 200;
+const EVENTS = {
+  glace: { titre: "Chambre froide : la glace se referme !", but: "Casse la glace avant qu'elle t'écrase", duree: 45, anneau: "blocs" },
+  inventaire: { titre: "Inventaire surprise : allées bouclées !", but: "Tiens bon", duree: 40, anneau: "barrieres" },
+  fourriere: { titre: "Fourrière : un porte-conteneur te coince !", but: "Détruis le porte-conteneur", duree: 0, anneau: "cones" },
+  venteflash: { titre: "Vente flash !", but: "Casse les présentoirs", duree: 30, anneau: "caddies" },
+};
+function entiteEv(type, x, y, r, hp, vit, deg, coul) {
+  const e = { type, ev: true, x, y, r, hp, max: hp, vit, deg, xp: 1, coul, boss: false, elite: false, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 };
+  S.ennemis.push(e); return e;
+}
+function demarrerEv() {
+  const id = LL().ev, E = EVENTS[id], p = S.p, mult = (1 + S.t / 135) * LL().pv;
+  const R = Math.min(300, Math.min(W, H) * .44);
+  S.ev = { id, E, cx: p.x, cy: p.y, r: R, t: 0, total: 0, reste: 0 };
+  S.transpas = [];
+  for (const e of S.ennemis) e.cote = Math.hypot(e.x - p.x, e.y - p.y) < R ? "in" : "out";
+  if (id === "glace") {
+    const n = Math.ceil(Math.PI * 2 * R / 30);
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; entiteEv("glace", p.x + Math.cos(a) * R, p.y + Math.sin(a) * R, 17, 22 * mult, 13, 8, "#bfe9ff") }
+    S.ev.total = n;
+  } else if (id === "fourriere") {
+    const a = rnd(0, 6.28), e = entiteEv("leviathan", p.x + Math.cos(a) * R * .7, p.y + Math.sin(a) * R * .7, 40, 1500 * mult, 46, 20, LL().coul.leviathan || "#c0392b");
+    e.boss = true; e.cote = "in"; e.evBoss = true; S.ev.total = 1;
+  } else if (id === "venteflash") {
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + .3, d = R * (.45 + .3 * (i % 2)); const e = entiteEv("presentoir", p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 20, 70 * mult, 0, 0, "#ff46be"); e.cote = "in" }
+    S.ev.total = 6;
+  }
+  annonce(E.titre); vibrer(80);
+}
+function finirEv(reussi) {
+  const ev = S.ev; S.ev = null; S.evFait = true;
+  for (const e of S.ennemis) { delete e.cote; if (e.ev && e.type !== "leviathan") e.parti = true }
+  if (!reussi) return annonce(ev.id === "glace" ? "La glace a fondu…" : "Trop tard, les promos sont finies");
+  const p = S.p, gain = Math.round(5 * LL().gain * (1 + .1 * niv("paie")));
+  { const a = rnd(0, 6.28); S.gemmes.push({ x: p.x + Math.cos(a) * 140, y: p.y + Math.sin(a) * 140, coffre: true, att: false }) }
+  for (let i = 0; i < 10; i++) { const a = i / 10 * 6.28; S.gemmes.push({ x: p.x + Math.cos(a) * 60, y: p.y + Math.sin(a) * 60, argent: gain, att: false }) }
+  annonce("Objectif réussi ! Coffre + prime"); vibrer(120);
+}
+function evenements(dt) {
+  if (!S.ev) { if (!S.evFait && LL().ev && S.t >= EV_T && !S.ennemis.some(e => e.boss)) demarrerEv(); return }
+  const ev = S.ev, p = S.p; ev.t += dt;
+  if (ev.id === "glace") {
+    ev.reste = S.ennemis.filter(e => e.type === "glace").length;
+    if (ev.reste === 0) return finirEv(true);
+    if (ev.t >= ev.E.duree) return finirEv(false);
+  } else if (ev.id === "inventaire") {
+    ev.acc = (ev.acc || 0) + dt * (5 + ev.t / 6);
+    while (ev.acc >= 1) {   // les cartons tombent des racks, à l'intérieur de l'enclos
+      ev.acc--; const a = rnd(0, 6.28); spawn(Math.random() < .25 ? "noye" : Math.random() < .5 ? "feu" : "crabe");
+      const e = S.ennemis[S.ennemis.length - 1]; e.x = ev.cx + Math.cos(a) * (ev.r - 30); e.y = ev.cy + Math.sin(a) * (ev.r - 30); e.cote = "in";
+    }
+    if (ev.t >= ev.E.duree) return finirEv(true);
+  } else if (ev.id === "fourriere") {
+    if (!S.ennemis.some(e => e.evBoss)) return finirEv(true);
+  } else if (ev.id === "venteflash") {
+    ev.reste = S.ennemis.filter(e => e.type === "presentoir").length;
+    if (ev.reste === 0) return finirEv(true);
+    if (ev.t >= ev.E.duree) return finirEv(false);
+  }
+  // l'enclos (sauf la glace, qui bloque par ses blocs) : le joueur reste dedans, ceux du dehors restent dehors
+  if (ev.E.anneau !== "blocs") {
+    const d = Math.hypot(p.x - ev.cx, p.y - ev.cy), lim = ev.r - p.r - 6;
+    if (d > lim) { p.x = ev.cx + (p.x - ev.cx) / d * lim; p.y = ev.cy + (p.y - ev.cy) / d * lim }
+  }
+}
+function contraindreEv(e) {
+  const ev = S.ev; if (!ev) return;
+  if (ev.E.anneau === "blocs") {
+    if (e.type === "glace") return;
+    for (const g of S.ennemis) { if (g.type !== "glace") continue; const dx = e.x - g.x, dy = e.y - g.y, d = Math.hypot(dx, dy), m = e.r + g.r; if (d > 0 && d < m) { e.x += dx / d * (m - d); e.y += dy / d * (m - d) } }
+    return;
+  }
+  if (!e.cote) e.cote = Math.hypot(e.x - ev.cx, e.y - ev.cy) < ev.r ? "in" : "out";
+  const d = Math.hypot(e.x - ev.cx, e.y - ev.cy) || 1;
+  if (e.cote === "in" && d > ev.r - e.r) { e.x = ev.cx + (e.x - ev.cx) / d * (ev.r - e.r); e.y = ev.cy + (e.y - ev.cy) / d * (ev.r - e.r) }
+  if (e.cote === "out" && d < ev.r + e.r + 8) { e.x = ev.cx + (e.x - ev.cx) / d * (ev.r + e.r + 8); e.y = ev.cy + (e.y - ev.cy) / d * (ev.r + e.r + 8) }
+}
+
 /* ---------- dégâts ---------- */
 function blesser(e, d, kx, ky) {
   d *= S.p.deg; e.hp -= d; e.flash = .1;
@@ -535,6 +622,8 @@ function blesser(e, d, kx, ky) {
 }
 function mourir(e) {
   if (e.decor) return casser(e);
+  if (e.type === "glace") { for (let i = 0; i < 5; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-120, 120), vy: rnd(-120, 120), t: .4, c: "#e8f8ff" }); S.gemmes.push({ x: e.x, y: e.y, v: 1, att: false }); return }
+  if (e.type === "presentoir") { for (let i = 0; i < 3; i++) S.gemmes.push({ x: e.x + rnd(-20, 20), y: e.y + rnd(-20, 20), argent: Math.round(5 * LL().gain), att: false }); for (let i = 0; i < 12; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-150, 150), vy: rnd(-150, 150), t: .5, c: ["#ff46be", "#50f0dc", "#ffe14d"][i % 3] }); return }
   S.kills++;
   const n = e.boss ? 14 : 1;
   for (let i = 0; i < n; i++) S.gemmes.push({ x: e.x + (n > 1 ? rnd(-40, 40) : 0), y: e.y + (n > 1 ? rnd(-40, 40) : 0), v: e.boss ? Math.ceil(e.xp / n) : e.xp, att: false });
@@ -690,7 +779,7 @@ function lancerTranspa(vise) {
 }
 function transpalettes(dt) {
   const p = S.p;
-  if (S.t > 35 && (S.transpaT -= dt) <= 0) {
+  if (S.t > 35 && !S.ev && (S.transpaT -= dt) <= 0) {
     const n = S.t > 360 && Math.random() < .4 ? 2 : 1;
     for (let i = 0; i < n; i++) lancerTranspa(i === 0 && Math.random() < .6);
     S.transpaT = Math.max(3.5, 11 - S.t / 60) * rnd(.8, 1.2) / LL().tpRate;
@@ -733,7 +822,7 @@ function maj(dt) {
   if (LL().murs) pousserHorsMurs(p, p.r);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
 
-  vagues(dt); machines(dt); armes(dt); transpalettes(dt);
+  vagues(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt);
 
   // déplacement des ennemis + séparation (grille)
   const murs = !!LL().murs;
@@ -743,6 +832,15 @@ function maj(dt) {
     for (const h in e.hit) e.hit[h] -= dt;
     e.flash -= dt; e.ph += dt;
     if (e.decor) { if (Math.hypot(p.x - e.x, p.y - e.y) > Math.hypot(W, H) * 1.6) e.parti = true; continue }
+    if (e.type === "glace" || e.type === "presentoir") {   // fixes ou qui se resserrent vers le centre de l'enclos, sans se bousculer
+      const ev = S.ev, gx = ev ? ev.cx - e.x : 0, gy = ev ? ev.cy - e.y : 0, gd = Math.hypot(gx, gy) || 1;
+      if (e.type === "glace" && gd > 46) { e.x += gx / gd * e.vit * dt; e.y += gy / gd * e.vit * dt }
+      const pd = Math.hypot(p.x - e.x, p.y - e.y);
+      if (e.type === "glace") {
+        if (pd < e.r + p.r) { const k = (e.r + p.r - pd) / (pd || 1); p.x += (p.x - e.x) * k; p.y += (p.y - e.y) * k; if (p.inv <= 0) { p.hp -= e.deg; p.inv = .5; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }) } }
+      }
+      continue;
+    }
     const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
     let vx = dx / d * e.vit, vy = dy / d * e.vit;
     if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 40; vy += Math.sin(e.ph * 4) * 40 }
@@ -754,10 +852,11 @@ function maj(dt) {
     }
     e.x += (vx + e.kb.x * 60) * dt; e.y += (vy + e.kb.y * 60) * dt;
     if (murs) pousserHorsMurs(e, e.r);
+    if (S.ev) contraindreEv(e);
     e.kb.x *= Math.pow(.02, dt); e.kb.y *= Math.pow(.02, dt);
     if (d < e.r + p.r && p.inv <= 0) { p.hp -= e.deg; p.inv = .5; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }) }
     // trop loin derrière : on le replace devant (sauf boss)
-    if (!e.boss && d > Math.hypot(W, H)) { const a = Math.random() * Math.PI * 2, dd = Math.hypot(W, H) / 2 + 40; e.x = p.x + Math.cos(a) * dd; e.y = p.y + Math.sin(a) * dd }
+    if (!e.boss && !e.cote && d > Math.hypot(W, H)) { const a = Math.random() * Math.PI * 2, dd = Math.hypot(W, H) / 2 + 40; e.x = p.x + Math.cos(a) * dd; e.y = p.y + Math.sin(a) * dd }
   }
   const morts = S.ennemis.filter(e => e.hp <= 0); morts.forEach(mourir);
   if (morts.length || S.ennemis.some(e => e.parti)) S.ennemis = S.ennemis.filter(e => e.hp > 0 && !e.parti);
@@ -797,9 +896,15 @@ function ouvrirCoffre() {
   for (let i = 0; i < 36; i++) { const a = i / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: i % 2 ? "#ffe14d" : "#fff" }) }
   S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
 }
+const PALIER = 20;
 function gagnerXp(v) {
-  const p = S.p; p.xp += v * p.xpm;
-  if (p.xp >= p.next) { p.xp -= p.next; p.niv++; p.next = Math.round(6 + 2 * p.niv + 1.4 * p.niv * p.niv); ouvrirChoix() }
+  const p = S.p; p.xp += v * p.xpm * (p.niv === PALIER ? 2 : 1);   // pendant le palier : expérience ×2
+  if (p.xp >= p.next) {
+    p.xp -= p.next; p.niv++;
+    p.next = Math.round((6 + 2 * p.niv + 1.4 * p.niv * p.niv) * (p.niv === PALIER ? 3 : 1));
+    if (p.niv === PALIER) annonce("Palier ! Expérience ×2");
+    ouvrirChoix();
+  }
 }
 
 /* ---------- montée de niveau ---------- */
@@ -866,7 +971,7 @@ function majArmes() {
   $("armes").innerHTML = a.join("") + (o.length ? '<i class="sep"></i>' : "") + o.join("");
 }
 function majHud() {
-  $("xp").style.width = (S.p.xp / S.p.next * 100).toFixed(1) + "%";
+  $("xp").style.width = (S.p.xp / S.p.next * 100).toFixed(1) + "%"; $("xp").classList.toggle("palier", S.p.niv === PALIER);
   $("argent").textContent = S.argent; $("niv").textContent = S.p.niv; $("temps").textContent = fmt(Math.max(0, VICTOIRE - S.t)); $("kills").textContent = S.kills;
 }
 function finir(gagne) {
@@ -1044,10 +1149,46 @@ function dessinerMurs(camx, camy, X, Y) {
     }
   }
 }
+function dessinerEnclos(X, Y) {
+  const ev = S.ev, x = X(ev.cx), y = Y(ev.cy), R = ev.r, A = ev.E.anneau;
+  if (A !== "blocs") {   // dehors assombri
+    cx.fillStyle = "rgba(0,0,0,.28)"; cx.beginPath(); cx.rect(0, 0, W, H); cx.arc(x, y, R, 0, 7, true); cx.fill("evenodd");
+  }
+  if (A === "barrieres") {
+    const n = Math.ceil(Math.PI * 2 * R / 46);
+    for (let i = 0; i < n; i++) { const a = i / n * 6.28; cx.save(); cx.translate(x + Math.cos(a) * R, y + Math.sin(a) * R); cx.rotate(a + Math.PI / 2);
+      cx.fillStyle = "#17130f"; cx.fillRect(-21, -6, 42, 12); for (let k = 0; k < 4; k++) { cx.fillStyle = k % 2 ? "#f2f0e6" : "#e8412c"; cx.fillRect(-19 + k * 9.5, -4, 9.5, 8) } cx.restore() }
+  } else if (A === "cones") {
+    const n = Math.ceil(Math.PI * 2 * R / 30);
+    for (let i = 0; i < n; i++) { const a = i / n * 6.28, cxx = x + Math.cos(a) * R, cyy = y + Math.sin(a) * R;
+      cx.fillStyle = "#17130f"; cx.fillRect(cxx - 9, cyy + 6, 18, 4); cx.fillStyle = "#ff7a1a"; cx.beginPath(); cx.moveTo(cxx, cyy - 12); cx.lineTo(cxx + 8, cyy + 7); cx.lineTo(cxx - 8, cyy + 7); cx.closePath(); cx.fill(); cx.fillStyle = "#f2f0e6"; cx.fillRect(cxx - 4, cyy - 2, 8, 3) }
+  } else if (A === "caddies") {
+    const n = Math.ceil(Math.PI * 2 * R / 40);
+    for (let i = 0; i < n; i++) { const a = i / n * 6.28; cx.save(); cx.translate(x + Math.cos(a) * R, y + Math.sin(a) * R); cx.rotate(a);
+      cx.strokeStyle = "#b8bec6"; cx.lineWidth = 2; cx.strokeRect(-11, -15, 22, 30); for (let k = -9; k < 11; k += 5) { cx.beginPath(); cx.moveTo(k, -15); cx.lineTo(k, 15); cx.stroke() }
+      cx.strokeStyle = "#ff46be"; cx.lineWidth = 4; cx.beginPath(); cx.moveTo(-13, -15); cx.lineTo(-13, 15); cx.stroke(); cx.restore() }
+  }
+}
+function dessinerObjectif() {
+  const ev = S.ev; if (!ev) return;
+  let txt = ev.E.but, prog = 0;
+  if (ev.id === "glace") { txt += " · " + ev.reste + " blocs"; prog = 1 - ev.t / ev.E.duree }
+  else if (ev.id === "inventaire") { txt += " · " + Math.ceil(ev.E.duree - ev.t) + " s"; prog = 1 - ev.t / ev.E.duree }
+  else if (ev.id === "venteflash") { txt += " · " + (ev.total - ev.reste) + " / " + ev.total; prog = 1 - ev.t / ev.E.duree }
+  else { const b = S.ennemis.find(e => e.evBoss); prog = b ? b.hp / b.max : 0 }
+  cx.font = "800 17px 'Nunito', sans-serif"; cx.textAlign = "center";
+  const w = Math.min(W - 30, cx.measureText(txt).width + 46), x = W / 2 - w / 2, y = H - 74;
+  cx.fillStyle = "#17130f"; cx.beginPath(); cx.roundRect(x + 4, y + 4, w, 50, 12); cx.fill();
+  cx.fillStyle = "#fff6e3"; cx.beginPath(); cx.roundRect(x, y, w, 50, 12); cx.fill(); cx.lineWidth = 3; cx.strokeStyle = "#17130f"; cx.stroke();
+  cx.fillStyle = "#17130f"; cx.fillText(txt, W / 2, y + 23, w - 20);
+  cx.fillStyle = "#d8ccb0"; cx.fillRect(x + 14, y + 33, w - 28, 8);
+  cx.fillStyle = ev.id === "fourriere" ? "#e8412c" : prog < .3 ? "#e8412c" : "#2fbf71"; cx.fillRect(x + 14, y + 33, (w - 28) * Math.max(0, prog), 8);
+}
 function dessiner() {
   const p = S.p, camx = p.x - W / 2, camy = p.y - H / 2, X = x => x - camx, Y = y => y - camy;
   sol(camx, camy);
   if (LL().murs) dessinerMurs(camx, camy, X, Y);
+  if (S.ev) dessinerEnclos(X, Y);
   // étiquettes scannées (expérience) et casse-croûte
   for (const g of S.gemmes) {
     const x = X(g.x), y = Y(g.y); if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
@@ -1099,7 +1240,21 @@ function dessiner() {
       if (e.hp < e.max) { const w = 36; cx.fillStyle = "rgba(0,0,0,.5)"; cx.fillRect(x - w / 2, y - e.r - 16, w, 4); cx.fillStyle = "#ffc21a"; cx.fillRect(x - w / 2, y - e.r - 16, w * Math.max(0, e.hp / e.max), 4) }
       continue;
     }
-    if (S.lieu !== "quai") dessinLieu(e, c, blanc, p);
+    if (e.type === "glace") {
+      cx.rotate(e.ph * .3);
+      cx.fillStyle = blanc ? "#fff" : "rgba(180,230,255,.85)"; cx.fillRect(-15, -15, 30, 30);
+      cx.strokeStyle = "#e8f8ff"; cx.lineWidth = 2; cx.strokeRect(-15, -15, 30, 30);
+      cx.fillStyle = "rgba(255,255,255,.7)"; cx.fillRect(-11, -11, 8, 3); cx.fillRect(-11, -11, 3, 8);
+      cx.strokeStyle = "rgba(60,130,190,.6)"; cx.beginPath(); cx.moveTo(-4, 12); cx.lineTo(3, 2); cx.lineTo(10, 6); cx.stroke();
+    } else if (e.type === "presentoir") {
+      const s2 = 1 + Math.sin(e.ph * 6) * .04; cx.scale(s2, s2);
+      cx.fillStyle = "rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(0, 26, 22, 6, 0, 0, 7); cx.fill();
+      cx.fillStyle = blanc ? "#fff" : "#ff46be"; cx.fillRect(-20, -26, 40, 50);
+      cx.fillStyle = "#fff6e3"; for (let k = 0; k < 3; k++) cx.fillRect(-16, -20 + k * 15, 32, 3);
+      const cs = ["#ffe14d", "#50f0dc", "#b44cff"]; for (let k = 0; k < 3; k++) for (let q = 0; q < 3; q++) { cx.fillStyle = cs[(k + q) % 3]; cx.fillRect(-14 + q * 10, -28 + k * 15 + 2, 8, 8) }
+      cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.strokeRect(-20, -26, 40, 50);
+      cx.font = "16px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeText("-70%", 0, -32); cx.fillStyle = "#ffe14d"; cx.fillText("-70%", 0, -32);
+    } else if (S.lieu !== "quai") dessinLieu(e, c, blanc, p);
     else if (e.type === "crabe") {            /* carton mal fermé qui sautille, rabats ouverts */
       const s = Math.abs(Math.sin(e.ph * 9)) * 3; cx.translate(0, -s);
       carton(e.r * 2, e.r * 1.6, c, true);
@@ -1263,6 +1418,7 @@ function dessiner() {
   for (const t of S.textes) { cx.fillStyle = `rgba(255,236,170,${t.t / .6})`; cx.fillText(t.v, X(t.x), Y(t.y)) }
   // annonce
   if (annonceT > 0) { cx.font = "36px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 6; cx.strokeStyle = `rgba(23,19,15,${Math.min(1, annonceT)})`; cx.strokeText(annonceTxt, W / 2, H * .28, W - 40); cx.fillStyle = `rgba(255,194,26,${Math.min(1, annonceT)})`; cx.fillText(annonceTxt, W / 2, H * .28, W - 40) }
+  dessinerObjectif();
   // joystick tactile
   if (JOY.actif && enJeu) {
     const ox = JOY.ox / ZOOM, oy = JOY.oy / ZOOM, R = JOY_R / ZOOM;
