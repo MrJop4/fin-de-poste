@@ -178,14 +178,17 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 #niveau.revel .carte { pointer-events: none; }
 #niveau.revel .aide { visibility: hidden; }
 /* coffre : machine à sous */
-.mode-coffre .cartes { padding: 26px 18px 18px; margin-top: 16px; }
+.mode-coffre .cartes { padding: 26px 50px 18px 18px; margin-top: 16px; }
+.levier-jeu { position: absolute; right: 12px; top: 18%; width: 12px; height: 55%; transform-origin: 50% 100%; z-index: 3; }
+.levier-jeu::before { content: ""; position: absolute; left: 0; right: 0; top: 16px; bottom: 0; background: #b8bec6; border: 3px solid var(--encre); border-radius: 6px; }
+.levier-jeu::after { content: ""; position: absolute; left: 50%; top: 0; width: 28px; height: 28px; transform: translateX(-50%); background: #e8412c; border: 3px solid var(--encre); border-radius: 50%; box-shadow: inset -4px -4px 0 rgba(0,0,0,.2); }
 .machine-jeu { position: absolute; inset: 0; background: #c0392b; border: 4px solid var(--encre); border-radius: 22px; box-shadow: 8px 8px 0 var(--encre); z-index: 0; }
 .machine-jeu .fronton { position: absolute; left: 50%; top: -22px; transform: translateX(-50%) rotate(-2deg); font-family: var(--display); font-size: 22px; color: var(--jaune); background: var(--encre); border-radius: 12px; padding: 5px 16px 1px; white-space: nowrap; box-shadow: 0 0 0 3px var(--jaune); z-index: 3; }
 .machine-jeu .ampoule { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: #ffe9a0; border: 2px solid var(--encre); }
 .machine-jeu .ampoule { top: 0; left: calc(4% + (var(--i) - 0) * 8.6%); transform: translate(-50%, -50%); }
-.machine-jeu .ampoule:nth-child(n+13) { top: 100%; left: calc(4% + (var(--i) - 11) * 8.6%); }
+.machine-jeu .ampoule:nth-child(n+14) { top: 100%; left: calc(4% + (var(--i) - 11) * 8.6%); }
 .machine-jeu.fete .ampoule { animation: clignote 0.35s steps(2) infinite; }
-.machine-jeu.fete .ampoule:nth-child(2n) { animation-delay: .17s; }
+.machine-jeu.fete .ampoule:nth-child(2n+1) { animation-delay: .17s; }
 .mode-coffre .carte { position: relative; z-index: 1; }
 .fenetre-jeu { position: relative; display: block; height: 140px; overflow: hidden; border: 3px solid var(--encre); border-radius: 10px; background: #2a2c31; box-shadow: inset 0 8px 10px rgba(0,0,0,.35); }
 .bande-jeu { position: absolute; left: 0; top: 0; width: 100%; display: block; }
@@ -234,7 +237,8 @@ button { touch-action: manipulation; }
   #cartes .carte { flex-direction: row; align-items: stretch; }
   #cartes .carte .art, #cartes .carte .bandeau { width: 96px; height: auto; min-height: 104px; flex: none; font-size: 15px; }
   .mode-coffre #cartes .carte .fenetre-jeu, .mode-coffre #cartes .carte .bande-jeu img { width: 96px; height: 104px; flex: none; }
-  .mode-coffre .cartes { padding: 26px 12px 14px; }
+  .mode-coffre .cartes { padding: 26px 42px 14px 12px; }
+  .levier-jeu { right: 9px; }
   .machine-jeu .fronton { font-size: 17px; }
   .pack-jeu { width: 110px; height: 154px; }
   .carte strong { font-size: 20px; } .carte .txt { font-size: 14px; }
@@ -1029,7 +1033,7 @@ function ouvrirCoffre() {
   $("choixTitre").textContent = id ? "★ Jackpot ! ★" : "Coffre !";
   $("niveau").classList.add("mode-coffre");
   const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
-  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
+  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
     return `<button class="carte${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
@@ -1041,6 +1045,7 @@ async function revelMachine() {
   revelEnCours = true; revel = []; $("niveau").classList.add("revel");
   const zone = $("cartes"), m = zone.querySelector(".machine-jeu");
   await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
+  ani(m.querySelector(".levier-jeu"), [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 380, fill: "none" });
   await Promise.all([...zone.querySelectorAll(".carte")].map((b, i) => {
     const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
     bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
