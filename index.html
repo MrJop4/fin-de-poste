@@ -422,7 +422,7 @@ const ARMES = {
   cle: { nom: "Clé à molette", img: "cle", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
   sabre: { nom: "Sabre de déballage", img: "sabre", max: 6, perso: "nyho", desc: l => l === 1 ? "Un grand coup de sabre en arc devant toi, qui tranche tout ce qu'il touche." : l === 4 ? "Le sabre frappe aussi dans ton dos." : `Arc plus large, ${20 + 9 * l} dégâts.` },
   tronc: { nom: "Lancer de tronc", img: "tronc", max: 6, perso: "nauud", desc: l => l === 1 ? "Lance un tronc qui roule et écrase tous les colis sur son passage." : `${1 + Math.floor(l / 3)} tronc(s), ${24 + 10 * l} dégâts, gros recul.` },
-  scotch: { nom: "Dévidoir de scotch", img: "scotch", max: 6, perso: "zuzu", desc: l => l === 1 ? "En courant, tu laisses une traînée de scotch qui colle et abîme les colis." : `Scotch plus large et plus durable, ${8 + 4 * l} dégâts, ralentit de ${30 + 3 * l} %.` },
+  scotch: { nom: "Dévidoir de scotch", img: "scotch", max: 6, perso: "zuzu", desc: l => l === 1 ? "Pose une grande plaque de scotch sous tes pieds : les colis s'y collent et s'abîment." : l === 4 ? "Deux plaques à la fois, une sous toi et une derrière." : `Plaque plus grande et plus fréquente, ${8 + 4 * l} dégâts, ralentit de ${40 + 3 * l} %.` },
   co2: { nom: "Extincteur à CO2", img: "co2", max: 6, perso: "djefrais", desc: l => l === 1 ? "Un jet de froid devant toi : abîme et ralentit les colis de moitié." : l === 4 ? "Un deuxième jet part dans ton dos." : `Jet plus long, ${5 + 3 * l} dégâts.` },
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
@@ -440,14 +440,14 @@ const EVOS = {
   harpon: { nom: "Lame infinie", avec: "meule", desc: "Cinq cutters dorés qui traversent tout." },
   corne: { nom: "Sirène d'évacuation", avec: "cire", desc: "Double onde rouge, énorme, qui fait tout reculer." },
   sel: { nom: "Tornade de film", avec: "boussole", desc: "Huit rouleaux sur une orbite qui respire." },
-  fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Quatre palettes tombent à la fois, zone énorme." },
+  fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Un rack entier s'écroule en dominos : sept chutes en ligne qui écrasent tout." },
   fourches: { nom: "Chariot fou", avec: "meule", desc: "Fourches dorées qui frappent dans les quatre directions." },
   cle: { nom: "Caisse à outils", avec: "soupe", desc: "Six clés lancées en étoile tout autour de toi." },
-  sabre: { nom: "Lame du shogun", avec: "bottes", desc: "Un tranchant circulaire qui fauche tout autour de toi, deux fois plus souvent." },
+  sabre: { nom: "Lame du shogun", avec: "bottes", desc: "Un grand coup de katana qui fait tout le tour de toi et tranche tout ce qu'il croise." },
   tronc: { nom: "Jeux des Highlands", avec: "cire", desc: "Six troncs géants lancés en étoile, qui ne s'arrêtent pas." },
-  scotch: { nom: "Scotch double face", avec: "soupe", desc: "Traînée énorme et durable : les colis y restent presque collés." },
-  co2: { nom: "Blizzard", avec: "boussole", desc: "Trois jets de neige qui tournent autour de toi et gèlent tout." },
-  talkie: { nom: "Réseau radio", avec: "huile", desc: "L'appel rebondit sur 12 colis, deux fois plus souvent." },
+  scotch: { nom: "Scotch double face", avec: "soupe", desc: "Traînée de scotch doré en continu : les colis qui marchent dedans sont ficelés, immobiles, puis éclatent." },
+  co2: { nom: "Blizzard", avec: "boussole", desc: "Jets devant et derrière, et toutes les 3 s un grand froid fige les colis autour de toi dans la glace : gelés, ils prennent 50 % de dégâts en plus." },
+  talkie: { nom: "Réseau radio", avec: "huile", desc: "Tu poses des antennes relais reliées par des arcs électriques : tout colis qui traverse le réseau grille." },
 };
 const NB_ARMES = 3, EVO = 7;
 const COUL_ARME = { sabre: "#c0392b", tronc: "#8a5a2b", scotch: "#c9a15a", co2: "#7fd3ff", lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
@@ -765,7 +765,7 @@ function contraindreEv(e) {
 
 /* ---------- dégâts ---------- */
 function blesser(e, d, kx, ky) {
-  d *= S.p.deg; if (e.ch && e.ch.etat === "sonne") d *= 1.5; e.hp -= d; e.flash = .1;
+  d *= S.p.deg; if (e.ch && e.ch.etat === "sonne") d *= 1.5; if (e.gel > 0) d *= 1.5; e.hp -= d; e.flash = .1;
   if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
@@ -835,13 +835,20 @@ function armes(dt) {
   if (A.fusee && (S.timers.fusee -= dt) <= 0) {
     const l = A.fusee; S.timers.fusee = (2.6 - .12 * l) * cd;
     const vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < W / 2 && Math.abs(e.y - p.y) < H / 2);
-    const n = l >= EVO ? 4 : l >= 5 ? 2 : 1;
-    for (let i = 0; i < n && vis.length; i++) { const c = vis[Math.floor(Math.random() * vis.length)]; S.fusees.push({ x: c.x, y: c.y, t: .6, r: l >= EVO ? 125 : 52 + 9 * l, deg: 22 + 11 * l }) }
+    if (l >= EVO) {   // un rack entier qui s'écroule en dominos sur une ligne de colis
+      S.timers.fusee = 2.6 * cd;
+      const pres = vis.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 320), liste = pres.length ? pres : vis, c = liste.length ? liste[Math.floor(Math.random() * liste.length)] : { x: p.x + Math.cos(p.dir) * 150, y: p.y + Math.sin(p.dir) * 150 }, a = rnd(0, 6.28);
+      for (let i = 0; i < 7; i++) { const d = (i - 3) * 62; S.fusees.push({ x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d, t: .55 + i * .09, t0: .55 + i * .09, r: 72, deg: (22 + 11 * l) * 1.3, rack: true, a, crac: i === 6 }) }
+    } else {
+      const n = l >= 5 ? 2 : 1;
+      for (let i = 0; i < n && vis.length; i++) { const c = vis[Math.floor(Math.random() * vis.length)]; S.fusees.push({ x: c.x, y: c.y, t: .6, t0: .6, r: 52 + 9 * l, deg: 22 + 11 * l }) }
+    }
   }
   for (const f of S.fusees) if ((f.t -= dt) <= 0 && !f.boum) {
     f.boum = true;
     for (const e of S.ennemis) { const d = Math.hypot(e.x - f.x, e.y - f.y); if (d < f.r + e.r) blesser(e, f.deg, (e.x - f.x) / 12, (e.y - f.y) / 12) }
     S.fx.push({ x: f.x, y: f.y, boum: f.r, t: .3, c: "#f4b53f" });
+    if (f.rack) { S.secousse = Math.max(S.secousse || 0, .35); for (let i = 0; i < 10; i++) S.fx.push({ x: f.x + rnd(-30, 30), y: f.y + rnd(-20, 20), vx: rnd(-220, 220), vy: rnd(-220, 120), t: .45, c: ["#b98a52", "#d8a568", "#2d6fb8", "#ff6a10"][i % 4] }); if (f.crac && S.textes.length < 60) S.textes.push({ x: f.x, y: f.y - 40, v: "CRAC !", t: .6 }) }
   }
   S.fusees = S.fusees.filter(f => !f.boum);
   // harpons en vol
@@ -881,7 +888,7 @@ function armes(dt) {
   }
   S.cles = S.cles.filter(k => !k.fini && k.t < 3);
   // talkie-walkie : l'appel rebondit d'ennemi en ennemi
-  if (A.talkie && (S.timers.talkie -= dt) <= 0) {
+  if (A.talkie && A.talkie < EVO && (S.timers.talkie -= dt) <= 0) {
     const l = A.talkie; S.timers.talkie = (l >= EVO ? 1 : 2.3 - .14 * l) * cd;
     let cur = proche(p.x, p.y, 380); const deja = new Set(), pts = [{ x: p.x, y: p.y }];
     for (let i = 0; i < (l >= EVO ? 12 : 2 + l) && cur; i++) { deja.add(cur); pts.push({ x: cur.x, y: cur.y }); blesser(cur, 15 + 7 * l, 0, 0); cur = proche(cur.x, cur.y, 170, deja) }
@@ -891,15 +898,23 @@ function armes(dt) {
   S.arcs = S.arcs.filter(a => a.t > 0);
   // sabre de déballage (Nyho) : grand arc devant toi, qui alterne un peu à gauche et à droite
   if (A.sabre && (S.timers.sabre -= dt) <= 0) {
-    const l = A.sabre, evo = l >= EVO; S.timers.sabre = (evo ? .9 : 1.4 - .07 * l) * cd; S.sabreG = !S.sabreG;
+    const l = A.sabre, evo = l >= EVO; S.timers.sabre = (evo ? 1.1 : 1.4 - .07 * l) * cd; S.sabreG = !S.sabreG;
     const base = p.dir + (S.sabreG ? .3 : -.3);
-    for (const off of evo ? [0] : l >= 4 ? [0, Math.PI] : [0]) S.sabres.push({ a: base + off, t: 0, R: evo ? 175 : 92 + 10 * l, demi: evo ? Math.PI : .95 + .03 * l, deg: (20 + 9 * l) * (evo ? 1.5 : 1), deja: new Set(), evo, sens: S.sabreG ? 1 : -1 });
+    if (evo) { S.tours = S.tours || []; S.tours.push({ a0: p.dir, t: 0, dur: .38, R: 165, deg: (20 + 9 * l) * 1.6, deja: new Set(), sens: S.sabreG ? 1 : -1 }) }
+    else for (const off of l >= 4 ? [0, Math.PI] : [0]) S.sabres.push({ a: base + off, t: 0, R: evo ? 175 : 92 + 10 * l, demi: evo ? Math.PI : .95 + .03 * l, deg: (20 + 9 * l) * (evo ? 1.5 : 1), deja: new Set(), evo, sens: S.sabreG ? 1 : -1 });
   }
   for (const sl of S.sabres) {
     sl.t += dt; if (sl.t > .14) continue;
     for (const e of S.ennemis) { if (sl.deja.has(e)) continue; const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > sl.R + e.r) continue; let da = Math.atan2(dy, dx) - sl.a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < sl.demi) { sl.deja.add(e); blesser(e, sl.deg, dx / (d || 1) * 6, dy / (d || 1) * 6) } }
   }
   S.sabres = S.sabres.filter(sl => sl.t < .3);
+  for (const tb of S.tours || []) {
+    const k0 = Math.min(1, tb.t / tb.dur); tb.t += dt; const k1 = Math.min(1, tb.t / tb.dur);
+    const a0 = tb.a0 + tb.sens * k0 * Math.PI * 2, a1 = tb.a0 + tb.sens * k1 * Math.PI * 2;
+    for (const e of S.ennemis) { if (tb.deja.has(e)) continue; const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > tb.R + e.r) continue;
+      let da = (Math.atan2(dy, dx) - Math.min(a0, a1)) % (Math.PI * 2); if (da < 0) da += Math.PI * 2; if (da <= Math.abs(a1 - a0) + e.r / Math.max(d, 1)) { tb.deja.add(e); blesser(e, tb.deg, dx / (d || 1) * 8, dy / (d || 1) * 8) } }
+  }
+  if (S.tours) S.tours = S.tours.filter(tb => tb.t < tb.dur + .25);
   // lancer de tronc (Nauud) : le tronc roule tout droit et écrase ce qu'il croise
   if (A.tronc && (S.timers.tronc -= dt) <= 0) {
     const l = A.tronc, evo = l >= EVO; S.timers.tronc = (evo ? 2.2 : 2.6 - .1 * l) * cd;
@@ -916,23 +931,53 @@ function armes(dt) {
   // dévidoir de scotch (Zuzu) : en courant, on pose des bandes de scotch qui collent et abîment
   if (A.scotch) {
     const l = A.scotch, evo = l >= EVO, pp = S.scotchPos;
-    if (!pp || Math.hypot(p.x - pp.x, p.y - pp.y) > (evo ? 26 : 18)) { S.scotchPos = { x: p.x, y: p.y }; S.scotchs.push({ x: p.x, y: p.y, a: p.dir, t: 0, vie: evo ? 5 : 2.4 + .3 * l, r: evo ? 36 : 18 + 2 * l, deg: (8 + 4 * l) * (evo ? 1.5 : 1), lent: evo ? .6 : .3 + .03 * l, evo }); if (S.scotchs.length > 90) S.scotchs.shift() }
+    if (evo) {   // traînée de scotch doré en continu
+      if (!pp || Math.hypot(p.x - pp.x, p.y - pp.y) > 22) { S.scotchPos = { x: p.x, y: p.y }; S.scotchs.push({ x: p.x, y: p.y, a: p.dir, t: 0, vie: 4, r: 30, deg: 0, lent: .5, evo: true }); if (S.scotchs.length > 120) S.scotchs.shift() }
+    } else if ((S.timers.scotch = (S.timers.scotch ?? .5) - dt) <= 0) {   // une grande plaque sous tes pieds, avec un temps de recharge
+      S.timers.scotch = (2.6 - .18 * l) * cd;
+      const pl = { t: 0, vie: 3 + .3 * l, r: 34 + 4 * l, deg: 8 + 4 * l, lent: .4 + .03 * l, plaque: true };
+      S.scotchs.push(Object.assign({ x: p.x, y: p.y, a: rnd(0, 3) }, pl));
+      if (l >= 4) S.scotchs.push(Object.assign({ x: p.x - Math.cos(p.dir) * 80, y: p.y - Math.sin(p.dir) * 80, a: rnd(0, 3) }, pl));
+    }
   }
   for (const sc of S.scotchs) {
     sc.t += dt;
-    for (const e of S.ennemis) { if (e.decor || Math.hypot(e.x - sc.x, e.y - sc.y) > sc.r + e.r * .6) continue; const f = e.boss ? sc.lent * .4 : sc.lent; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .15; if ((e.hit.sc || 0) <= 0) { blesser(e, sc.deg, 0, 0); e.hit.sc = .5 } }
+    for (const e of S.ennemis) {
+      if (e.decor || Math.hypot(e.x - sc.x, e.y - sc.y) > sc.r + e.r * .6) continue;
+      if (sc.evo) { if (!(e.ficele > 0) && (e.hit.fic || 0) <= 0) { e.ficele = e.boss ? .5 : 1.3; e.hit.fic = 3 } continue }
+      const f = e.boss ? sc.lent * .4 : sc.lent; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .15;
+      if ((e.hit.sc || 0) <= 0) { blesser(e, sc.deg, 0, 0); e.hit.sc = .5 }
+    }
   }
   S.scotchs = S.scotchs.filter(sc => sc.t < sc.vie);
   // extincteur à CO2 (Djefrais) : jet de froid continu dans le sens de la marche
   if (A.co2) {
-    const l = A.co2, evo = l >= EVO, port = evo ? 200 : 105 + 12 * l, demi = evo ? .4 : .42;
+    const l = A.co2, evo = l >= EVO, port = evo ? 190 : 105 + 12 * l, demi = .42;
     S.co2A += dt * 2.2;
-    const jets = evo ? [S.co2A, S.co2A + 2.09, S.co2A + 4.19] : l >= 4 ? [p.dir, p.dir + Math.PI] : [p.dir]; S.co2Jets = jets; S.co2Port = port;
+    const jets = l >= 4 ? [p.dir, p.dir + Math.PI] : [p.dir]; S.co2Jets = jets; S.co2Port = port;
+    if (evo && (S.timers.froid = (S.timers.froid ?? 1) - dt) <= 0) { S.timers.froid = 3 * cd; S.froids = S.froids || []; S.froids.push({ x: p.x, y: p.y, r: 10, max: 290, deja: new Set() }) }
     for (const e of S.ennemis) {
       const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > port + e.r) continue;
       for (const a of jets) { let da = Math.atan2(dy, dx) - a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < demi + e.r / Math.max(d, 1)) { const f = e.boss ? .25 : evo ? .7 : .5; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .4; if ((e.hit.co2 || 0) <= 0) { blesser(e, 5 + 3 * l, dx / (d || 1) * 1.5, dy / (d || 1) * 1.5); e.hit.co2 = .4 } break } }
     }
   } else S.co2Jets = null;
+  for (const fr of S.froids || []) {
+    fr.r += 620 * dt; fr.x = p.x; fr.y = p.y;
+    for (const e of S.ennemis) { if (e.decor || fr.deja.has(e)) continue; if (Math.hypot(e.x - fr.x, e.y - fr.y) < fr.r + e.r) { fr.deja.add(e); e.gel = e.boss ? .6 : 2; blesser(e, 30, 0, 0) } }
+  }
+  if (S.froids) S.froids = S.froids.filter(fr => fr.r < fr.max);
+  // réseau radio : antennes relais reliées entre elles et à toi par des arcs électriques
+  if (A.talkie >= EVO) {
+    S.antennes = S.antennes || [];
+    if ((S.timers.antenne = (S.timers.antenne ?? 0) - dt) <= 0) { S.timers.antenne = 2.2 * cd; S.antennes.push({ x: p.x, y: p.y, t: 0, vie: 9, zap: 0 }); if (S.antennes.length > 4) S.antennes.shift() }
+    const pts = S.antennes.concat([{ x: p.x, y: p.y }]);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const A2 = pts[i], B = pts[i + 1], lx = B.x - A2.x, ly = B.y - A2.y, L2 = lx * lx + ly * ly || 1;
+      for (const e of S.ennemis) { if (e.decor || (e.hit.res || 0) > 0) continue; const u = Math.max(0, Math.min(1, ((e.x - A2.x) * lx + (e.y - A2.y) * ly) / L2)), d = Math.hypot(e.x - A2.x - u * lx, e.y - A2.y - u * ly); if (d < e.r + 12) { blesser(e, 22 + 7 * EVO, 0, 0); e.hit.res = .3 } }
+    }
+    for (const an of S.antennes) { an.t += dt; if ((an.zap -= dt) <= 0) { const c = proche(an.x, an.y, 170); if (c) { an.zap = 1; blesser(c, 40, 0, 0); S.arcs.push({ pts: [{ x: an.x, y: an.y - 30 }, { x: c.x, y: c.y }], t: .25, evo: true }) } } }
+    S.antennes = S.antennes.filter(an => an.t < an.vie);
+  }
 }
 
 /* ---------- murs : une grille infinie de blocs (racks, remorques) ; chaque bloc est centré dans sa case, les bords de case sont des allées ---------- */
@@ -1040,6 +1085,8 @@ function maj(dt) {
     if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 30; vy += Math.sin(e.ph * 4) * 30 }
     if (p.givre && d < 140) { vx *= .55; vy *= .55 }
     if (e.colle > 0) { e.colle -= dt; vx *= 1 - (e.colleF || 0); vy *= 1 - (e.colleF || 0) }
+    if (e.gel > 0) { e.gel -= dt; vx = 0; vy = 0 }
+    if (e.ficele > 0) { e.ficele -= dt; vx = 0; vy = 0; if (e.ficele <= 0) { blesser(e, 45 + S.t / 12, 0, 0); for (let i = 0; i < 6; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-160, 160), vy: rnd(-160, 160), t: .4, c: "#ffcd5a" }) } }
     const cxg = Math.floor(e.x / cell), cyg = Math.floor(e.y / cell);
     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
       const a = G.get(key(cxg + i, cyg + j)); if (!a) continue;
@@ -1815,6 +1862,26 @@ const spriteTronc = () => sprite("tronc", () => cuire(52, 24, 26, 12, x => {
 const spriteScotch = evo => sprite("scotch" + evo, () => cuire(44, 44, 22, 22, x => {
   for (const a of [-.45, .45]) { x.save(); x.rotate(a); rrect(x, -19, -5.5, 38, 11, 2); x.fillStyle = evo ? "rgba(255,205,90,.82)" : "rgba(214,176,110,.78)"; x.fill(); x.lineWidth = 1.2; x.strokeStyle = "rgba(23,19,15,.55)"; x.stroke(); x.fillStyle = "rgba(255,255,255,.45)"; x.fillRect(-17, -4, 34, 2); x.restore() }
 }));
+const spriteRackChute = () => sprite("rackchute", () => cuire(76, 40, 38, 20, x => {
+  rrect(x, -34, -16, 68, 32, 2); x.fillStyle = "#1d3f66"; x.fill();
+  const cs = [["#d8a568", "#a8763f"], ["#e2c08f", "#b48a52"], ["#ff7a6a", "#c13a2c"]];
+  for (let i = 0; i < 3; i++) { rrect(x, -30 + i * 21, -11, 18, 22, 2); x.fillStyle = lin(x, 0, -11, 0, 11, [[0, cs[i][0]], [1, cs[i][1]]]); x.fill(); trait(x, 1.6) }
+  x.fillStyle = "#ff6a10"; x.fillRect(-34, -16, 68, 4); x.fillRect(-34, 12, 68, 4);
+  for (const u of [-36, 30]) { x.fillStyle = "#2d6fb8"; x.fillRect(u, -19, 6, 38) }
+  rrect(x, -34, -16, 68, 32, 2); trait(x, 2.6);
+}));
+const spriteKatana = () => sprite("katana", () => cuire(180, 22, 0, 11, x => {
+  rrect(x, 4, -4, 34, 8, 3); x.fillStyle = "#ff6a10"; x.fill(); trait(x, 1.8);
+  x.fillStyle = "#17130f"; for (let u = 8; u < 36; u += 6) x.fillRect(u, -4, 2, 8);
+  rrect(x, 37, -8, 6, 16, 2); x.fillStyle = "#ffc21a"; x.fill(); trait(x, 1.6);
+  x.beginPath(); x.moveTo(43, -3.5); x.quadraticCurveTo(120, -7, 176, -1); x.lineTo(43, 3.5); x.closePath(); x.fillStyle = lin(x, 0, -4, 0, 4, [[0, "#ffffff"], [.5, "#cfd6de"], [1, "#8a929c"]]); x.fill(); trait(x, 1.6);
+}));
+const spriteAntenne = () => sprite("antenne", () => cuire(30, 56, 15, 50, x => {
+  rrect(x, -10, -6, 20, 8, 2); x.fillStyle = "#2a2d33"; x.fill(); trait(x, 1.8);
+  x.strokeStyle = ENCRE; x.lineWidth = 4; x.beginPath(); x.moveTo(0, -6); x.lineTo(0, -40); x.stroke(); x.strokeStyle = "#cfd6de"; x.lineWidth = 2; x.stroke();
+  x.strokeStyle = "#cfd6de"; x.lineWidth = 1.6; for (const h of [-18, -28]) { x.beginPath(); x.moveTo(-7, h + 4); x.lineTo(0, h); x.lineTo(7, h + 4); x.stroke() }
+  x.beginPath(); x.arc(0, -42, 4, 0, 7); x.fillStyle = "#e8412c"; x.fill(); trait(x, 1.4);
+}));
 /* --- le perso : gilet aux couleurs du personnage, casque brillant, variantes pour les morts --- */
 function dPerso(x, gilet, casque, avecCasque, yeuxX) {
   x.fillStyle = "#2b3140"; rrect(x, 15, 44, 7, 9, 3); x.fill(); trait(x, 2); rrect(x, 26, 44, 7, 9, 3); x.fill(); trait(x, 2);
@@ -1883,6 +1950,8 @@ function dessinerEnnemi(e, x, y, p) {
   if (e.elite) ajouter(lueur("255,200,60"), x, y, e.r * 5, e.r * 5, .35 + .15 * Math.sin(S.t * 5));
   poser(s, x, y + dy, rot, sx * (blanc ? 1.1 : 1), sy * (blanc ? .9 : 1), false);
   if (blanc) { cx.globalAlpha = .85; poser(s, x, y + dy, rot, sx * 1.1, sy * .9, true); cx.globalAlpha = 1 }
+  if (e.gel > 0) { const g = Math.min(1, e.gel * 3), w = e.r * 2.4; cx.save(); cx.globalAlpha = .75 * g; cx.fillStyle = "rgba(170,225,255,.55)"; cx.strokeStyle = "#e8f8ff"; cx.lineWidth = 2; cx.beginPath(); cx.roundRect(x - w / 2, y - w * .7, w, w, 5); cx.fill(); cx.stroke(); cx.fillStyle = "rgba(255,255,255,.8)"; cx.fillRect(x - w / 2 + 4, y - w * .7 + 4, w * .3, 3); cx.restore() }
+  if (e.ficele > 0) { cx.globalAlpha = .95; for (const da of [-.6, .6]) poser(spriteScotch(true), x, y - e.r * .3, da, e.r / 16, e.r / 26); cx.globalAlpha = 1 }
   if (e.kind === "cafe") { cx.fillStyle = "rgba(228,226,220,.35)"; for (let k = 0; k < 2; k++) { const q = (e.ph * .8 + k * .5) % 1; cx.beginPath(); cx.arc(x + Math.sin(q * 6 + k) * 3, y - 26 - q * 14, 3 + q * 3, 0, 7); cx.fill() } }
   if (e.decor) { if (e.hp < e.max) barre(x, y - e.r - 16, 36, 6, e.hp / e.max, "#ffc21a", "#c98a00"); return }
   if (e.elite) { cx.font = "13px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeStyle = ENCRE; cx.lineJoin = "round"; const tx = e.mini ? "HORS GABARIT" : "FRAGILE"; cx.strokeText(tx, x, y - e.r * 1.4 - 10); cx.fillStyle = "#ffd447"; cx.fillText(tx, x, y - e.r * 1.4 - 10) }
@@ -2025,12 +2094,12 @@ function dessinerJeu() {
     const or = g.v >= 4; if (lum) ajouter(lueur(or ? "255,200,60" : "63,224,255"), x, y, 26, 26, .4 + .15 * Math.sin(S.t * 5 + g.y)); poser(spriteEtiquette(or), x, y - 3 + b, 0, 1, 1);
   }
   // traînée de scotch (sous les colis)
-  for (const sc of S.scotchs) { cx.globalAlpha = Math.max(0, Math.min(1, (sc.vie - sc.t) / .4)) * .9; poser(spriteScotch(!!sc.evo), X(sc.x), Y(sc.y), sc.a, sc.r / 18, sc.r / 18) }
+  for (const sc of S.scotchs) { cx.globalAlpha = Math.max(0, Math.min(1, (sc.vie - sc.t) / .4)) * .9; const e2 = sc.r / 18, ap = Math.min(1, sc.t / .15); if (sc.plaque) { for (const da of [0, 1.05, 2.1]) poser(spriteScotch(false), X(sc.x), Y(sc.y), sc.a + da, e2 * ap, e2 * .8 * ap) } else poser(spriteScotch(!!sc.evo), X(sc.x), Y(sc.y), sc.a, e2, e2) }
   cx.globalAlpha = 1;
   // coups de klaxon
   for (const o of S.ondes) { if (o.r < 0) continue; const d = o.r / .86 * 2; ajouter(anneau(o.evo ? "255,70,50" : "255,150,40"), X(o.x), Y(o.y), d, d, .9 * (1 - o.r / o.max)) }
   // ombre des palettes qui tombent
-  for (const f of S.fusees) { const k = 1 - f.t / .6, x = X(f.x), y = Y(f.y); cx.strokeStyle = "rgba(255,90,31,.6)"; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.ellipse(x, y, f.r, f.r * .6, 0, 0, 7); cx.stroke(); cx.setLineDash([]); ombreSol(x, y, f.r * .5 * (.4 + .6 * k), f.r * .3 * (.4 + .6 * k)); const e2 = f.r / 40; poser(spritePaletteSol(), x, y - (1 - k) * 160, 0, e2, e2) }
+  for (const f of S.fusees) { const k = Math.max(0, 1 - f.t / (f.t0 || .6)), x = X(f.x), y = Y(f.y); cx.strokeStyle = "rgba(255,90,31,.6)"; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.ellipse(x, y, f.r, f.r * .6, 0, 0, 7); cx.stroke(); cx.setLineDash([]); ombreSol(x, y, f.r * .5 * (.4 + .6 * k), f.r * .3 * (.4 + .6 * k)); if (f.rack) poser(spriteRackChute(), x, y - (1 - k) * 200, f.a, 1, 1); else { const e2 = f.r / 40; poser(spritePaletteSol(), x, y - (1 - k) * 160, 0, e2, e2) } }
   // ennemis (dessins cuits une fois : voir spriteEnnemi)
   for (const e of S.ennemis) {
     const x = X(e.x), y = Y(e.y); if (x < -120 || y < -120 || x > W + 120 || y > H + 120) continue;
@@ -2086,6 +2155,25 @@ function dessinerJeu() {
   }
   // cutters
   for (const h of S.tirs) { const x = X(h.x), y = Y(h.y), a = Math.atan2(h.vy, h.vx), g = lueur(h.evo ? "255,220,80" : "255,130,60"); for (let q = 1; q <= 3; q++) ajouter(g, x - Math.cos(a) * q * 9, y - Math.sin(a) * q * 9, 26 - q * 5, 26 - q * 5, .5 - q * .12); ajouter(g, x, y, h.evo ? 46 : 30, h.evo ? 46 : 30, .7); poser(spriteCutter(!!h.evo), x, y, S.t * 18, h.evo ? 1.6 : 1.1, h.evo ? 1.6 : 1.1) }
+  // lame du shogun : le katana fait le tour, avec une traînée rouge et or
+  for (const tb of S.tours || []) {
+    const k = Math.min(1, tb.t / tb.dur), a1 = tb.a0 + tb.sens * k * Math.PI * 2, x = X(p.x), y = Y(p.y), fade = Math.max(0, 1 - Math.max(0, tb.t - tb.dur) / .25);
+    cx.save(); cx.globalCompositeOperation = "lighter"; cx.globalAlpha = .85 * fade;
+    const deb = tb.sens > 0 ? Math.max(tb.a0, a1 - 2.2) : a1, fin = tb.sens > 0 ? a1 : Math.min(tb.a0, a1 + 2.2);
+    const g = cx.createRadialGradient(x, y, 30, x, y, tb.R); g.addColorStop(0, "rgba(255,80,40,0)"); g.addColorStop(.7, "rgba(255,90,50,.55)"); g.addColorStop(1, "rgba(255,225,120,.95)");
+    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, tb.R, Math.min(deb, fin), Math.max(deb, fin)); cx.arc(x, y, 30, Math.max(deb, fin), Math.min(deb, fin), true); cx.closePath(); cx.fill(); cx.restore();
+    if (k < 1) poser(spriteKatana(), x, y, a1, 1, tb.sens);
+  }
+  // grand froid : un anneau de givre qui gèle tout
+  for (const fr of S.froids || []) { const d = fr.r / .86 * 2; ajouter(anneau("200,240,255"), X(fr.x), Y(fr.y), d, d, .9 * (1 - fr.r / fr.max)); for (let i = 0; i < 10; i++) { const a = i / 10 * 6.28 + fr.r * .01; ajouter(lueur("235,250,255"), X(fr.x) + Math.cos(a) * fr.r, Y(fr.y) + Math.sin(a) * fr.r, 26, 26, .7 * (1 - fr.r / fr.max)) } }
+  // réseau radio : liaisons électriques et antennes
+  if (S.antennes && S.antennes.length) {
+    const pts = S.antennes.map(a => ({ x: X(a.x), y: Y(a.y) - 30 })).concat([{ x: X(p.x), y: Y(p.y) - 10 }]);
+    cx.save(); cx.globalCompositeOperation = "lighter"; cx.lineCap = "round";
+    for (const [lw, col] of [[9, "rgba(80,200,255,.35)"], [2.5, "rgba(230,250,255,.95)"]]) { cx.strokeStyle = col; cx.lineWidth = lw; cx.beginPath(); cx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) { const A2 = pts[i - 1], B = pts[i]; for (let q = 1; q <= 5; q++) { const f = q / 6; cx.lineTo(A2.x + (B.x - A2.x) * f + rnd(-6, 6), A2.y + (B.y - A2.y) * f + rnd(-6, 6)) } cx.lineTo(B.x, B.y) } cx.stroke() }
+    cx.restore();
+    for (const an of S.antennes) { const x = X(an.x), y = Y(an.y); ombreSol(x, y + 4, 12, 4); poser(spriteAntenne(), x, y, 0, 1, 1); if (Math.sin(S.t * 8 + an.x) > 0) ajouter(lueur("255,60,40"), x, y - 40, 22, 22, .9) }
+  }
   // sabre : un croissant lumineux qui balaie
   for (const sl of S.sabres) {
     const k = sl.t / .3, x = X(p.x), y = Y(p.y), R = sl.R * (.7 + .3 * Math.min(1, sl.t / .1)), a0 = sl.a - sl.demi, a1 = sl.a + sl.demi;
@@ -2429,7 +2517,8 @@ function joueurMort(px, py, PP) {
   cx.restore();
 }
 function dessiner() {
-  const M = S.mort; if (!M) return dessinerJeu();
+  const M = S.mort;
+  if (!M) { const sk = (S.secousse || 0) * 10; S.secousse = Math.max(0, (S.secousse || 0) - .04); if (sk > .3) { cx.save(); cx.translate(rnd(-sk, sk), rnd(-sk, sk)); dessinerJeu(); cx.restore() } else dessinerJeu(); return }
   const St = MORTS[M.v], t = M.t, z = St.zoom(t), sh = M.shake * 14, cam = St.cam ? St.cam(t) : [0, 0];
   cx.save(); cx.translate(W / 2 + rnd(-1, 1) * sh, H / 2 + rnd(-1, 1) * sh); cx.scale(z, z); cx.translate(-W / 2 - cam[0], -H / 2 - cam[1]);
   dessinerJeu();
