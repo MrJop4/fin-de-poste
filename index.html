@@ -1469,6 +1469,146 @@ function dSemi(x, cab) {
   x.fillStyle = "#ffe14d"; rrect(x, 189, 16, 5, 9, 2); x.fill(); trait(x, 1.5); rrect(x, 189, 59, 5, 9, 2); x.fill(); trait(x, 1.5);
   x.fillStyle = "rgba(255,255,255,.35)"; rrect(x, 150, 18, 22, 6, 3); x.fill();
 }
+/* --- ennemis dessinés à la main pour chaque lieu (centrés sur l'origine, dessinés pour un rayon de référence r) --- */
+function yeux(x, ax, ay, ecart, t, fache = true, regard = 1) {
+  x.fillStyle = "#fff"; x.beginPath(); x.ellipse(ax - ecart, ay, t, t * 1.15, 0, 0, 7); x.ellipse(ax + ecart, ay, t, t * 1.15, 0, 0, 7); x.fill(); x.lineWidth = 1.4; x.strokeStyle = ENCRE; x.stroke();
+  x.fillStyle = ENCRE; x.beginPath(); x.arc(ax - ecart + .5 * regard, ay + t * .3, t * .52, 0, 7); x.arc(ax + ecart + .5 * regard, ay + t * .3, t * .52, 0, 7); x.fill();
+  if (fache) { x.lineWidth = Math.max(1.6, t * .6); x.beginPath(); x.moveTo(ax - ecart - t * 1.3, ay - t * 1.5); x.lineTo(ax - ecart + t * .9, ay - t * .7); x.moveTo(ax + ecart + t * 1.3, ay - t * 1.5); x.lineTo(ax + ecart - t * .9, ay - t * .7); x.stroke() }
+}
+function bouche(x, ax, ay, l) { x.lineWidth = 1.6; x.strokeStyle = ENCRE; x.beginPath(); x.moveTo(ax - l, ay); x.lineTo(ax - l / 2, ay - 1.5); x.lineTo(ax, ay); x.lineTo(ax + l / 2, ay - 1.5); x.lineTo(ax + l, ay); x.stroke() }
+function roue(x, a, b, r) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fillStyle = "#2a2d33"; x.fill(); trait(x, 1.8); x.beginPath(); x.arc(a, b, r * .4, 0, 7); x.fillStyle = "#9aa0a8"; x.fill() }
+/* camion vu de dessus, cabine vers +x */
+function dCamion(x, o) {
+  x.save(); x.translate(-110, -42);
+  rrect(x, 4, 10, 138, 64, 4); x.fillStyle = lin(x, 0, 10, 0, 74, o.caisse); x.fill();
+  if (o.nervures) { x.fillStyle = o.nervures; for (let i = 10; i < 140; i += o.pas || 12) x.fillRect(i, 10, o.pas ? 3 : 2, 64) }
+  if (o.bande) { x.fillStyle = o.bande; x.fillRect(4, 14, 138, 5); x.fillRect(4, 65, 138, 5) }
+  if (o.neon) { x.strokeStyle = o.neon; x.lineWidth = 3; rrect(x, 10, 16, 126, 52, 4); x.stroke(); x.strokeStyle = "rgba(255,255,255,.5)"; x.lineWidth = 1; x.stroke() }
+  if (o.logo) o.logo(x);
+  x.font = `${o.taille || 18}px 'Luckiest Guy', Impact, sans-serif`; x.textAlign = "center"; x.lineJoin = "round";
+  if (o.contourTexte) { x.lineWidth = 4; x.strokeStyle = o.contourTexte; x.strokeText(o.texte, o.tx || 72, 49) }
+  x.fillStyle = o.couleurTexte; x.fillText(o.texte, o.tx || 72, 49);
+  rrect(x, 4, 10, 138, 64, 4); trait(x, 3);
+  x.fillStyle = "#3a3f4a"; x.fillRect(140, 30, 8, 24); x.strokeRect(140, 30, 8, 24);
+  rrect(x, 146, 14, 48, 56, 10); x.fillStyle = lin(x, 0, 14, 0, 70, [[0, teinte(o.cabine, .3)], [.5, o.cabine], [1, teinte(o.cabine, -.3)]]); x.fill(); trait(x, 3);
+  rrect(x, 178, 20, 10, 44, 4); x.fillStyle = lin(x, 178, 0, 188, 0, [[0, "#9fe7ff"], [1, "#3a8fc8"]]); x.fill(); trait(x, 2);
+  x.fillStyle = "rgba(255,255,255,.6)"; x.fillRect(180, 24, 2, 16);
+  x.fillStyle = "#ffe14d"; rrect(x, 189, 16, 5, 9, 2); x.fill(); trait(x, 1.5); rrect(x, 189, 59, 5, 9, 2); x.fill(); trait(x, 1.5);
+  x.fillStyle = "rgba(255,255,255,.35)"; rrect(x, 150, 18, 22, 6, 3); x.fill();
+  x.restore();
+}
+const D_SEMI = { r: 48, w: 204, h: 90, ox: 112, oy: 45 };
+const DESSINS = {
+  quai: {
+    crabe: { r: 13, w: 44, h: 42, ox: 22, oy: 28, d: x => { x.translate(-20, -26); dCarton(x) } },
+    feu: { r: 9, w: 30, h: 34, ox: 15, oy: 17, d: x => { x.translate(-13, -16); dPapier(x) } },
+    noye: { r: 19, w: 60, h: 60, ox: 30, oy: 34, d: x => { x.translate(-28, -32); dPalette(x) } },
+    leviathan: Object.assign({ d: (x, e) => { x.translate(-110, -42); dSemi(x, e.coul || "#d63b2f") } }, D_SEMI),
+    murene: { r: 13, w: 48, h: 40, ox: 22, oy: 20, d: x => {   /* diable fou : chariot à deux roues, un carton dessus */
+      roue(x, -14, -12, 5); roue(x, -14, 12, 5);
+      x.strokeStyle = ENCRE; x.lineWidth = 5; x.beginPath(); x.moveTo(-16, -12); x.lineTo(16, -12); x.moveTo(-16, 12); x.lineTo(16, 12); x.stroke();
+      x.strokeStyle = "#e8412c"; x.lineWidth = 3; x.stroke();
+      x.strokeStyle = ENCRE; x.lineWidth = 5; x.beginPath(); x.moveTo(16, -14); x.lineTo(22, -14); x.lineTo(22, 14); x.lineTo(16, 14); x.stroke(); x.strokeStyle = "#2a2d33"; x.lineWidth = 3; x.stroke();
+      rrect(x, -10, -10, 22, 20, 2); x.fillStyle = lin(x, 0, -10, 0, 10, [[0, "#d8a568"], [1, "#a8763f"]]); x.fill(); x.fillStyle = "rgba(244,231,196,.9)"; x.fillRect(-10, -2, 22, 4); rrect(x, -10, -10, 22, 20, 2); trait(x, 2.2);
+      yeux(x, 1, 0, 5, 2.8);
+    } },
+  },
+  frigo: {
+    crabe: { r: 11, w: 40, h: 38, ox: 20, oy: 20, d: x => {   /* bac de surgelés */
+      rrect(x, -15, -9, 30, 22, 4); x.fillStyle = lin(x, 0, -9, 0, 13, [[0, "#b9e3fb"], [1, "#5fa9d8"]]); x.fill(); trait(x);
+      for (const a of [-9, 0, 9]) { x.fillStyle = "rgba(255,255,255,.35)"; x.fillRect(a - 2, -6, 4, 16) }
+      rrect(x, -17, -14, 34, 7, 3); x.fillStyle = "#f4fbff"; x.fill(); trait(x, 2.2);
+      x.fillStyle = "#e6f6ff"; for (const [a, l] of [[-12, 6], [-4, 4], [7, 7], [13, 4]]) { x.beginPath(); x.moveTo(a - 2, -8); x.lineTo(a, -8 + l); x.lineTo(a + 2, -8); x.closePath(); x.fill() }
+      yeux(x, 0, 2, 5.5, 3); bouche(x, 0, 9, 4);
+    } },
+    feu: { r: 9, w: 34, h: 34, ox: 17, oy: 17, d: x => {   /* flocon */
+      x.strokeStyle = ENCRE; x.lineWidth = 6; for (let k = 0; k < 3; k++) { x.save(); x.rotate(k * Math.PI / 3); x.beginPath(); x.moveTo(-13, 0); x.lineTo(13, 0); x.moveTo(8, 0); x.lineTo(12, -4); x.moveTo(8, 0); x.lineTo(12, 4); x.moveTo(-8, 0); x.lineTo(-12, -4); x.moveTo(-8, 0); x.lineTo(-12, 4); x.stroke(); x.restore() }
+      x.strokeStyle = "#ffffff"; x.lineWidth = 3; for (let k = 0; k < 3; k++) { x.save(); x.rotate(k * Math.PI / 3); x.beginPath(); x.moveTo(-13, 0); x.lineTo(13, 0); x.moveTo(8, 0); x.lineTo(12, -4); x.moveTo(8, 0); x.lineTo(12, 4); x.moveTo(-8, 0); x.lineTo(-12, -4); x.moveTo(-8, 0); x.lineTo(-12, 4); x.stroke(); x.restore() }
+      x.beginPath(); x.arc(0, 0, 6.5, 0, 7); x.fillStyle = radg(x, -2, -2, 8, [[0, "#ffffff"], [1, "#a8dcff"]]); x.fill(); trait(x, 2);
+      x.fillStyle = ENCRE; x.beginPath(); x.arc(-2.3, -.5, 1.2, 0, 7); x.arc(2.3, -.5, 1.2, 0, 7); x.fill();
+    } },
+    noye: { r: 16, w: 50, h: 48, ox: 25, oy: 24, d: x => {   /* bloc de glace */
+      rrect(x, -19, -17, 38, 34, 5); x.fillStyle = lin(x, -19, -17, 19, 17, [[0, "rgba(225,247,255,.98)"], [.5, "rgba(150,210,245,.95)"], [1, "rgba(90,160,215,.95)"]]); x.fill(); trait(x);
+      x.fillStyle = "rgba(255,255,255,.75)"; x.beginPath(); x.moveTo(-15, -13); x.lineTo(-4, -13); x.lineTo(-15, -2); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(40,110,170,.6)"; x.lineWidth = 1.4; x.beginPath(); x.moveTo(6, 15); x.lineTo(10, 6); x.lineTo(16, 9); x.moveTo(-12, 15); x.lineTo(-8, 9); x.stroke();
+      x.fillStyle = "rgba(255,255,255,.9)"; x.fillRect(10, -13, 5, 2);
+      yeux(x, 0, 1, 6, 3.4); bouche(x, 0, 9, 5);
+    } },
+    murene: { r: 13, w: 48, h: 44, ox: 22, oy: 22, d: x => {   /* roll de livraison grillagé, vers +x */
+      roue(x, -14, -15, 3.5); roue(x, 14, -15, 3.5); roue(x, -14, 15, 3.5); roue(x, 14, 15, 3.5);
+      rrect(x, -17, -14, 34, 28, 3); x.fillStyle = "rgba(160,170,180,.35)"; x.fill();
+      x.fillStyle = lin(x, 0, -10, 0, 10, [[0, "#d8a568"], [1, "#a8763f"]]); rrect(x, -13, -10, 14, 20, 2); x.fill(); trait(x, 1.6);
+      x.fillStyle = "#e9f6ff"; rrect(x, 2, -10, 11, 9, 2); x.fill(); trait(x, 1.6); x.fillStyle = "#8ec9ec"; rrect(x, 2, 1, 11, 9, 2); x.fill(); trait(x, 1.6);
+      x.strokeStyle = "#cfd6de"; x.lineWidth = 1.6; for (let k = -13; k <= 13; k += 5) { x.beginPath(); x.moveTo(k, -14); x.lineTo(k, 14); x.stroke() }
+      rrect(x, -17, -14, 34, 28, 3); trait(x, 2.6); x.strokeStyle = "#cfd6de"; x.lineWidth = 1.4; x.stroke();
+      yeux(x, -6, 0, 3.6, 2.4);
+    } },
+    leviathan: Object.assign({ d: x => dCamion(x, { caisse: [[0, "#ffffff"], [.5, "#eef6fb"], [1, "#bfd5e3"]], nervures: "rgba(0,0,0,.08)", bande: "#5fa9d8", cabine: "#2f6fb0", texte: "-18 °C", couleurTexte: "#2f6fb0", tx: 90, taille: 20,
+      logo: x => { x.strokeStyle = "#5fa9d8"; x.lineWidth = 3.5; x.save(); x.translate(38, 42); for (let k = 0; k < 3; k++) { x.rotate(Math.PI / 3); x.beginPath(); x.moveTo(-15, 0); x.lineTo(15, 0); x.stroke() } x.restore() } }) }, D_SEMI),
+  },
+  parking: {
+    crabe: { r: 11, w: 36, h: 42, ox: 18, oy: 26, d: x => {   /* cône qui sautille */
+      rrect(x, -15, 9, 30, 6, 2); x.fillStyle = "#c2410c"; x.fill(); trait(x, 2);
+      x.beginPath(); x.moveTo(-3, -21); x.lineTo(3, -21); x.lineTo(11, 10); x.lineTo(-11, 10); x.closePath(); x.fillStyle = lin(x, -11, 0, 11, 0, [[0, "#ffa25a"], [.6, "#ff7a1a"], [1, "#d4520f"]]); x.fill(); trait(x);
+      x.fillStyle = "#fff"; x.beginPath(); x.moveTo(-6.5, -6); x.lineTo(6.5, -6); x.lineTo(7.8, -1); x.lineTo(-7.8, -1); x.closePath(); x.fill();
+      x.fillStyle = "rgba(255,255,255,.35)"; x.beginPath(); x.moveTo(-2, -19); x.lineTo(0, -19); x.lineTo(-5, 8); x.lineTo(-8, 8); x.closePath(); x.fill();
+      yeux(x, 0, 3.5, 3.8, 2.3);
+    } },
+    feu: { r: 9, w: 34, h: 36, ox: 17, oy: 18, d: x => {   /* sac plastique qui vole */
+      x.beginPath(); x.moveTo(-11, -4); x.quadraticCurveTo(-13, -16, -6, -15); x.quadraticCurveTo(-5, -8, 0, -8); x.quadraticCurveTo(5, -8, 6, -15); x.quadraticCurveTo(13, -16, 11, -4); x.lineTo(9, 13); x.quadraticCurveTo(0, 16, -9, 13); x.closePath();
+      x.fillStyle = lin(x, -11, 0, 11, 0, [[0, "rgba(255,255,255,.95)"], [1, "rgba(215,220,226,.95)"]]); x.fill(); trait(x, 2.2);
+      x.strokeStyle = "rgba(0,0,0,.18)"; x.lineWidth = 1; x.beginPath(); x.moveTo(-5, -2); x.lineTo(-3, 11); x.moveTo(4, -2); x.lineTo(3, 11); x.stroke();
+      x.fillStyle = "#e8412c"; x.font = "7px 'Luckiest Guy', Impact"; x.textAlign = "center"; x.fillText("MERCI", 0, 10);
+      yeux(x, 0, 1, 3.6, 2.2);
+    } },
+    noye: { r: 16, w: 44, h: 44, ox: 22, oy: 22, d: x => {   /* pneu qui roule */
+      x.beginPath(); x.arc(0, 0, 17, 0, 7); x.fillStyle = radg(x, -4, -5, 20, [[0, "#4a4f57"], [1, "#1f2226"]]); x.fill(); trait(x);
+      x.strokeStyle = "#5c626b"; x.lineWidth = 3; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; x.beginPath(); x.moveTo(Math.cos(a) * 12, Math.sin(a) * 12); x.lineTo(Math.cos(a + .15) * 16, Math.sin(a + .15) * 16); x.stroke() }
+      x.beginPath(); x.arc(0, 0, 9, 0, 7); x.fillStyle = radg(x, -3, -3, 10, [[0, "#f2f5f8"], [1, "#8a929c"]]); x.fill(); trait(x, 2);
+      x.fillStyle = "#5a5f66"; for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; x.beginPath(); x.arc(Math.cos(a) * 5, Math.sin(a) * 5, 1.4, 0, 7); x.fill() }
+      x.beginPath(); x.arc(0, 0, 2.2, 0, 7); x.fillStyle = ENCRE; x.fill();
+      x.fillStyle = "rgba(255,255,255,.25)"; x.beginPath(); x.arc(0, 0, 15, 3.6, 4.6); x.lineTo(0, 0); x.closePath(); x.fill();
+    } },
+    murene: { r: 13, w: 52, h: 46, ox: 24, oy: 23, d: x => {   /* caddie fou, vers +x */
+      roue(x, -14, -16, 3.5); roue(x, 14, -16, 3.5); roue(x, -14, 16, 3.5); roue(x, 14, 16, 3.5);
+      x.beginPath(); x.moveTo(-17, -12); x.lineTo(17, -15); x.lineTo(17, 15); x.lineTo(-17, 12); x.closePath(); x.fillStyle = "rgba(190,198,206,.3)"; x.fill();
+      x.strokeStyle = "#cfd6de"; x.lineWidth = 1.5; for (let k = -13; k <= 15; k += 5) { x.beginPath(); x.moveTo(k, -13); x.lineTo(k, 13); x.stroke() } for (const k of [-6, 0, 6]) { x.beginPath(); x.moveTo(-17, k); x.lineTo(17, k); x.stroke() }
+      x.beginPath(); x.moveTo(-17, -12); x.lineTo(17, -15); x.lineTo(17, 15); x.lineTo(-17, 12); x.closePath(); trait(x, 2.6); x.strokeStyle = "#e4e8ec"; x.lineWidth = 1.4; x.stroke();
+      rrect(x, -24, -14, 5, 28, 2.5); x.fillStyle = "#e8412c"; x.fill(); trait(x, 2);
+      x.fillStyle = "#ffc21a"; rrect(x, -4, -8, 10, 8, 2); x.fill(); trait(x, 1.5); x.fillStyle = "#3fae4a"; rrect(x, 5, 1, 8, 9, 2); x.fill(); trait(x, 1.5);
+      yeux(x, -2, -4, 4, 2.5);
+    } },
+    leviathan: Object.assign({ d: x => dCamion(x, { caisse: [[0, "#ff8a3a"], [.5, "#ff7a1a"], [1, "#c2560c"]], nervures: "rgba(0,0,0,.2)", pas: 9, cabine: "#2a2d33", texte: "CONTENEUR", couleurTexte: "#fff6e3", contourTexte: "#17130f", taille: 17 }) }, D_SEMI),
+  },
+  promo: {
+    crabe: { r: 11, w: 40, h: 40, ox: 20, oy: 22, d: x => {   /* colis express */
+      x.beginPath(); x.moveTo(-14, -6); x.lineTo(14, -6); x.lineTo(11, -12); x.lineTo(-11, -12); x.closePath(); x.fillStyle = "#d48cff"; x.fill(); trait(x, 2);
+      rrect(x, -14, -6, 28, 20, 2); x.fillStyle = lin(x, 0, -6, 0, 14, [[0, "#c46bff"], [1, "#8a2fd0"]]); x.fill(); trait(x);
+      x.beginPath(); x.moveTo(2, -4); x.lineTo(-5, 4); x.lineTo(0, 4); x.lineTo(-3, 12); x.lineTo(6, 2); x.lineTo(1, 2); x.lineTo(4, -4); x.closePath(); x.fillStyle = "#ffe14d"; x.fill(); x.lineWidth = 1.2; x.strokeStyle = ENCRE; x.stroke();
+      yeux(x, 0, 2, 7.5, 2.8);
+      rrect(x, 7, -16, 12, 7, 2); x.fillStyle = "#50f0dc"; x.fill(); trait(x, 1.5); x.font = "5px 'Luckiest Guy', Impact"; x.textAlign = "center"; x.fillStyle = ENCRE; x.fillText("24H", 13, -10.5);
+    } },
+    feu: { r: 9, w: 32, h: 32, ox: 16, oy: 16, d: x => {   /* papier bulle */
+      rrect(x, -12, -12, 24, 24, 4); x.fillStyle = "rgba(225,244,255,.8)"; x.fill(); trait(x, 2.2);
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { x.beginPath(); x.arc(i * 7.5, j * 7.5, 3.3, 0, 7); x.fillStyle = radg(x, i * 7.5 - 1, j * 7.5 - 1, 4, [[0, "#ffffff"], [1, "#b6e4ff"]]); x.fill(); x.lineWidth = 1; x.strokeStyle = "rgba(60,120,170,.5)"; x.stroke() }
+      x.fillStyle = ENCRE; x.beginPath(); x.arc(-3.5, 0, 1.6, 0, 7); x.arc(3.5, 0, 1.6, 0, 7); x.fill();
+    } },
+    noye: { r: 16, w: 52, h: 52, ox: 26, oy: 28, d: x => {   /* pile de colis promo */
+      const boite = (a, b, w, h, c1, c2) => { rrect(x, a, b, w, h, 2); x.fillStyle = lin(x, 0, b, 0, b + h, [[0, c1], [1, c2]]); x.fill(); x.fillStyle = "rgba(255,255,255,.35)"; x.fillRect(a + w / 2 - 2, b, 4, h); rrect(x, a, b, w, h, 2); trait(x, 2.2) };
+      boite(-20, 2, 40, 18, "#d8a568", "#a8763f"); boite(-15, -14, 28, 17, "#c46bff", "#8a2fd0"); boite(-8, -26, 18, 13, "#ff6bd0", "#c4148f");
+      x.save(); x.translate(13, -6); x.rotate(.25); rrect(x, -9, -5, 18, 10, 2); x.fillStyle = "#ffe14d"; x.fill(); trait(x, 1.6); x.font = "8px 'Luckiest Guy', Impact"; x.textAlign = "center"; x.fillStyle = "#e8412c"; x.fillText("-50%", 0, 3); x.restore();
+      yeux(x, 0, 10, 7, 3.2);
+    } },
+    murene: { r: 13, w: 40, h: 40, ox: 20, oy: 20, d: x => {   /* robot de tri, vers +x */
+      x.beginPath(); x.arc(0, 0, 15, 0, 7); x.fillStyle = radg(x, -5, -5, 18, [[0, "#ffb15a"], [.6, "#ff8a1f"], [1, "#c25a00"]]); x.fill(); trait(x);
+      x.beginPath(); x.arc(0, 0, 10, 0, 7); x.fillStyle = "#2a2240"; x.fill(); trait(x, 1.6);
+      rrect(x, 3, -6, 9, 12, 4); x.fillStyle = "#50f0dc"; x.fill(); x.fillStyle = "#fff"; x.fillRect(6, -4, 2, 3);
+      x.fillStyle = "rgba(255,255,255,.5)"; x.beginPath(); x.ellipse(-7, -9, 4, 2, -.6, 0, 7); x.fill();
+      x.strokeStyle = ENCRE; x.lineWidth = 2; x.beginPath(); x.moveTo(-6, -10); x.lineTo(-9, -17); x.stroke(); x.beginPath(); x.arc(-9, -17, 2.2, 0, 7); x.fillStyle = "#ff46be"; x.fill(); trait(x, 1.4);
+    } },
+    leviathan: Object.assign({ d: x => dCamion(x, { caisse: [[0, "#3b2d5c"], [.5, "#2a2240"], [1, "#1b1530"]], neon: "#ff46be", cabine: "#ff46be", texte: "-70 %", couleurTexte: "#ffe14d", contourTexte: "#17130f", taille: 26, tx: 74 }) }, D_SEMI),
+  },
+};
 /* --- le perso : gilet aux couleurs du personnage, casque brillant, variantes pour les morts --- */
 function dPerso(x, gilet, casque, avecCasque, yeuxX) {
   x.fillStyle = "#2b3140"; rrect(x, 15, 44, 7, 9, 3); x.fill(); trait(x, 2); rrect(x, 26, 44, 7, 9, 3); x.fill(); trait(x, 2);
@@ -1499,13 +1639,8 @@ function spriteJoueur(perso, avecCasque = true, yeuxX = false) {
 function spriteEnnemi(e) {
   const L = S.lieu, r = Math.round(e.r), t = e.decor ? "d:" + e.kind : e.type, cle = `e|${L}|${t}|${r}`;
   return sprite(cle, () => {
-    if ((L === "quai" || L === "stockage") && !e.decor) {
-      const k = r / 13;
-      if (t === "crabe") return cuire(44 * k, 42 * k, 22 * k, 28 * k, x => { x.scale(k, k); x.translate(-20, -26); dCarton(x) });
-      if (t === "feu") { const k2 = r / 9; return cuire(30 * k2, 34 * k2, 15 * k2, 17 * k2, x => { x.scale(k2, k2); x.translate(-13, -16); dPapier(x) }) }
-      if (t === "noye") { const k2 = r / 19; return cuire(60 * k2, 60 * k2, 30 * k2, 34 * k2, x => { x.scale(k2, k2); x.translate(-28, -32); dPalette(x) }) }
-      if (t === "leviathan") { const k2 = r / 48; return cuire(204 * k2, 90 * k2, 112 * k2, 45 * k2, x => { x.scale(k2, k2); x.translate(-110, -42); dSemi(x, e.coul || "#d63b2f") }) }
-    }
+    const lieu = L === "stockage" ? "quai" : L, D = !e.decor && DESSINS[lieu] && DESSINS[lieu][t];
+    if (D) { const k = r / D.r; return cuire(D.w * k, D.h * k, D.ox * k, D.oy * k, x => { x.scale(k, k); D.d(x, e) }) }
     const faux = Object.assign({}, e, { ph: 0, flash: 0, x: 0, y: 0, hit: {}, ch: null }), p0 = { x: 1, y: 0 };
     let w, h, ox, oy;
     if (e.decor) { w = 64; h = 80; ox = 32; oy = 48 }
@@ -1520,9 +1655,9 @@ function poseEnnemi(e, p) {
   if (e.decor) return [dy, rot, sx, sy];
   if (t === "glace") rot = e.ph * .3;
   else if (t === "presentoir") sx = sy = 1 + Math.sin(e.ph * 6) * .04;
-  else if (t === "crabe") { const hp = Math.abs(Math.sin(e.ph * 9)); dy = -hp * 3; sy = 1 + hp * .06; sx = 1 - hp * .04; if ((L === "quai" || L === "stockage") && p.x < e.x) sx = -sx }
+  else if (t === "crabe") { const hp = Math.abs(Math.sin(e.ph * 9)); dy = -hp * 3; sy = 1 + hp * .06; sx = 1 - hp * .04; if (p.x < e.x) sx = -sx }
   else if (t === "feu") rot = L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
-  else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if ((L === "quai" || L === "stockage") && p.x < e.x) sx = -1 }
+  else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if (L !== "parking" && p.x < e.x) sx = -1 }
   else rot = e.ch && (e.ch.etat === "vise" || e.ch.etat === "fonce") ? e.ch.a : Math.atan2(p.y - e.y, p.x - e.x);
   return [dy, rot, sx, sy];
 }
