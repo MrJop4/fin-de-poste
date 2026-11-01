@@ -226,7 +226,14 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .panneau.large { max-width: 1060px; }
 .caisse { font-size: 18px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 999px; padding: 4px 18px; box-shadow: 3px 3px 0 var(--encre); }
 .caisse b { font-family: var(--display); font-weight: 400; font-size: 26px; }
+.btn:focus-visible, .carte:focus-visible, .bascule:focus-visible { outline: 4px solid var(--jaune); outline-offset: 3px; }
 .panneau h3 { margin: 8px 0 -4px; font-family: var(--display); font-weight: 400; font-size: 28px; color: #fff; letter-spacing: .03em; align-self: flex-start; text-shadow: 3px 3px 0 var(--encre); }
+/* vestiaire : une couleur par catégorie (lieux en violet, persos en orange comme les outils, améliorations en bleu comme les équipements) */
+.cat { display: flex; flex-direction: column; gap: 2px; padding: 6px 14px 8px; border-radius: 12px; border: 3px solid var(--encre); box-shadow: 0 4px 0 var(--encre); align-self: stretch !important; margin-top: 14px !important; }
+.cat small { font-family: var(--ui); font-weight: 800; font-size: 14px; letter-spacing: 0; line-height: 1.3; text-shadow: none; color: rgba(255,255,255,.92); }
+.cat-lieu { background: #8a4fd9; } .cat-perso { background: #ff6a10; } .cat-amelio { background: #2f8fe0; }
+.g-lieu .carte { border: 5px solid #8a4fd9; } .g-perso .carte { border: 5px solid #ff6a10; } .g-amelio .carte { border: 5px solid #2f8fe0; }
+.g-lieu .carte .art { border-color: #5b2fa0; } .g-perso .carte .art { border-color: #c24a00; } .g-amelio .carte .art { border-color: #1d5f9e; }
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; width: 100%; }
 .grille .carte .art, .grille .carte .bandeau { height: 120px; }
 .bascule { pointer-events: auto; cursor: pointer; font: 800 15px var(--ui); color: var(--encre); background: #d8ccb0; border: 3px solid var(--encre); border-radius: 12px; padding: 6px 14px; box-shadow: 3px 3px 0 var(--encre); }
@@ -334,12 +341,12 @@ button { touch-action: manipulation; }
     <h2>Vestiaire</h2>
     <div class="caisse">Caisse : <b id="banque">0</b> €</div>
     <button class="bascule" id="modeTest"></button>
-    <h3>Lieu de travail</h3>
-    <div class="grille" id="lieux"></div>
-    <h3>Personnage</h3>
-    <div class="grille" id="persos"></div>
-    <h3>Améliorations permanentes</h3>
-    <div class="grille" id="amelios"></div>
+    <h3 class="cat cat-lieu">Lieu de travail <small>Où se passe ta nuit de boulot. Chaque lieu a ses propres colis, un moment spécial et paie plus… mais il est plus dur.</small></h3>
+    <div class="grille g-lieu" id="lieux"></div>
+    <h3 class="cat cat-perso">Personnage <small>Qui tu joues. Chacun a ses forces et son outil de départ ; en débloquer un ajoute aussi son outil unique aux cartes de toutes tes parties.</small></h3>
+    <div class="grille g-perso" id="persos"></div>
+    <h3 class="cat cat-amelio">Améliorations permanentes <small>Achetées avec ta paie, elles restent pour toutes les parties : plus de vie, de vitesse, de dégâts…</small></h3>
+    <div class="grille g-amelio" id="amelios"></div>
     <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button></div>
   </div>
 </div>
@@ -382,13 +389,14 @@ const VICTOIRE = 600;
 /* équilibrage, réglé avec un simulateur (parties jouées par un bot, 16 par profil) :
    la pression vient du nombre de colis présents (une cible qui monte), pas d'un débit fixe.
    Repères pour 10 min : niveau ~6 à 2:30, ~12 à 5:00, ~18 à 7:30, ~23 à 10:00 ;
-   semi tué en 40-60 s avec un build moyen ; victoire pour ~45 % des débutants, ~75 % avec un vestiaire moyen. */
+   semi tué en 40-60 s avec un build moyen ; victoire pour ~5-10 % des débutants, ~60 % avec un vestiaire moyen, ~90 % au max. */
 const EQ = {
   vivantsDebut: 18, vivantsFin: 110, vivantsMax: 220,   // colis présents visés au début, à 10:00, puis en heures sup
   vague: { toutes: 60, duree: 12, bonus: .45 },         // une vague par minute : +45 % de colis pendant 12 s
   debitMax: 8,                                          // au plus 8 colis par seconde (+1 toutes les 25 s) : une vague arrive, elle ne tombe pas d'un coup
   pvTemps: 115,                                         // PV des colis ×(1 + t / pvTemps)
   vitTemps: 2000,                                       // vitesse ×(1 + t / vitTemps), plafonnée à 15 min
+  degBase: 1.7,                                         // dégâts des colis ×1,7 : 10 coups de carton pour mourir au départ (100 vie)
   degTemps: 300,                                        // dégâts ×(1 + t / degTemps)
   mini: [120, 420], miniPv: 8,                          // colis hors gabarit (mini-boss) : moments, et PV ×8 d'une palette
   fragile: [40, 60],                                    // un colis « fragile » (petit coffre) toutes les 40 à 60 s
@@ -412,6 +420,10 @@ const ARMES = {
   // armes liées aux persos : elles entrent dans les cartes quand le perso est débloqué
   fourches: { nom: "Fourches", img: "fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
   cle: { nom: "Clé à molette", img: "cle", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
+  sabre: { nom: "Sabre de déballage", img: "nyho", max: 6, perso: "nyho", desc: l => l === 1 ? "Un grand coup de sabre en arc devant toi, qui tranche tout ce qu'il touche." : l === 4 ? "Le sabre frappe aussi dans ton dos." : `Arc plus large, ${20 + 9 * l} dégâts.` },
+  tronc: { nom: "Lancer de tronc", img: "nauud", max: 6, perso: "nauud", desc: l => l === 1 ? "Lance un tronc qui roule et écrase tous les colis sur son passage." : `${1 + Math.floor(l / 3)} tronc(s), ${24 + 10 * l} dégâts, gros recul.` },
+  scotch: { nom: "Dévidoir de scotch", img: "zuzuletroll", max: 6, perso: "zuzu", desc: l => l === 1 ? "En courant, tu laisses une traînée de scotch qui colle et abîme les colis." : `Scotch plus large et plus durable, ${8 + 4 * l} dégâts, ralentit de ${30 + 3 * l} %.` },
+  co2: { nom: "Extincteur à CO2", img: "djefrais", max: 6, perso: "djefrais", desc: l => l === 1 ? "Un jet de froid devant toi : abîme et ralentit les colis de moitié." : l === 4 ? "Un deuxième jet part dans ton dos." : `Jet plus long, ${5 + 3 * l} dégâts.` },
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
@@ -424,10 +436,14 @@ const EVOS = {
   fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Quatre palettes tombent à la fois, zone énorme." },
   fourches: { nom: "Chariot fou", avec: "meule", desc: "Fourches dorées qui frappent dans les quatre directions." },
   cle: { nom: "Caisse à outils", avec: "soupe", desc: "Six clés lancées en étoile tout autour de toi." },
+  sabre: { nom: "Lame du shogun", avec: "bottes", desc: "Un tranchant circulaire qui fauche tout autour de toi, deux fois plus souvent." },
+  tronc: { nom: "Jeux des Highlands", avec: "cire", desc: "Six troncs géants lancés en étoile, qui ne s'arrêtent pas." },
+  scotch: { nom: "Scotch double face", avec: "soupe", desc: "Traînée énorme et durable : les colis y restent presque collés." },
+  co2: { nom: "Blizzard", avec: "boussole", desc: "Trois jets de neige qui tournent autour de toi et gèlent tout." },
   talkie: { nom: "Réseau radio", avec: "huile", desc: "L'appel rebondit sur 12 colis, deux fois plus souvent." },
 };
 const NB_ARMES = 3, EVO = 7;
-const COUL_ARME = { lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
+const COUL_ARME = { sabre: "#c0392b", tronc: "#8a5a2b", scotch: "#c9a15a", co2: "#7fd3ff", lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
 const OBJETS = {
   bottes: { nom: "Chaussures de sécu", img: "cebien", max: 5, desc: () => "+8 % de vitesse de déplacement." },
   cire: { nom: "Gilet haute visibilité", img: "blinde", max: 5, desc: () => "+20 points de vie maximum (et soigne de 20)." },
@@ -452,10 +468,10 @@ const PERSOS = {
   cariste: { nom: "Cariste", img: "tooof", court: "Costaud : +30 vie", prix: 250, arme: "fourches", gilet: "#ffc21a", casque: "#ff5a1f", vie: 30, vit: .95, desc: "Costaud : +30 vie, un peu plus lent. Arme : les Fourches." },
   reparateur: { nom: "Réparateur", img: "bastos", court: "Outils 15 % plus rapides", prix: 450, arme: "cle", gilet: "#3d8bd9", casque: "#e4e2dc", cd: .85, desc: "Outils 15 % plus rapides. Arme : la Clé à molette." },
   chef: { nom: "Chef d'équipe", img: "gimmix", court: "Ramasse de loin, apprend vite", prix: 700, arme: "talkie", gilet: "#e4e2dc", casque: "#d63b2f", aimant: 1.3, xp: 1.15, desc: "Ramasse de loin (+30 %), apprend vite (+15 % d'expérience). Arme : le Talkie-walkie." },
-  nyho: { nom: "Nyho le samouraï", img: "nyho", court: "Dégâts +25 %, un peu lent", prix: 900, arme: "harpon", gilet: "#2a2c30", casque: "#c0392b", deg: 1.25, vit: .95, desc: "Dégâts +25 %, un peu plus lent. Arme : le Cutter, tranchant comme un sabre." },
-  nauud: { nom: "Nauud le highlander", img: "nauud", court: "+50 vie, se soigne seul", prix: 1100, arme: "corne", gilet: "#2e7d4f", casque: "#d35400", vie: 50, regen: .5, desc: "+50 vie et récupère 0,5 vie par seconde. Arme : le Klaxon, qui sonne comme une cornemuse." },
-  zuzu: { nom: "Zuzu le troll", img: "zuzuletroll", court: "Très rapide mais fragile", prix: 1300, arme: "sel", gilet: "#3d8bd9", casque: "#5a8f3a", vie: -20, vit: 1.2, desc: "+20 % de vitesse, mais 20 vie en moins. Arme : les Rouleaux de film." },
-  djefrais: { nom: "Djefrais", img: "djefrais", court: "Ralentit les colis autour de lui", prix: 1500, arme: "lanterne", gilet: "#9fd2ff", casque: "#e8f6ff", givre: true, desc: "Une aura glacée ralentit les ennemis proches de 45 %. Arme : la Douchette laser." },
+  nyho: { nom: "Nyho le samouraï", img: "nyho", court: "Dégâts +25 %, un peu lent", prix: 900, arme: "sabre", gilet: "#2a2c30", casque: "#c0392b", deg: 1.25, vit: .95, desc: "Dégâts +25 %, un peu plus lent. Arme unique : le Sabre de déballage." },
+  nauud: { nom: "Nauud le highlander", img: "nauud", court: "+50 vie, se soigne seul", prix: 1100, arme: "tronc", gilet: "#2e7d4f", casque: "#d35400", vie: 50, regen: .5, desc: "+50 vie et récupère 0,5 vie par seconde. Arme unique : le Lancer de tronc, comme aux jeux des Highlands." },
+  zuzu: { nom: "Zuzu le troll", img: "zuzuletroll", court: "Très rapide mais fragile", prix: 1300, arme: "scotch", gilet: "#3d8bd9", casque: "#5a8f3a", vie: -20, vit: 1.2, desc: "+20 % de vitesse, mais 20 vie en moins. Arme unique : le Dévidoir de scotch, parfait pour un perso qui court partout." },
+  djefrais: { nom: "Djefrais", img: "djefrais", court: "Ralentit les colis autour de lui", prix: 1500, arme: "co2", gilet: "#9fd2ff", casque: "#e8f6ff", givre: true, desc: "Une aura glacée ralentit les ennemis proches de 45 %. Arme unique : l'Extincteur à CO2." },
 };
 const LIEUX = {
   quai: { nom: "Quai de nuit", img: "premiereheure", info: "Paie normale", prix: 0, desc: "Le quai d'origine. Pas de surprise.",
@@ -527,7 +543,7 @@ function nouvellePartie() {
     perso: persoActif(), lieu: lieuActif(), argent: 0, coups: [], cles: [], arcs: [], cleId: 0,
     p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
     armes: { [P.arme]: 1 }, objets: {},
-    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8 },
+    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8 }, sabres: [], troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
@@ -548,7 +564,7 @@ function nouvellePartie() {
 function spawn(type, elite) {
   const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + 60;
   const L = LL(), mult = (1 + S.t / EQ.pvTemps) * L.pv, hp = T.hp * mult * (elite ? 6 : 1);
-  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / EQ.vitTemps), deg: T.deg * (1 + S.t / EQ.degTemps) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
+  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / EQ.vitTemps), deg: T.deg * EQ.degBase * (1 + S.t / EQ.degTemps) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
 }
 function cibleVivants(t) {
   let c = EQ.vivantsDebut + (EQ.vivantsFin - EQ.vivantsDebut) * Math.min(1, t / VICTOIRE);
@@ -866,6 +882,50 @@ function armes(dt) {
   }
   for (const a of S.arcs) a.t -= dt;
   S.arcs = S.arcs.filter(a => a.t > 0);
+  // sabre de déballage (Nyho) : grand arc devant toi, qui alterne un peu à gauche et à droite
+  if (A.sabre && (S.timers.sabre -= dt) <= 0) {
+    const l = A.sabre, evo = l >= EVO; S.timers.sabre = (evo ? .9 : 1.4 - .07 * l) * cd; S.sabreG = !S.sabreG;
+    const base = p.dir + (S.sabreG ? .3 : -.3);
+    for (const off of evo ? [0] : l >= 4 ? [0, Math.PI] : [0]) S.sabres.push({ a: base + off, t: 0, R: evo ? 175 : 92 + 10 * l, demi: evo ? Math.PI : .95 + .03 * l, deg: (20 + 9 * l) * (evo ? 1.5 : 1), deja: new Set(), evo, sens: S.sabreG ? 1 : -1 });
+  }
+  for (const sl of S.sabres) {
+    sl.t += dt; if (sl.t > .14) continue;
+    for (const e of S.ennemis) { if (sl.deja.has(e)) continue; const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > sl.R + e.r) continue; let da = Math.atan2(dy, dx) - sl.a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < sl.demi) { sl.deja.add(e); blesser(e, sl.deg, dx / (d || 1) * 6, dy / (d || 1) * 6) } }
+  }
+  S.sabres = S.sabres.filter(sl => sl.t < .3);
+  // lancer de tronc (Nauud) : le tronc roule tout droit et écrase ce qu'il croise
+  if (A.tronc && (S.timers.tronc -= dt) <= 0) {
+    const l = A.tronc, evo = l >= EVO; S.timers.tronc = (evo ? 2.2 : 2.6 - .1 * l) * cd;
+    const c = proche(p.x, p.y, 600), base = c ? Math.atan2(c.y - p.y, c.x - p.x) : p.dir, n = evo ? 6 : 1 + Math.floor(l / 3);
+    for (let i = 0; i < n; i++) { const a = evo ? base + i * Math.PI * 2 / n : base + (i - (n - 1) / 2) * .45; S.troncs.push({ x: p.x, y: p.y, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, a, t: 0, vie: evo ? 2.2 : 1.4, deg: 24 + 10 * l, larg: evo ? 30 : 20, deja: new Set(), evo }) }
+  }
+  for (const tr of S.troncs) {
+    tr.t += dt; tr.x += tr.vx * dt; tr.y += tr.vy * dt;
+    if (LL().murs && dansMur(tr.x, tr.y, 6)) { tr.t = tr.vie; continue }
+    const ca = Math.cos(tr.a), sa = Math.sin(tr.a);
+    for (const e of S.ennemis) { if (tr.deja.has(e)) continue; const dx = e.x - tr.x, dy = e.y - tr.y, u = dx * ca + dy * sa, v = -dx * sa + dy * ca; if (Math.abs(u) < 12 + e.r && Math.abs(v) < tr.larg + e.r) { tr.deja.add(e); blesser(e, tr.deg, ca * 9 + (v > 0 ? -sa : sa) * 4, sa * 9 + (v > 0 ? ca : -ca) * 4) } }
+  }
+  S.troncs = S.troncs.filter(tr => tr.t < tr.vie);
+  // dévidoir de scotch (Zuzu) : en courant, on pose des bandes de scotch qui collent et abîment
+  if (A.scotch) {
+    const l = A.scotch, evo = l >= EVO, pp = S.scotchPos;
+    if (!pp || Math.hypot(p.x - pp.x, p.y - pp.y) > (evo ? 26 : 18)) { S.scotchPos = { x: p.x, y: p.y }; S.scotchs.push({ x: p.x, y: p.y, a: p.dir, t: 0, vie: evo ? 5 : 2.4 + .3 * l, r: evo ? 36 : 18 + 2 * l, deg: (8 + 4 * l) * (evo ? 1.5 : 1), lent: evo ? .6 : .3 + .03 * l, evo }); if (S.scotchs.length > 90) S.scotchs.shift() }
+  }
+  for (const sc of S.scotchs) {
+    sc.t += dt;
+    for (const e of S.ennemis) { if (e.decor || Math.hypot(e.x - sc.x, e.y - sc.y) > sc.r + e.r * .6) continue; const f = e.boss ? sc.lent * .4 : sc.lent; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .15; if ((e.hit.sc || 0) <= 0) { blesser(e, sc.deg, 0, 0); e.hit.sc = .5 } }
+  }
+  S.scotchs = S.scotchs.filter(sc => sc.t < sc.vie);
+  // extincteur à CO2 (Djefrais) : jet de froid continu dans le sens de la marche
+  if (A.co2) {
+    const l = A.co2, evo = l >= EVO, port = evo ? 200 : 105 + 12 * l, demi = evo ? .4 : .42;
+    S.co2A += dt * 2.2;
+    const jets = evo ? [S.co2A, S.co2A + 2.09, S.co2A + 4.19] : l >= 4 ? [p.dir, p.dir + Math.PI] : [p.dir]; S.co2Jets = jets; S.co2Port = port;
+    for (const e of S.ennemis) {
+      const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > port + e.r) continue;
+      for (const a of jets) { let da = Math.atan2(dy, dx) - a; da = Math.atan2(Math.sin(da), Math.cos(da)); if (Math.abs(da) < demi + e.r / Math.max(d, 1)) { const f = e.boss ? .25 : evo ? .7 : .5; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .4; if ((e.hit.co2 || 0) <= 0) { blesser(e, 5 + 3 * l, dx / (d || 1) * 1.5, dy / (d || 1) * 1.5); e.hit.co2 = .4 } break } }
+    }
+  } else S.co2Jets = null;
 }
 
 /* ---------- murs : une grille infinie de blocs (racks, remorques) ; chaque bloc est centré dans sa case, les bords de case sont des allées ---------- */
@@ -972,6 +1032,7 @@ function maj(dt) {
     let vx = dx / d * e.vit, vy = dy / d * e.vit;
     if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 30; vy += Math.sin(e.ph * 4) * 30 }
     if (p.givre && d < 140) { vx *= .55; vy *= .55 }
+    if (e.colle > 0) { e.colle -= dt; vx *= 1 - (e.colleF || 0); vy *= 1 - (e.colleF || 0) }
     const cxg = Math.floor(e.x / cell), cyg = Math.floor(e.y / cell);
     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
       const a = G.get(key(cxg + i, cyg + j)); if (!a) continue;
@@ -1738,6 +1799,15 @@ function spriteMur(M, m, hs) {
     x.fillStyle = "#ffe14d"; for (const a of [8, m.w - 14]) { rrect(x, a, cabine ? cy - 1 : cy + 42, 6, 4, 1.5); x.fill() }
   }));
 }
+/* --- armes uniques des persos --- */
+const spriteTronc = () => sprite("tronc", () => cuire(52, 24, 26, 12, x => {
+  rrect(x, -23, -9, 46, 18, 8); x.fillStyle = lin(x, 0, -9, 0, 9, [[0, "#c08a52"], [.5, "#8a5a2b"], [1, "#5e3b1a"]]); x.fill(); trait(x, 2.2);
+  x.strokeStyle = "rgba(40,20,5,.5)"; x.lineWidth = 1.2; for (const a of [-14, -4, 6, 14]) { x.beginPath(); x.moveTo(a, -7); x.lineTo(a + 3, 7); x.stroke() }
+  x.beginPath(); x.ellipse(21, 0, 4, 8.5, 0, 0, 7); x.fillStyle = "#e8c08a"; x.fill(); trait(x, 1.8); x.strokeStyle = "#a8763f"; x.lineWidth = 1; x.beginPath(); x.ellipse(21, 0, 2, 4.5, 0, 0, 7); x.stroke();
+}));
+const spriteScotch = evo => sprite("scotch" + evo, () => cuire(44, 44, 22, 22, x => {
+  for (const a of [-.45, .45]) { x.save(); x.rotate(a); rrect(x, -19, -5.5, 38, 11, 2); x.fillStyle = evo ? "rgba(255,205,90,.82)" : "rgba(214,176,110,.78)"; x.fill(); x.lineWidth = 1.2; x.strokeStyle = "rgba(23,19,15,.55)"; x.stroke(); x.fillStyle = "rgba(255,255,255,.45)"; x.fillRect(-17, -4, 34, 2); x.restore() }
+}));
 /* --- le perso : gilet aux couleurs du personnage, casque brillant, variantes pour les morts --- */
 function dPerso(x, gilet, casque, avecCasque, yeuxX) {
   x.fillStyle = "#2b3140"; rrect(x, 15, 44, 7, 9, 3); x.fill(); trait(x, 2); rrect(x, 26, 44, 7, 9, 3); x.fill(); trait(x, 2);
@@ -1938,6 +2008,9 @@ function dessinerJeu() {
     if (g.coffre) { const k = .5 + .5 * Math.sin(S.t * 6); ajouter(lueur(g.gros ? "255,214,70" : "255,236,190"), x, y - 4, g.gros ? 90 : 50, g.gros ? 90 : 50, (g.gros ? .5 : .3) + .2 * k); ombreSol(x, y + 9, 14, 4); poser(spriteCoffre(!!g.gros), x, y - 4 + b, 0, 1, 1); continue }
     const or = g.v >= 4; if (lum) ajouter(lueur(or ? "255,200,60" : "63,224,255"), x, y, 26, 26, .4 + .15 * Math.sin(S.t * 5 + g.y)); poser(spriteEtiquette(or), x, y - 3 + b, 0, 1, 1);
   }
+  // traînée de scotch (sous les colis)
+  for (const sc of S.scotchs) { cx.globalAlpha = Math.max(0, Math.min(1, (sc.vie - sc.t) / .4)) * .9; poser(spriteScotch(!!sc.evo), X(sc.x), Y(sc.y), sc.a, sc.r / 18, sc.r / 18) }
+  cx.globalAlpha = 1;
   // coups de klaxon
   for (const o of S.ondes) { if (o.r < 0) continue; const d = o.r / .86 * 2; ajouter(anneau(o.evo ? "255,70,50" : "255,150,40"), X(o.x), Y(o.y), d, d, .9 * (1 - o.r / o.max)) }
   // ombre des palettes qui tombent
@@ -1997,6 +2070,22 @@ function dessinerJeu() {
   }
   // cutters
   for (const h of S.tirs) { const x = X(h.x), y = Y(h.y), a = Math.atan2(h.vy, h.vx), g = lueur(h.evo ? "255,220,80" : "255,130,60"); for (let q = 1; q <= 3; q++) ajouter(g, x - Math.cos(a) * q * 9, y - Math.sin(a) * q * 9, 26 - q * 5, 26 - q * 5, .5 - q * .12); ajouter(g, x, y, h.evo ? 46 : 30, h.evo ? 46 : 30, .7); poser(spriteCutter(!!h.evo), x, y, S.t * 18, h.evo ? 1.6 : 1.1, h.evo ? 1.6 : 1.1) }
+  // sabre : un croissant lumineux qui balaie
+  for (const sl of S.sabres) {
+    const k = sl.t / .3, x = X(p.x), y = Y(p.y), R = sl.R * (.7 + .3 * Math.min(1, sl.t / .1)), a0 = sl.a - sl.demi, a1 = sl.a + sl.demi;
+    cx.save(); cx.globalCompositeOperation = "lighter"; cx.globalAlpha = Math.max(0, 1 - k);
+    const g = cx.createRadialGradient(x, y, R * .5, x, y, R); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(.7, sl.evo ? "rgba(255,80,70,.5)" : "rgba(160,225,255,.45)"); g.addColorStop(1, "rgba(255,255,255,.95)");
+    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, R, a0, a1); cx.arc(x, y, R * .5, a1, a0, true); cx.closePath(); cx.fill(); cx.restore();
+  }
+  // troncs qui roulent
+  for (const tr of S.troncs) { const x = X(tr.x), y = Y(tr.y), e2 = tr.evo ? 1.5 : 1; ombreSol(x, y + 8, 22 * e2, 5); poser(spriteTronc(), x, y + Math.abs(Math.sin(tr.t * 20)) * -2, tr.a + Math.PI / 2, e2, e2); if (Math.random() < .5) S.fx.push({ x: tr.x - tr.vx * .03, y: tr.y - tr.vy * .03 + 6, vx: rnd(-30, 30), vy: rnd(-30, 10), t: .3, c: "#cfc6b4" }) }
+  // jet de CO2 : un cône froid avec des bouffées
+  if (S.co2Jets) for (const a of S.co2Jets) {
+    const x = X(p.x), y = Y(p.y) - 6, port = S.co2Port;
+    cx.save(); cx.globalCompositeOperation = "lighter"; const g = cx.createRadialGradient(x, y, 6, x, y, port); g.addColorStop(0, "rgba(220,245,255,.5)"); g.addColorStop(1, "rgba(160,220,255,0)");
+    cx.fillStyle = g; cx.beginPath(); cx.moveTo(x, y); cx.arc(x, y, port, a - .42, a + .42); cx.closePath(); cx.fill(); cx.restore();
+    for (let i = 0; i < 6; i++) { const d = ((S.t * 260 + i * port / 6) % port), w = .3 * Math.sin(S.t * 7 + i * 2); ajouter(lueur("225,245,255"), x + Math.cos(a + w * d / port) * d, y + Math.sin(a + w * d / port) * d, 14 + d * .35, 14 + d * .35, .45 * (1 - d / port)) }
+  }
   // rouleaux de film étirable
   if (S.armes.sel && S.armes.sel >= EVO && S.selR) { cx.strokeStyle = "rgba(230,245,255,.18)"; cx.lineWidth = 16; cx.beginPath(); cx.arc(X(p.x), Y(p.y), S.selR, 0, 7); cx.stroke() }
   if (S.armes.sel) { const n = S.selN || S.armes.sel + 1, rr = S.selR || 62 + 4 * S.armes.sel; for (let i = 0; i < n; i++) { const a = S.angleSel + i * Math.PI * 2 / n, x = X(p.x) + Math.cos(a) * rr, y = Y(p.y) + Math.sin(a) * rr; ajouter(lueur("127,220,255"), x, y, 46, 46, .55); poser(spriteRouleau(), x, y, S.t * 8 + i, 1, 1) } }
@@ -2382,8 +2471,19 @@ function dessinerInventaire() {
   }).join("") : `<div class="inv-carte vide"><div><strong>Aucun équipement</strong><span class="niv-txt">Les équipements débloquent les évolutions de tes outils.</span></div></div>`;
 }
 function basculerPause() { if (!enJeu || choix || S.mort) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
+/* menus (fin de partie, pause, vestiaire) : flèches ou ZQSD pour passer d'un bouton à l'autre, Espace ou Entrée pour valider */
+function menuClavier(e) {
+  const v = ["fin", "pause", "vestiaire"].map($).find(el => !el.hidden); if (!v) return false;
+  const bs = [...v.querySelectorAll("button")].filter(b => !b.hidden && !b.disabled && b.offsetParent !== null); if (!bs.length) return false;
+  let i = bs.indexOf(document.activeElement);
+  const prec = ["ArrowLeft", "ArrowUp", "KeyA", "KeyW"], suiv = ["ArrowRight", "ArrowDown", "KeyD", "KeyS"];
+  if (prec.includes(e.code) || suiv.includes(e.code)) { e.preventDefault(); i = i < 0 ? 0 : (i + (suiv.includes(e.code) ? 1 : -1) + bs.length) % bs.length; bs[i].focus(); bs[i].scrollIntoView({ block: "nearest" }); return true }
+  if ((e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter")) { e.preventDefault(); if (!e.repeat) (i >= 0 ? bs[i] : bs[0]).click(); return true }
+  return false;
+}
 addEventListener("keydown", e => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
+  if (!(S && S.mort && !S.mort.fini) && menuClavier(e)) return;
   // pendant l'animation de mort, une touche la passe (pas tout de suite, pour ne pas la sauter sans le vouloir)
   if (S && S.mort && !S.mort.fini) { if (!e.repeat && S.mort.t > .8 && ["Space", "Enter", "Escape", "NumpadEnter"].includes(e.code)) finirMort(); return }
   // accueil : Q/D change de perso, Z/S de lieu, Espace lance la partie
