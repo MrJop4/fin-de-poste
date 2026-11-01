@@ -1837,7 +1837,16 @@ function dPerso(x, gilet, casque, avecCasque, yeuxX) {
   } else { x.fillStyle = "#6b4a2b"; x.beginPath(); x.arc(24, 9, 7, Math.PI, 0); x.fill() }
 }
 const ECH_J = .8;
+/* les persos illustrés (images générées, détourées, contour encre) ; tant qu'une image n'est pas chargée, on garde le dessin */
+const IMG_PERSO = {}, HAUT_PERSO = 56;
+for (const id of Object.keys(PERSOS)) { const i = new Image(); i.src = "persos/" + id + ".webp"; IMG_PERSO[id] = i }
 function spriteJoueur(perso, avecCasque = true, yeuxX = false) {
+  const im = IMG_PERSO[perso];
+  if (im && im.complete && im.naturalWidth) return sprite("jimg|" + perso, () => {
+    const h = HAUT_PERSO, w = h * im.naturalWidth / im.naturalHeight, c = document.createElement("canvas"); c.width = Math.round(w * 2); c.height = Math.round(h * 2);
+    const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(im, 0, 0, c.width, c.height);
+    return { c, w, h, ox: w / 2, oy: h * .66 };
+  });
   const P = PERSOS[perso] || PERSOS.preparateur;
   return sprite(`j|${perso}|${avecCasque}|${yeuxX}`, () => { const s = cuire(48 * ECH_J, 56 * ECH_J, 24 * ECH_J, 36 * ECH_J, x => { x.scale(ECH_J, ECH_J); x.translate(-24, -36); dPerso(x, P.gilet, P.casque, avecCasque, yeuxX) }); return s });
 }
@@ -2128,7 +2137,9 @@ function dessinerJeu() {
   if (S.mort) joueurMort(px, py, PP);
   else if (!(p.inv > 0 && Math.floor(p.inv * 20) % 2)) {
     const sq = 1 + Math.abs(Math.sin(p.pas)) * .06, f = Math.cos(p.dir) < 0 ? -1 : 1;
-    poser(spriteJoueur(S.perso), px, py + bob * .5, 0, f / sq, sq);
+    // il se dandine en marchant (balancement gauche-droite), immobile il reste droit
+    const allure = Math.min(1, Math.hypot(p.vx, p.vy) / 80), dand = Math.sin(p.pas) * .12 * allure;
+    poser(spriteJoueur(S.perso), px, py - Math.abs(Math.sin(p.pas)) * 2 * allure, dand, f, 1);
   }
   // éclairage du quai : néons, coins sombres
   const g = cx.createRadialGradient(px, py, 120, px, py, Math.max(W, H) * .7);
