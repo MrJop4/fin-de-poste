@@ -290,6 +290,46 @@ button { touch-action: manipulation; }
   #niveau .panneau { padding-top: 70px; }
 }
 @media (prefers-reduced-motion: reduce) { .carte, .xpbar i, .carte-perso, .btn { transition: none; } }
+/* cartes de choix (booster, machine à sous) : l'illustration en entier, le texte posé dessus sur un bandeau sombre.
+   Pas d'overflow:hidden sur la carte : il aplatirait la 3D du retournement. */
+#cartes { box-sizing: border-box; width: 100%; max-width: min(760px, calc((100dvh - 250px) * .747 * 3 + 40px)); margin-inline: auto; }
+#cartes.cartes { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 14px; }
+.mode-coffre #cartes.cartes { padding: 22px 46px 14px 14px; max-width: min(820px, calc((100dvh - 250px) * .747 * 3 + 100px)); }
+#cartes .carte { display: block !important; aspect-ratio: 432 / 578; padding: 0; background: #2a2c31; border-radius: 16px; }
+#cartes .carte .art, .mode-coffre #cartes .carte .fenetre-jeu { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; border: 0; border-radius: 11px; object-fit: cover; object-position: 50% 50% !important; box-shadow: none; }
+.mode-coffre #cartes .carte .bande-jeu img { width: 100% !important; height: auto; aspect-ratio: 432 / 578; object-fit: cover; }
+#cartes .carte .tag { position: absolute; left: 7px; top: 7px; z-index: 2; max-width: calc(100% - 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; background: var(--cat, var(--encre)); border: 2px solid var(--encre); font-size: clamp(9px, 1.25vw, 11.5px); padding: 1px 7px; }
+#cartes .carte.k-arme { --cat: #ff6a10; } #cartes .carte.k-objet { --cat: #2f8fe0; } #cartes .carte.k-evo { --cat: #c98a00; } #cartes .carte.k-soin { --cat: #1f9e4a; }
+#cartes .carte .corps { position: absolute; left: 0; right: 0; bottom: 0; padding: 42% 10px 10px; gap: 3px; border-radius: 0 0 11px 11px; background: linear-gradient(transparent, rgba(16,12,9,.82) 36%, rgba(16,12,9,.96)); text-align: left; }
+#cartes .carte strong { color: #fff; text-shadow: 2px 2px 0 var(--encre), -1px -1px 0 var(--encre); font-size: clamp(14px, 2.3vw, 23px) !important; }
+#cartes .carte .txt { color: #f1ebdf; font-size: clamp(10.5px, 1.6vw, 14px) !important; line-height: 1.22; }
+#cartes .carte .evo-hint { font-size: clamp(9px, 1.25vw, 12px); margin-top: 2px; }
+#cartes .carte.sel { background: #2a2c31; }
+.carte.evo-carte.arrete { background: #2a2c31; }
+.mode-coffre #cartes .carte:not(.arrete) .tag { opacity: 0; } .mode-coffre #cartes .carte .tag { transition: opacity .5s; }
+@media (max-height: 520px) and (orientation: landscape) {
+  #cartes { max-width: min(640px, calc((100dvh - 150px) * .747 * 3 + 30px)); } #cartes.cartes { gap: 9px; }
+  .mode-coffre #cartes.cartes { max-width: min(700px, calc((100dvh - 190px) * .747 * 3 + 80px)); padding: 16px 38px 10px 10px; }
+  #cartes .carte .corps { padding: 36% 7px 7px; }
+}
+@media (max-width: 700px) {
+  #cartes.cartes { gap: 7px; } .mode-coffre #cartes.cartes { padding: 18px 28px 10px 8px; max-width: calc(100vw - 20px); }
+  #cartes .carte .corps { padding: 30% 6px 6px; } #cartes .carte .evo-hint { display: none; }
+}
+.detail-carte { display: none; }
+@media (max-width: 700px) {
+  #cartes .carte .txt, #cartes .carte .evo-hint { display: none; }
+  #cartes .carte .corps { padding: 45% 6px 7px; }
+  #cartes .carte.sel { transform: translateY(-6px); }
+  .detail-carte { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; width: 100%; max-width: 440px; margin-top: -2px; text-align: left; color: var(--encre); background: var(--papier); border: 3px solid var(--encre); border-left: 9px solid var(--cat, var(--encre)); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); padding: 9px 12px 11px; }
+  .detail-carte:empty, #niveau.revel .detail-carte { visibility: hidden; }
+  .detail-carte.k-arme { --cat: #ff6a10; } .detail-carte.k-objet { --cat: #2f8fe0; } .detail-carte.k-evo { --cat: #c98a00; } .detail-carte.k-soin { --cat: #1f9e4a; }
+  .detail-carte .tag { font-size: 11px; color: #fff; background: var(--cat, var(--encre)); border: 2px solid var(--encre); border-radius: 6px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .05em; }
+  .detail-carte b { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1; }
+  .detail-carte .txt { font-size: 15px; line-height: 1.3; color: #3a332a; }
+  .detail-carte .prendre { align-self: stretch; margin-top: 4px; font-size: 22px; padding: 6px 12px; }
+  #niveau .aide .tactile { font-size: 13px; }
+}
 </style>
 
 <canvas id="jeu"></canvas>
@@ -346,7 +386,8 @@ button { touch-action: manipulation; }
     <div class="slots" id="slots"></div>
     <div class="ouvrir" id="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
     <div class="cartes" id="cartes"></div>
-    <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
+    <div class="detail-carte" id="detailCarte"></div>
+    <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte pour la lire, touche-la encore pour la prendre</span></div>
   </div>
 </div>
 
@@ -1355,7 +1396,16 @@ function gagnerXp(v) {
 
 /* ---------- montée de niveau ---------- */
 let offres = [], sel = 0;
-function majSel() { $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); if (i === sel) b.focus({ preventScroll: true }) }) }
+function majSel() {
+  $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); if (i === sel) b.focus({ preventScroll: true }) });
+  // téléphone debout : le texte de la carte choisie s'affiche en grand sous les cartes, avec un bouton pour la prendre
+  const b = $("cartes").querySelector(".carte.sel"), dc = $("detailCarte");
+  if (!b) { dc.innerHTML = ""; return }
+  const k = (b.className.match(/k-(\w+)/) || [])[1] || "";
+  dc.className = "detail-carte k-" + k;
+  dc.innerHTML = `<span class="tag">${b.querySelector(".tag").textContent}</span><b>${b.querySelector("strong").textContent}</b><span class="txt">${b.querySelector(".txt").innerHTML}</span>${b.querySelector(".evo-hint") ? b.querySelector(".evo-hint").outerHTML : ""}<button class="btn go prendre" id="prendreCarte">Prendre</button>`;
+  $("prendreCarte").onclick = () => { if (!revelEnCours) prendre(sel) };
+}
 function offresPossibles() {
   const pool = [];
   const nb = Object.keys(S.armes).length;
@@ -1408,7 +1458,7 @@ function ouvrirChoix() {
   $("cartes").innerHTML = offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o);
     const visuel = `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>`;
-    return `<button class="carte k-${o.kind}" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
+    return `<button class="carte k-${o.kind}" data-i="${i}">${visuel}<span class="tag">${i + 1} · ${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
   }).join("");
   const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ évolution prête : ouvre un gros coffre (semi, hors gabarit) !" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
@@ -1464,7 +1514,7 @@ function ouvrirCoffre(gros) {
   const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
   $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
-    return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
+    return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="tag">${i + 1} · ${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
   }).join("");
   $("slots").textContent = "Choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
@@ -1508,9 +1558,14 @@ function prendre(i) {
   if (S.coffresEnAttente && S.coffresEnAttente.length) return ouvrirCoffre(S.coffresEnAttente.shift());
   if (p.xp >= p.next) gagnerXp(0);
 }
-$("cartes").addEventListener("mousemove", e => { const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
+$("cartes").addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
 $("niveau").addEventListener("pointerdown", e => { if (attenteOuverture) { e.preventDefault(); ouvrirBooster() } else if (revelEnCours && revelType === "machine") passerRevel() });
-$("cartes").addEventListener("click", e => { if (revelEnCours) return; const b = e.target.closest(".carte"); if (b) prendre(+b.dataset.i) });
+$("cartes").addEventListener("click", e => {
+  if (revelEnCours) return; const b = e.target.closest(".carte"); if (!b) return;
+  // au doigt : une première touche choisit la carte (on lit son texte), une seconde la prend
+  if (matchMedia("(pointer: coarse)").matches && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel(); vibrer(10); return }
+  prendre(+b.dataset.i);
+});
 
 /* ---------- interface ---------- */
 function majArmes() {
