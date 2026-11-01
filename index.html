@@ -2384,10 +2384,8 @@ cv.addEventListener("pointerdown", e => {
 });
 cv.addEventListener("pointermove", e => {
   if (!JOY.actif || e.pointerId !== JOY.id) return;
+  // le socle reste là où le doigt s'est posé jusqu'à ce qu'on le relève ; au-delà du bord, on avance à fond dans cette direction
   JOY.x = e.clientX; JOY.y = e.clientY;
-  // le socle suit le doigt quand on dépasse le bord, pour ne jamais avoir à relever le pouce
-  const dx = JOY.x - JOY.ox, dy = JOY.y - JOY.oy, d = Math.hypot(dx, dy);
-  if (d > JOY_R * 1.4) { const k = (d - JOY_R * 1.4) / d; JOY.ox += dx * k; JOY.oy += dy * k }
 });
 const lacher = e => { if (e.pointerId === JOY.id) { JOY.actif = false; JOY.id = null } };
 cv.addEventListener("pointerup", lacher); cv.addEventListener("pointercancel", lacher);
