@@ -189,6 +189,15 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .row .temps.infini { color: #ff6ad5; }
 /* booster des montées de niveau */
 #cartes { position: relative; perspective: 1000px; }
+/* dos des cartes : visible tant que la carte n'est pas retournée */
+#cartes .carte { position: relative; transform-style: preserve-3d; }
+#cartes .carte > :not(.dos) { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.carte .dos { position: absolute; inset: -5px; border-radius: 16px; border: 5px solid var(--encre); transform: rotateY(180deg) translateZ(1px); backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; display: grid; place-items: center; pointer-events: none;
+  background: repeating-linear-gradient(-45deg, #ffc21a 0 12px, #17130f 12px 24px); }
+.carte .dos::before { content: ""; position: absolute; inset: 9px; border-radius: 9px; border: 3px solid var(--encre); background: radial-gradient(circle at 50% 40%, #3a4a5e, #1c2430 75%); }
+.carte .dos b { position: relative; font-family: var(--display); font-weight: 400; font-size: 26px; line-height: .9; text-align: center; color: var(--jaune); transform: rotate(-8deg); text-shadow: 3px 3px 0 var(--encre), -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre); }
+.dos-img .carte .dos { border-width: 3px; background: #1c2430 url(cartes/dos.webp) center / cover; }
+.dos-img .carte .dos::before, .dos-img .carte .dos b { display: none; }
 .pack-jeu { position: absolute; left: 50%; top: 50%; width: 150px; height: 210px; z-index: 5; pointer-events: none; }
 .pack-jeu .pack-corps, .pack-jeu .pack-haut { position: absolute; left: 0; right: 0; border: 3px solid var(--encre); background: linear-gradient(120deg, #ff46be, #ffb000 40%, #50f0dc 70%, #ff46be); }
 .pack-jeu .pack-haut { top: 0; height: 16%; border-radius: 12px 12px 0 0; border-bottom: 3px dashed var(--encre); }
@@ -294,7 +303,7 @@ button { touch-action: manipulation; }
 <div class="voile" id="accueil">
   <div class="acc">
     <div class="acc-g">
-      <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">Tiens 10 minutes !</span></h1>
+      <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">10 minutes + le boss !</span></h1>
       <div class="lieu-sel">
         <button class="fleche" id="lieuPrec" aria-label="Lieu précédent">‹</button>
         <div class="nom"><b id="lieuNom">Quai de nuit</b><small id="lieuInfo"></small><button class="btn debloquer petit" id="lieuAchat" hidden></button></div>
@@ -326,7 +335,7 @@ button { touch-action: manipulation; }
     <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : débloque persos et lieux depuis l'accueil (flèches puis « Débloquer »), et achète des améliorations au vestiaire.</span></div>
     <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un gros coffre (semi, hors gabarit) = évolution !</span></div>
     <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
-    <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes et c'est la fin du poste.</span></div>
+    <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes, puis bats le boss du lieu pour finir ton poste.</span></div>
     <div class="boutons"><button class="btn go" id="aideOk">C'est parti</button></div>
   </div>
 </div>
@@ -335,7 +344,7 @@ button { touch-action: manipulation; }
   <div class="panneau">
     <h2 id="choixTitre">Niveau 2 !</h2>
     <div class="slots" id="slots"></div>
-    <div class="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
+    <div class="ouvrir" id="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
     <div class="cartes" id="cartes"></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte</span></div>
   </div>
@@ -367,7 +376,7 @@ button { touch-action: manipulation; }
     <h2 id="finTitre">Arrêt de travail</h2>
     <div class="bilan" id="bilan"></div>
     <button class="btn go infini" id="continuer" hidden>Continuer en heures sup ∞</button>
-    <div class="boutons"><button class="btn go" id="rejouer">Rejouer</button><button class="btn" id="vest2">Vestiaire</button><button class="btn" id="versAccueil">Accueil</button></div>
+    <div class="boutons"><button class="btn go" id="rejouer">Rejouer</button><button class="btn" id="versAccueil">Accueil</button></div>
   </div>
 </div>
 
@@ -428,6 +437,8 @@ const ARMES = {
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
+{ const d = new Image(); d.onload = () => document.documentElement.classList.add("dos-img"); d.src = IMG("dos") }
+const DOS = '<span class="dos" aria-hidden="true"><b>FIN<br>DE<br>POSTE</b></span>';
 /* illustrations pas encore livrées : on affiche une image de secours (l'arme de base pour une évolution, le perso pour une arme unique) */
 const REPLI = { sabre: "nyho", tronc: "nauud", scotch: "zuzuletroll", co2: "djefrais" };
 document.addEventListener("error", e => {
@@ -493,12 +504,12 @@ const LIEUX = {
   stockage: { nom: "Zone de stockage", img: "stocktampon", info: "Allées de racks · paie ×1,4", ev: "inventaire", prix: 550, desc: "Des rangées de racks forment des allées : sers-t'en comme abri, mais gare aux impasses. Les transpalettes foncent dans les allées. Paie ×1,4.",
     sol: { fond: "#25292e", joint: "rgba(0,0,0,.3)", allee: "rgba(255,194,26,.3)", texte: "ALLÉE", tache: "rgba(10,10,12,.3)", miette: "rgba(185,138,82,.45)" },
     ombre: "10,12,16", gain: 1.4, pv: 1.2, spawn: 1.1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1.4,
-    murs: { type: "racks", cw: 720, ch: 250, w: 540, h: 62, trou: .14 },
+    murs: { type: "racks", cw: 640, ch: 320, w: 446, h: 110, trou: .14, larg: 460, vars: [{ img: "rack1", w: 446, h: 165 }, { img: "rack2", w: 446, h: 109 }, { img: "rack3", w: 446, h: 92 }] },
     boss1: "Un semi recule dans l'allée !", boss2: "Deux semis bloquent les allées", coul: {} },
   parking: { nom: "Parking poids lourds", img: "retardcamion", info: "Remorques garées · paie ×1,6", ev: "fourriere", prix: 700, desc: "Au coucher du soleil, entre les remorques garées. Les camionnettes foncent sur les voies de circulation. Cônes, pneus, caddies. Paie ×1,6.",
     sol: { fond: "#2d2723", joint: "rgba(0,0,0,.25)", allee: "rgba(240,238,230,.55)", texte: "PLACE", tache: "rgba(0,0,0,.32)", miette: "rgba(255,140,40,.4)" },
     ombre: "34,12,4", gain: 1.6, pv: 1.3, spawn: 1, tpCoul: "#f2f0e6", tpNom: "camionnette", tpRate: 1.8, van: true,
-    murs: { type: "remorques", cw: 150, ch: 470, w: 66, h: 250, trou: .2, horizontal: true },
+    murs: { type: "remorques", cw: 150, ch: 470, w: 66, h: 250, trou: .2, horizontal: true, larg: 76, vars: [{ img: "camion1", w: 64, h: 272 }, { img: "camion2", w: 64, h: 278 }, { img: "remorque1", w: 70, h: 222 }, { img: "remorque2", w: 68, h: 270 }, { img: "remorque3", w: 70, h: 258 }] },
     boss1: "Un porte-conteneur recule sans regarder !", boss2: "Deux porte-conteneurs en manœuvre", coul: { crabe: "#ff7a1a", feu: "#f2f0e6", noye: "#24262a", murene: "#b8bec6", leviathan: "#c0392b" } },
   promo: { nom: "Entrepôt des promos", img: "maouell", info: "Foule · paie ×2", ev: "venteflash", prix: 1000, desc: "Semaine des promos : 35 % d'ennemis en plus, sous les néons. Colis express, robots de tri. Paie ×2.",
     sol: { fond: "#221a2e", joint: "rgba(255,255,255,.06)", allee: "rgba(255,70,190,.5)", texte: "ALLÉE", tache: "rgba(140,90,255,.13)", miette: "rgba(80,240,220,.35)" },
@@ -576,7 +587,7 @@ function spawn(type, elite) {
 }
 function cibleVivants(t) {
   let c = EQ.vivantsDebut + (EQ.vivantsFin - EQ.vivantsDebut) * Math.min(1, t / VICTOIRE);
-  if (t > VICTOIRE) c = Math.min(EQ.vivantsMax, EQ.vivantsFin + (t - VICTOIRE) / 4);
+  if (t > VICTOIRE) c = S.infini ? Math.min(EQ.vivantsMax, EQ.vivantsFin + (t - VICTOIRE) / 4) : EQ.vivantsFin * .55;
   if (t > 50 && t % EQ.vague.toutes > EQ.vague.toutes - EQ.vague.duree) c *= 1 + EQ.vague.bonus;
   return c * LL().spawn * (S.ev ? .4 : 1);
 }
@@ -611,6 +622,7 @@ function vagues(dt) {
       for (let i = 0; i < 6; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-90, 90), vy: rnd(-90, 90), t: .4, c: "#cfc6b4" });
     }
   } else S.planteAcc = 0;
+  if (!S.chefE && t >= VICTOIRE) spawnChef();   // le boss de fin arrive même pendant un événement
   if (S.ev) return;
   // encerclement : chaque minute, un anneau de colis apparaît autour de toi et se resserre ; immobile, tu te fais écraser
   if (t >= (S.cercleT ?? EQ.cercle.debut)) {
@@ -636,6 +648,144 @@ function spawnMini() {
   spawn("noye", true); const e = S.ennemis[S.ennemis.length - 1];
   e.mini = true; e.r = 30; e.hp = e.max = e.hp / 6 * EQ.miniPv; e.vit *= .8; e.xp = 40;
   annonce("Colis hors gabarit !");
+}
+/* sens : -1 si l'illustration regarde vers la gauche.
+   pv : multiple de la vie d'un semi à 10:00, calé au simulateur pour ~40 s (quai) à ~75 s (promos) avec le vestiaire qu'on a en arrivant dans ce lieu */
+/* ---------- boss de fin : à 10:00 le chrono s'arrête, le boss du lieu arrive ; la partie est gagnée quand il tombe ---------- */
+const CHEFS = {
+  quai: { id: "megacolis", sens: -1, nom: "Le Méga-Colis", pv: .8, vit: 30, r: 58, haut: 180, att: [] },
+  frigo: { id: "yeti", nom: "Le Yéti du frigo", pv: .6, vit: 36, r: 58, haut: 190, att: ["souffle", "blocs"] },
+  stockage: { id: "cariste", sens: -1, nom: "Le Cariste fou", pv: .85, vit: 34, r: 56, haut: 170, att: ["charge"] },
+  parking: { id: "routier", nom: "Le Routier", pv: 1.05, vit: 34, r: 54, haut: 200, att: ["klaxon", "radio"] },
+  promo: { id: "promo", sens: -1, nom: "Le Roi des Promos", pv: 1.15, vit: 38, r: 56, haut: 180, att: ["vente", "etiquettes"] },
+};
+const IMG_BOSS = {};
+for (const c of Object.values(CHEFS)) { const im = new Image(); im.src = "boss/" + c.id + ".webp"; IMG_BOSS[c.id] = im }
+const chefDuLieu = () => CHEFS[S.lieu] || CHEFS.quai;
+function spawnChef() {
+  const C = chefDuLieu(); spawn("leviathan"); const e = S.ennemis[S.ennemis.length - 1];
+  e.type = "chef"; e.chef = C; e.r = C.r; e.hp = e.max = e.hp * C.pv; e.vit = C.vit; e.xp = 200; e.coul = "#ffc21a";
+  e.at = { etat: "marche", t: 4, n: 0 };
+  S.chefE = e; S.tirsChef = []; annonce("⚠ " + C.nom + " arrive !"); vibrer(200);
+}
+/* le joueur reçoit un coup d'une attaque du boss */
+function toucheChef(deg, lent) {
+  const p = S.p; if (lent) p.lent = Math.max(p.lent || 0, lent);
+  if (p.inv > 0) return; p.hp -= deg; p.inv = .5; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }); vibrer(40);
+}
+/* comportement : marche vers le joueur, puis une attaque de sa liste, chacune annoncée avant de frapper */
+function iaChef(e, vx, vy, dt) {
+  const p = S.p, C = e.chef, a = e.at, dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+  a.t -= dt;
+  // phase de rage sous 35 % de vie : plus rapide, attaques plus rapprochées
+  if (!e.rage && e.hp < e.max * .35) { e.rage = true; annonce(C.nom + " s'énerve !"); vibrer(120) }
+  if (e.rage) { vx *= 1.3; vy *= 1.3 }
+  if (a.etat === "marche") {
+    if (a.t <= 0 && C.att.length && d < 700) { a.att = C.att[a.n++ % C.att.length]; a.etat = "prepare"; a.a = Math.atan2(dy, dx);
+      a.t = { souffle: .9, blocs: .5, charge: 1, klaxon: .9, radio: .6, vente: .7, etiquettes: .6 }[a.att];
+      if (a.att === "radio") annonce("Le Routier appelle les copains !"); if (a.att === "vente") annonce("Vente flash !") }
+    return [vx, vy];
+  }
+  if (a.etat === "prepare") {
+    if (a.att === "souffle" || a.att === "charge" || a.att === "etiquettes") a.a += Math.atan2(Math.sin(Math.atan2(dy, dx) - a.a), Math.cos(Math.atan2(dy, dx) - a.a)) * Math.min(1, dt * 1.6);
+    if (a.t > 0) return [0, 0];
+    a.etat = "frappe";
+    if (a.att === "souffle") { a.t = .7; a.deja = false }
+    else if (a.att === "blocs") { for (let i = 0; i < 4; i++) S.tirsChef.push({ k: "bloc", x: p.x + (i ? rnd(-110, 110) : 0), y: p.y + (i ? rnd(-110, 110) : 0), t: 1.1 + i * .18, t0: 1.1 + i * .18, r: 44 }); a.t = .3 }
+    else if (a.att === "charge") { a.t = 1.2 }
+    else if (a.att === "klaxon") { a.t = .45; S.tirsChef.push({ k: "onde", x: e.x, y: e.y, t: .45, t0: .45, r: 320 }); vibrer(80) }
+    else if (a.att === "radio") { a.t = .2; for (let i = 0; i < 3; i++) setTimeout(() => { if (enJeu && S.chefE === e) lancerTranspa(i === 0) }, i * 700) }
+    else if (a.att === "vente") { a.t = .3; for (let i = 0; i < 9; i++) { spawn("crabe"); const m = S.ennemis[S.ennemis.length - 1], an = i / 9 * 6.28; m.x = e.x + Math.cos(an) * 90; m.y = e.y + Math.sin(an) * 90; m.vit *= 1.35 } }
+    else if (a.att === "etiquettes") { a.t = .3; for (let i = -2; i <= 2; i++) { const an = a.a + i * .22; S.tirsChef.push({ k: "etiq", x: e.x, y: e.y, vx: Math.cos(an) * 270, vy: Math.sin(an) * 270, t: 2.6, t0: 2.6, r: 13, a: an }) } }
+  }
+  if (a.etat === "frappe") {
+    if (a.att === "souffle") {   // cône glacé devant lui
+      if (!a.deja) { const pa = Math.atan2(dy, dx), da = Math.abs(Math.atan2(Math.sin(pa - a.a), Math.cos(pa - a.a))); if (d < 290 && da < .5) { a.deja = true; toucheChef(e.deg * .7, 3) } }
+      if (S.fx.length < 240) for (let i = 0; i < 3; i++) { const an = a.a + rnd(-.45, .45), v = rnd(200, 420); S.fx.push({ x: e.x + Math.cos(a.a) * 30, y: e.y + Math.sin(a.a) * 30, vx: Math.cos(an) * v, vy: Math.sin(an) * v, t: .55, c: i % 2 ? "#e8f8ff" : "#9fd2ff" }) }
+      vx = 0; vy = 0;
+    } else if (a.att === "charge") {   // fonce tout droit ; s'il percute un rack, des palettes tombent
+      vx = Math.cos(a.a) * C.vit * 9; vy = Math.sin(a.a) * C.vit * 9;
+      if (d < e.r + p.r + 6) toucheChef(e.deg * 1.4);
+      const fx = e.x + Math.cos(a.a) * (e.r + 10), fy = e.y + Math.sin(a.a) * (e.r + 10);
+      if (LL().murs && dansMur(fx, fy, 8)) {
+        a.t = 0; S.secousse = Math.max(S.secousse || 0, .5); vibrer(120); annonce("BOUM ! Les palettes tombent !");
+        for (let i = 0; i < 6; i++) S.tirsChef.push({ k: "palette", x: p.x + (i ? rnd(-160, 160) : 0), y: p.y + (i ? rnd(-160, 160) : 0), t: .9 + i * .12, t0: .9 + i * .12, r: 40 });
+      }
+    } else vx = vy = 0;
+    if (a.t <= 0) { a.etat = a.att === "charge" ? "sonne" : "marche"; a.t = a.att === "charge" ? 1.4 : e.rage ? rnd(1.8, 2.6) : rnd(3, 4.5) }
+    return [vx, vy];
+  }
+  if (a.etat === "sonne") { if (a.t <= 0) { a.etat = "marche"; a.t = e.rage ? rnd(1.5, 2.2) : rnd(2.5, 3.5) } return [0, 0] }
+  return [vx, vy];
+}
+/* projectiles et chutes du boss */
+function tirsChef(dt) {
+  const p = S.p; if (!S.tirsChef) return;
+  for (const o of S.tirsChef) {
+    o.t -= dt;
+    if (o.k === "etiq") { o.x += o.vx * dt; o.y += o.vy * dt; o.a += dt * 8; if (Math.hypot(o.x - p.x, o.y - p.y) < o.r + p.r) { o.t = 0; toucheChef(S.chefE ? S.chefE.deg * .35 : 10, 2.2) } }
+    else if (o.k === "onde") { if (o.t <= 0) { const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy) || 1; if (d < o.r) { p.pousse = { x: dx / d * 1100, y: dy / d * 1100 }; toucheChef(S.chefE ? S.chefE.deg * .5 : 10) } } }
+    else if (o.t <= 0 && !o.fait) {   // bloc de glace ou palette qui touche le sol
+      o.fait = true; if (Math.hypot(o.x - p.x, o.y - p.y) < o.r + p.r) toucheChef(S.chefE ? S.chefE.deg * .8 : 15);
+      for (let i = 0; i < 10; i++) S.fx.push({ x: o.x + rnd(-20, 20), y: o.y + rnd(-14, 14), vx: rnd(-200, 200), vy: rnd(-200, 120), t: .45, c: o.k === "bloc" ? (i % 2 ? "#e8f8ff" : "#9fd2ff") : ["#b98a52", "#d8a568"][i % 2] });
+    }
+  }
+  S.tirsChef = S.tirsChef.filter(o => o.t > (o.k === "onde" ? -.35 : 0));
+}
+const blancBoss = {};
+function dessinerChef(e, x, y, p) {
+  const C = e.chef, im = IMG_BOSS[C.id];
+  ombreSol(x, y + e.r * .75, e.r * 1.5, e.r * .45);
+  if (!im || !im.complete || !im.naturalWidth) return dessinerEnnemi(Object.assign({}, e, { type: "leviathan", chef: null }), x, y, p);
+  const h = C.haut, w = h * im.naturalWidth / im.naturalHeight, a = e.at;
+  const marche = a.etat === "marche" || (a.att === "charge" && a.etat === "frappe");
+  const rot = a.etat === "sonne" ? Math.sin(S.t * 18) * .08 : marche ? Math.sin(e.ph * (a.etat === "frappe" ? 20 : 5)) * .07 : 0;
+  const sq = a.etat === "prepare" ? 1 + Math.sin(S.t * 30) * .03 : 1;
+  cx.save(); cx.translate(x, y + e.r * .75); cx.rotate(rot); const vers = a.att === "charge" && a.etat !== "marche" ? Math.cos(a.a) : p.x - e.x;   // il regarde là où il va
+  cx.scale((vers < 0 ? -1 : 1) * (C.sens || 1) * (2 - sq), sq);
+  cx.drawImage(im, -w / 2, -h, w, h);
+  if (e.flash > 0) {   // éclair blanc quand on le touche
+    let b = blancBoss[C.id];
+    if (!b) { b = document.createElement("canvas"); b.width = im.naturalWidth; b.height = im.naturalHeight; const g = b.getContext("2d"); g.drawImage(im, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#fff"; g.fillRect(0, 0, b.width, b.height); blancBoss[C.id] = b }
+    cx.globalAlpha = .7; cx.drawImage(b, -w / 2, -h, w, h); cx.globalAlpha = 1;
+  }
+  if (e.gel > 0) { cx.globalAlpha = .35; cx.fillStyle = "#bfe9ff"; cx.fillRect(-w / 2, -h, w, h); cx.globalAlpha = 1 }
+  cx.restore();
+  if (a.etat === "sonne") { cx.font = "22px 'Luckiest Guy', Impact"; cx.textAlign = "center"; cx.fillStyle = "#ffe14d"; for (let k = 0; k < 3; k++) { const an = S.t * 4 + k * 2.1; cx.fillText("★", x + Math.cos(an) * 40, y - C.haut + 10 + Math.sin(an) * 10) } }
+}
+/* annonces au sol des attaques (sous les personnages) */
+function dessinerAlertesChef(X, Y) {
+  const e = S.chefE;
+  if (e && e.hp > 0) {
+    const a = e.at, x = X(e.x), y = Y(e.y), k = .5 + .5 * Math.sin(S.t * 26);
+    if (a.att === "souffle" && (a.etat === "prepare" || a.etat === "frappe")) {
+      cx.save(); cx.translate(x, y); cx.rotate(a.a); cx.beginPath(); cx.moveTo(0, 0); cx.arc(0, 0, 290, -.5, .5); cx.closePath();
+      cx.fillStyle = a.etat === "prepare" ? `rgba(120,200,255,${.12 + .14 * k})` : "rgba(200,240,255,.38)"; cx.fill(); cx.strokeStyle = "rgba(220,245,255,.8)"; cx.lineWidth = 3; cx.setLineDash([10, 8]); cx.stroke(); cx.restore();
+    }
+    if (a.att === "charge" && a.etat === "prepare") { cx.save(); cx.translate(x, y); cx.rotate(a.a); cx.fillStyle = `rgba(255,42,31,${.14 + .2 * k})`; cx.fillRect(0, -e.r * .8, 900, e.r * 1.6); cx.strokeStyle = "rgba(255,60,40,.85)"; cx.lineWidth = 3; cx.setLineDash([14, 10]); cx.strokeRect(0, -e.r * .8, 900, e.r * 1.6); cx.restore() }
+    if (a.att === "klaxon" && a.etat === "prepare") { const r = 320 * (1 - a.t / .9); cx.strokeStyle = `rgba(255,150,40,${.5 + .4 * k})`; cx.lineWidth = 4; cx.setLineDash([12, 10]); cx.beginPath(); cx.arc(x, y, 320, 0, 7); cx.stroke(); cx.setLineDash([]); cx.fillStyle = "rgba(255,150,40,.12)"; cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill() }
+    if (a.att === "etiquettes" && a.etat === "prepare") { cx.strokeStyle = `rgba(255,70,190,${.4 + .4 * k})`; cx.lineWidth = 3; cx.setLineDash([8, 8]); for (let i = -2; i <= 2; i++) { const an = a.a + i * .22; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + Math.cos(an) * 260, y + Math.sin(an) * 260); cx.stroke() } }
+    cx.setLineDash([]);
+  }
+  for (const o of S.tirsChef || []) {
+    const x = X(o.x), y = Y(o.y);
+    if (o.k === "bloc" || o.k === "palette") {
+      if (o.fait) continue; const k = Math.max(0, 1 - o.t / o.t0);
+      cx.strokeStyle = o.k === "bloc" ? "rgba(160,220,255,.8)" : "rgba(255,90,31,.7)"; cx.lineWidth = 3; cx.setLineDash([8, 6]); cx.beginPath(); cx.ellipse(x, y, o.r, o.r * .6, 0, 0, 7); cx.stroke(); cx.setLineDash([]);
+      ombreSol(x, y, o.r * (.3 + .7 * k), o.r * .6 * (.3 + .7 * k));
+      const hy = y - (1 - k) * 260;
+      if (o.k === "palette") poser(spritePaletteSol(), x, hy, 0, o.r / 40, o.r / 40);
+      else { cx.save(); cx.translate(x, hy); cx.rotate(o.t * 3); cx.fillStyle = "rgba(200,240,255,.92)"; cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.beginPath(); cx.roundRect(-22, -18, 44, 36, 6); cx.fill(); cx.stroke(); cx.fillStyle = "rgba(255,255,255,.8)"; cx.fillRect(-14, -12, 10, 20); cx.restore() }
+    } else if (o.k === "onde") { const k = 1 - Math.max(0, o.t) / o.t0, r = o.t > 0 ? o.r * k * .3 : o.r * (1 + -o.t * 1.5); ajouter(anneau("255,150,40"), x, y, r * 2.3, r * 2.3, o.t > 0 ? .5 : Math.max(0, 1 + o.t * 2.8)) }
+    else if (o.k === "etiq") { cx.save(); cx.translate(x, y); cx.rotate(o.a); cx.fillStyle = "#ffe14d"; cx.strokeStyle = "#17130f"; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(-14, -9); cx.lineTo(8, -9); cx.lineTo(15, 0); cx.lineTo(8, 9); cx.lineTo(-14, 9); cx.closePath(); cx.fill(); cx.stroke(); cx.fillStyle = "#e8412c"; cx.font = "10px 'Luckiest Guy', Impact"; cx.textAlign = "center"; cx.fillText("%", -3, 4); cx.restore() }
+  }
+}
+/* grande barre de vie en haut de l'écran */
+function barreChef() {
+  const e = S.chefE; if (!e || e.hp <= 0 || !enJeu) return;
+  const w = Math.min(W * .7, 560), y = H < 500 ? 96 : 126;
+  cx.font = (H < 500 ? 17 : 22) + "px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineJoin = "round"; cx.lineWidth = 5; cx.strokeStyle = ENCRE; cx.strokeText(e.chef.nom, W / 2, y - 6); cx.fillStyle = "#ffe14d"; cx.fillText(e.chef.nom, W / 2, y - 6);
+  barre(W / 2, y, w, H < 500 ? 10 : 14, e.hp / e.max, "#ff6b57", "#a8231a");
 }
 let annonceTxt = "", annonceT = 0;
 function annonce(t) { annonceTxt = t; annonceT = 3 }
@@ -764,7 +914,7 @@ function contraindreEv(e) {
 
 /* ---------- dégâts ---------- */
 function blesser(e, d, kx, ky) {
-  d *= S.p.deg; if (e.ch && e.ch.etat === "sonne") d *= 1.5; if (e.gel > 0) d *= 1.5; e.hp -= d; e.flash = .1;
+  d *= S.p.deg; if ((e.ch && e.ch.etat === "sonne") || (e.at && e.at.etat === "sonne")) d *= 1.5; if (e.gel > 0) d *= 1.5; e.hp -= d; e.flash = .1;
   if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
@@ -985,13 +1135,49 @@ function mursZone(x0, y0, x1, y1) {
   const out = [];
   for (let i = Math.floor(x0 / M.cw) - 1; i <= Math.floor(x1 / M.cw) + 1; i++) for (let j = Math.floor(y0 / M.ch) - 1; j <= Math.floor(y1 / M.ch) + 1; j++) {
     if (hash(i * 7 + 3, j * 13 + 5) < M.trou) continue;
-    const x = i * M.cw + (M.cw - M.w) / 2, y = j * M.ch + (M.ch - M.h) / 2;
-    if (x > x1 || x + M.w < x0 || y > y1 || y + M.h < y0) continue;
-    out.push({ x, y, w: M.w, h: M.h, i, j });
+    const v = M.vars ? M.vars[Math.floor(hash2(i, j) * M.vars.length)] : M, w = v.w, h = v.h;
+    const x = i * M.cw + (M.cw - w) / 2, y = j * M.ch + (M.ch - h) / 2;
+    if (x > x1 || x + w < x0 || y > y1 || y + h < y0) continue;
+    out.push({ x, y, w, h, i, j, v });   // jamais retournés : l'ombre dessinée doit rester en bas
   }
   return out;
 }
 function dansMur(x, y, r) { for (const m of mursZone(x - r, y - r, x + r, y + r)) { const nx = clamp(x, m.x, m.x + m.w), ny = clamp(y, m.y, m.y + m.h); if (Math.hypot(x - nx, y - ny) < r) return true } return false }
+/* le segment (ax,ay)→(bx,by) traverse-t-il le rectangle ? renvoie la fraction du trajet où il y entre, sinon null */
+function coupe(ax, ay, bx, by, x0, y0, x1, y1) {
+  let t0 = 0, t1 = 1; const dx = bx - ax, dy = by - ay;
+  for (const [pp, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+    if (pp === 0) { if (q < 0) return null; continue }
+    const t = q / pp; if (pp < 0) { if (t > t1) return null; if (t > t0) t0 = t } else { if (t < t0) return null; if (t < t1) t1 = t }
+  }
+  return t0;
+}
+/* contournement : si un mur sépare le colis du joueur, il vise le coin du mur qui fait le plus court détour */
+function chemin(e) {
+  const p = S.p, r = e.r + 4;
+  let mur = null, tm = 2;
+  for (const m of mursZone(Math.min(e.x, p.x) - r, Math.min(e.y, p.y) - r, Math.max(e.x, p.x) + r, Math.max(e.y, p.y) + r)) {
+    const t = coupe(e.x, e.y, p.x, p.y, m.x - r, m.y - r, m.x + m.w + r, m.y + m.h + r);
+    if (t !== null && t < tm) { tm = t; mur = m }
+  }
+  if (!mur) return null;
+  const k = r + 14, m = mur, x0 = m.x - r + 2, y0 = m.y - r + 2, x1 = m.x + m.w + r - 2, y1 = m.y + m.h + r - 2;
+  const C = [[m.x - k, m.y - k], [m.x + m.w + k, m.y - k], [m.x + m.w + k, m.y + m.h + k], [m.x - k, m.y + m.h + k]];   // dans l'ordre du tour
+  const voit = (ax, ay, bx, by) => coupe(ax, ay, bx, by, x0, y0, x1, y1) === null;
+  let c = null, cl = 1e9;
+  C.forEach(([x, y], i) => {
+    if (Math.hypot(x - e.x, y - e.y) < 20 || !voit(e.x, e.y, x, y)) return;
+    let l = Math.hypot(x - e.x, y - e.y);
+    if (voit(x, y, p.x, p.y)) l += Math.hypot(p.x - x, p.y - y);
+    else {   // il faudra passer par un coin voisin
+      let mieux = 1e9;
+      for (const j of [(i + 1) % 4, (i + 3) % 4]) { const [x2, y2] = C[j]; if (voit(x2, y2, p.x, p.y)) mieux = Math.min(mieux, Math.hypot(x2 - x, y2 - y) + Math.hypot(p.x - x2, p.y - y2)) }
+      l += mieux;
+    }
+    if (l < cl) { cl = l; c = { x, y } }
+  });
+  return c;
+}
 function pousserHorsMurs(o, r) {
   for (const m of mursZone(o.x - r, o.y - r, o.x + r, o.y + r)) {
     const nx = clamp(o.x, m.x, m.x + m.w), ny = clamp(o.y, m.y, m.y + m.h), dx = o.x - nx, dy = o.y - ny, d = Math.hypot(dx, dy);
@@ -1051,16 +1237,17 @@ function maj(dt) {
   if (keys.has("KeyD") || keys.has("ArrowRight")) mx++;
   if (keys.has("KeyW") || keys.has("ArrowUp")) my--;
   if (keys.has("KeyS") || keys.has("ArrowDown")) my++;
-  const vit = p.vit * (p.boost > 0 ? 1.4 : 1); p.boost -= dt;
+  const vit = p.vit * (p.boost > 0 ? 1.4 : 1) * (p.lent > 0 ? .5 : 1); p.boost -= dt; p.lent = (p.lent || 0) - dt;
   let tx = 0, ty = 0, force = 1;
   if (JOY.actif) { const jx = JOY.x - JOY.ox, jy = JOY.y - JOY.oy, jd = Math.hypot(jx, jy); if (jd > 6) { mx = jx; my = jy; force = Math.min(1, jd / JOY_R) } }
   if (mx || my) { const n = Math.hypot(mx, my); tx = mx / n * vit * force; ty = my / n * vit * force; p.dir = Math.atan2(my, mx); p.pas += dt * 10 * force }
   const lis = Math.min(1, (LL().glisse ? 2.4 : 40) * dt); p.vx += (tx - p.vx) * lis; p.vy += (ty - p.vy) * lis;
   p.x += p.vx * dt; p.y += p.vy * dt;
+  if (p.pousse) { p.x += p.pousse.x * dt; p.y += p.pousse.y * dt; const k = Math.pow(.004, dt); p.pousse.x *= k; p.pousse.y *= k; if (Math.abs(p.pousse.x) + Math.abs(p.pousse.y) < 20) p.pousse = null }
   if (LL().murs) pousserHorsMurs(p, p.r);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
 
-  vagues(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt);
+  vagues(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
 
   // déplacement des ennemis + séparation (grille)
   const murs = !!LL().murs;
@@ -1080,7 +1267,14 @@ function maj(dt) {
       continue;
     }
     const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
-    let vx = dx / d * e.vit, vy = dy / d * e.vit;
+    // dans les lieux à murs, on recalcule de temps en temps le détour (coin à contourner)
+    let gx = dx, gy = dy;
+    if (murs && d < 1100) {
+      if ((e.navT = (e.navT || 0) - dt) <= 0) { e.navT = .2 + Math.random() * .15; e.nav = chemin(e) }
+      if (e.nav) { gx = e.nav.x - e.x; gy = e.nav.y - e.y; if (Math.hypot(gx, gy) < 14) { e.nav = null; e.navT = 0; gx = dx; gy = dy } }
+    }
+    const gd = Math.hypot(gx, gy) || 1;
+    let vx = gx / gd * e.vit, vy = gy / gd * e.vit;
     if (e.type === "feu") { vx += Math.cos(e.ph * 4) * 30; vy += Math.sin(e.ph * 4) * 30 }
     if (p.givre && d < 140) { vx *= .55; vy *= .55 }
     if (e.colle > 0) { e.colle -= dt; vx *= 1 - (e.colleF || 0); vy *= 1 - (e.colleF || 0) }
@@ -1104,6 +1298,7 @@ function maj(dt) {
       else if (c.etat === "sonne") { vx = 0; vy = 0 }
       else if (c.etat === "fonce") { vx = Math.cos(c.a) * e.vit * 7; vy = Math.sin(c.a) * e.vit * 7 }
     }
+    if (e.chef) [vx, vy] = iaChef(e, vx, vy, dt);
     e.x += (vx + e.kb.x * 60) * dt; e.y += (vy + e.kb.y * 60) * dt;
     if (murs) pousserHorsMurs(e, e.r);
     if (S.ev) contraindreEv(e);
@@ -1138,7 +1333,8 @@ function maj(dt) {
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
   }
   if (p.hp <= 0) return mortJoueur();
-  if (S.t >= VICTOIRE && !S.infini) return finir(true);
+  if (S.chefE && S.chefE.hp <= 0 && !S.chefMort) { S.chefMort = 1.6; annonce(S.chefE.chef.nom + " est KO !"); S.secousse = .6; vibrer(250) }
+  if (S.chefMort > 0 && !S.infini && (S.chefMort -= dt) <= 0) return finir(true);
   majHud();
 }
 
@@ -1212,7 +1408,7 @@ function ouvrirChoix() {
   $("cartes").innerHTML = offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o);
     const visuel = `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>`;
-    return `<button class="carte k-${o.kind}" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
+    return `<button class="carte k-${o.kind}" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
   }).join("");
   const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ évolution prête : ouvre un gros coffre (semi, hors gabarit) !" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
@@ -1221,6 +1417,7 @@ function ouvrirChoix() {
 /* montée de niveau : un booster tombe, se déchire, les 3 cartes en sortent (environ 1 s) */
 async function revelBooster() {
   revelEnCours = true; revelType = "booster"; revel = []; $("niveau").classList.add("revel");
+  $("ouvrir").innerHTML = '<span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l\'ouvrir</span>';
   const zone = $("cartes"), boutons = [...zone.querySelectorAll(".carte")], zr = zone.getBoundingClientRect();
   const pack = document.createElement("div"); pack.className = "pack-jeu";
   pack.innerHTML = '<div class="pack-haut"></div><div class="pack-corps"><span class="pk1">FIN DE POSTE</span><span class="pk2">BOOSTER</span></div>';
@@ -1236,12 +1433,22 @@ async function revelBooster() {
   await ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg) scale(1)", filter: "brightness(1)" }, { transform: "translate(-50%,-50%) rotate(-3deg) scale(1.12)", filter: "brightness(2.6)" }], { duration: 420, easing: "ease-out" });
   ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg) scale(1.12)", opacity: 1 }, { transform: "translate(-50%,-50%) translateY(40vh) rotate(8deg) scale(.9)", opacity: 0 }], { duration: 800, delay: 350 });
   const cxp = zr.left + zr.width / 2, cyp = zr.top + zr.height / 2;
-  await Promise.all(boutons.map((b, i) => {
+  // les cartes jaillissent de dos, se posent, puis se retournent une à une (pas d'opacité animée : elle aplatirait la 3D)
+  const vols = boutons.map((b, i) => {
     const r = b.getBoundingClientRect(), dx = cxp - (r.left + r.width / 2), dy = cyp - (r.top + r.height / 2);
     b.style.opacity = "";
-    return ani(b, [{ transform: `translate(${dx}px,${dy}px) scale(.35) rotateY(180deg)`, opacity: 0 }, { transform: `translate(${dx * .2}px,${dy * .2 - 30}px) scale(1.08) rotateY(60deg)`, opacity: 1, offset: .55 }, { transform: "none", opacity: 1 }], { duration: 950, delay: 150 + i * 300, easing: "cubic-bezier(.25,1.2,.5,1)", fill: "none" });
-  }));
+    return b.animate([{ transform: `translate(${dx}px,${dy}px) scale(.35) rotateY(180deg) rotate(-10deg)` }, { transform: `translate(${dx * .2}px,${dy * .2 - 30}px) scale(1.06) rotateY(180deg) rotate(4deg)`, offset: .55 }, { transform: "rotateY(180deg)" }], { duration: 700, delay: 120 + i * 200, easing: "cubic-bezier(.25,1.2,.5,1)", fill: "both" });
+  });
+  await Promise.all(vols.map(a => a.finished.catch(() => { })));
+  await new Promise(r => setTimeout(r, 250));
+  await Promise.all(boutons.map((b, i) => new Promise(r => setTimeout(r, i * 260)).then(() => retourner(b, vols[i]))));
   pack.remove(); finRevel();
+}
+/* retourne une carte posée de dos (tenue par l'animation « tenue ») */
+async function retourner(b, tenue) {
+  vibrer(12);
+  await ani(b, [{ transform: "rotateY(180deg) scale(1)" }, { transform: "rotateY(90deg) scale(1.12) translateY(-10px)", offset: .5 }, { transform: "rotateY(0deg) scale(1)" }], { duration: 480, easing: "cubic-bezier(.3,1.3,.5,1)", fill: "none" });
+  if (tenue) tenue.cancel();
 }
 /* coffre : machine à sous, 3 rouleaux qui s'arrêtent bien cadrés ; si une évolution est prête, elle tombe au milieu */
 /* deux sortes de coffres : le petit (colis « fragile ») donne une carte ; le gros (semi, hors gabarit, objectif réussi)
@@ -1257,7 +1464,7 @@ function ouvrirCoffre(gros) {
   const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
   $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
-    return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
+    return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
   }).join("");
   $("slots").textContent = "Choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
@@ -1265,11 +1472,19 @@ function ouvrirCoffre(gros) {
 }
 async function revelMachine() {
   revelEnCours = true; revelType = "machine"; revel = []; $("niveau").classList.add("revel");
-  const zone = $("cartes"), m = zone.querySelector(".machine-jeu");
+  const zone = $("cartes"), m = zone.querySelector(".machine-jeu"), cartes = [...zone.querySelectorAll(".carte")];
+  // les 3 cartes attendent de dos ; on appuie pour actionner le levier
+  const tenues = cartes.map(b => b.animate([{ transform: "rotateY(180deg)" }, { transform: "rotateY(180deg)" }], { duration: 1, fill: "both" }));
+  $("ouvrir").innerHTML = '<span class="clavier"><kbd>Espace</kbd> pour actionner la machine</span><span class="tactile">Touche la machine pour la lancer</span>';
   await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 450, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
+  const attend = m.querySelector(".levier-jeu").animate([{ transform: "rotate(0)" }, { transform: "rotate(10deg)" }, { transform: "rotate(0)" }], { duration: 700, iterations: Infinity, easing: "ease-in-out" });
+  $("niveau").classList.add("attente");
+  await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
+  $("niveau").classList.remove("attente"); attend.cancel(); vibrer(30);
   ani(m.querySelector(".levier-jeu"), [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 700, fill: "none" });
-  await new Promise(r => setTimeout(r, 450));
-  await Promise.all([...zone.querySelectorAll(".carte")].map((b, i) => {
+  await new Promise(r => setTimeout(r, 250));
+  await Promise.all(cartes.map((b, i) => new Promise(r => setTimeout(r, i * 140)).then(() => retourner(b, tenues[i]))));
+  await Promise.all(cartes.map((b, i) => {
     const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
     bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
     return ani(bande, [{ transform: "translateY(0)", filter: "blur(0)" }, { transform: `translateY(${-n * h * .5}px)`, filter: "blur(2px)", offset: .5 }, { transform: `translateY(${-n * h}px)`, filter: "blur(0)" }], { duration: 1700 + i * 750, easing: "cubic-bezier(.35,0,.25,1.04)" }).then(() => {
@@ -1306,7 +1521,7 @@ function majArmes() {
 }
 function majHud() {
   $("xp").style.width = (S.p.xp / S.p.next * 100).toFixed(1) + "%"; $("xp").classList.toggle("palier", S.p.niv === PALIER);
-  $("argent").textContent = S.argent; $("niv").textContent = S.p.niv; $("temps").textContent = S.infini ? "+" + fmt(S.t - VICTOIRE) : fmt(Math.max(0, VICTOIRE - S.t)); $("temps").classList.toggle("infini", !!S.infini); $("kills").textContent = S.kills;
+  $("argent").textContent = S.argent; $("niv").textContent = S.p.niv; $("temps").textContent = S.infini ? "+" + fmt(S.t - VICTOIRE) : S.chefE ? "BOSS" : fmt(Math.max(0, VICTOIRE - S.t)); $("temps").classList.toggle("infini", !!S.infini); $("kills").textContent = S.kills;
 }
 function finir(gagne) {
   enJeu = false; $("hud").hidden = true; JOY.actif = false;
@@ -1364,6 +1579,8 @@ function tourner(liste, cle, sens) { const i = liste.indexOf(SAVE[cle]); SAVE[cl
 
 /* ---------- dessin ---------- */
 const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967295 };
+/* hachage entier propre (Math.imul) pour choisir les variantes de murs */
+const hash2 = (x, y) => { let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1); h = Math.imul(h ^ (h >>> 15), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); return ((h ^ (h >>> 16)) >>> 0) / 4294967296 };
 /* dalle béton du quai : joints, allées jaunes tous les 6 carreaux, numéros de quai peints, taches d'huile */
 function sol(camx, camy) {
   const L = LL(), C = L.sol, tu = tuileSol(L);
@@ -1483,7 +1700,12 @@ function dessinLieu(e, c, blanc, p) {
 function dessinerMurs(camx, camy, X, Y) {
   const M = LL().murs;
   for (const m of mursZone(camx - 40, camy - 40, camx + W + 40, camy + H + 40)) {
-    const x = X(m.x), y = Y(m.y), hs = hash(m.i * 3 + 1, m.j * 5 + 2);
+    const x = X(m.x), y = Y(m.y), hs = hash(m.i * 3 + 1, m.j * 5 + 2), im = m.v && m.v.img && IMG_MUR[m.v.img];
+    if (im && im.complete && im.naturalWidth) {   // illustration (racks, camions) avec son ombre déjà dessinée
+      const sw = M.larg, sh = sw * im.naturalHeight / im.naturalWidth;
+      cx.save(); cx.translate(x + m.w / 2, y + m.h / 2);
+      cx.drawImage(im, -sw / 2 + 2, -sh / 2 + 2, sw, sh); cx.restore(); continue;
+    }
     cx.fillStyle = "rgba(0,0,0,.35)"; cx.fillRect(x + 6, y + 8, m.w, m.h);
     const sp = spriteMur(M, m, hs); cx.drawImage(sp.c, x - sp.ox, y - sp.oy, sp.w, sp.h);
   }
@@ -1917,6 +2139,8 @@ function dPerso(x, gilet, casque, avecCasque, yeuxX) {
 const ECH_J = .8;
 /* les persos illustrés (images générées, détourées, contour encre) ; tant qu'une image n'est pas chargée, on garde le dessin */
 const IMG_PERSO = {}, HAUT_PERSO = 56;
+const IMG_MUR = {};
+for (const L of Object.values(LIEUX)) for (const v of (L.murs && L.murs.vars) || []) { const im = new Image(); im.src = "murs/" + v.img + ".webp"; IMG_MUR[v.img] = im }
 for (const id of Object.keys(PERSOS)) { const i = new Image(); i.src = "persos/" + id + ".webp"; IMG_PERSO[id] = i }
 function spriteJoueur(perso, avecCasque = true, yeuxX = false) {
   const im = IMG_PERSO[perso];
@@ -2120,9 +2344,10 @@ function dessinerJeu() {
   // ombre des palettes qui tombent
   for (const f of S.fusees) { const k = Math.max(0, 1 - f.t / (f.t0 || .6)), x = X(f.x), y = Y(f.y); cx.strokeStyle = "rgba(255,90,31,.6)"; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.ellipse(x, y, f.r, f.r * .6, 0, 0, 7); cx.stroke(); cx.setLineDash([]); ombreSol(x, y, f.r * .5 * (.4 + .6 * k), f.r * .3 * (.4 + .6 * k)); if (f.rack) poser(spriteRackChute(), x, y - (1 - k) * 200, f.a, 1, 1); else { const e2 = f.r / 40; poser(spritePaletteSol(), x, y - (1 - k) * 160, 0, e2, e2) } }
   // ennemis (dessins cuits une fois : voir spriteEnnemi)
+  dessinerAlertesChef(X, Y);
   for (const e of S.ennemis) {
-    const x = X(e.x), y = Y(e.y); if (x < -120 || y < -120 || x > W + 120 || y > H + 120) continue;
-    dessinerEnnemi(e, x, y, p);
+    const x = X(e.x), y = Y(e.y); if (x < -220 || y < -220 || x > W + 220 || y > H + 220) continue;
+    if (e.chef) dessinerChef(e, x, y, p); else dessinerEnnemi(e, x, y, p);
   }
   // le semi qui vise : couloir rouge ; sonné : étoiles
   for (const e of S.ennemis) {
@@ -2291,6 +2516,7 @@ function dessinerJeu() {
   // annonce
   if (annonceT > 0) { cx.font = "36px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 6; cx.strokeStyle = `rgba(23,19,15,${Math.min(1, annonceT)})`; cx.strokeText(annonceTxt, W / 2, H * .28, W - 40); cx.fillStyle = `rgba(255,194,26,${Math.min(1, annonceT)})`; cx.fillText(annonceTxt, W / 2, H * .28, W - 40) }
   dessinerObjectif();
+  barreChef();
   // joystick tactile
   if (JOY.actif && enJeu) {
     const ox = JOY.ox / ZOOM, oy = JOY.oy / ZOOM, R = JOY_R / ZOOM;
@@ -2701,7 +2927,6 @@ $("vestiaire").addEventListener("click", e => {
 });
 $("vest1").onclick = () => ouvrirVestiaire("accueil");
 $("persoAchat").onclick = e => { e.stopPropagation(); debloquer("perso") }; $("lieuAchat").onclick = e => { e.stopPropagation(); debloquer("lieu") };
-$("vest2").onclick = () => ouvrirVestiaire("fin");
 $("modeTest").onclick = () => { SAVE.test = !SAVE.test; sauver(); dessinerVestiaire(); record() };
 $("raz").onclick = () => { SAVE.amelioTest = {}; sauver(); dessinerVestiaire() };
 $("retour").onclick = () => { $("vestiaire").hidden = true; $(retourVers).hidden = false; if (retourVers === "accueil") { demo(); majAccueil() } };

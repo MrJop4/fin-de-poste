@@ -2,11 +2,13 @@
    avec un bot qui fuit les colis, esquive les transpalettes et choisit ses cartes comme un joueur moyen. */
 window.SIM = function (opts) {
   opts = opts || {};
-  SAVE.test = true; SAVE.amelioTest = opts.amelio || {}; SAVE.perso = opts.perso || "preparateur"; SAVE.lieu = opts.lieu || "quai";
+  SAVE.test = true; SAVE.lieux = Object.keys(LIEUX); SAVE.amelioTest = opts.amelio || {}; SAVE.perso = opts.perso || "preparateur"; SAVE.lieu = opts.lieu || "quai";
   W = opts.W || 1000; H = opts.H || 640;
-  const log = { morts: null, niveaux: {}, vivants: {}, hp: {}, kills: {}, dps: {}, entrant: {}, boss: [], evos: [], choix: [], coffres: 0, argent: 0, degSubis: {} };
+  if (opts.chefPv) for (const c of Object.values(CHEFS)) c.pv = opts.chefPv;
+  const log = { chef: null, morts: null, niveaux: {}, vivants: {}, hp: {}, kills: {}, dps: {}, entrant: {}, boss: [], evos: [], choix: [], coffres: 0, argent: 0, degSubis: {} };
   let degats = 0, entrant = 0, subis = 0, fini = null;
-  const _blesser = blesser; blesser = function (e, d, kx, ky) { if (!e.decor) degats += Math.min(e.hp, d * S.p.deg); return _blesser(e, d, kx, ky) };
+  const _blesser = blesser; blesser = function (e, d, kx, ky) { const h0 = e.hp; if (!e.decor) degats += Math.min(e.hp, d * S.p.deg); const r = _blesser(e, d, kx, ky); if (e.chef) log.chef.deg += h0 - Math.max(0, e.hp); return r };
+  const _sc = spawnChef; spawnChef = function () { _sc(); log.chef = { t0: S.t, pv: S.chefE.max, deg: 0 } };
   const _spawn = spawn; spawn = function (type, elite) { _spawn(type, elite); const e = S.ennemis[S.ennemis.length - 1]; entrant += e.hp; if (e.boss) log.boss.push({ t0: S.t, e, nb: 1 }) };
   if (typeof spawnMini === "function") { const _sm = spawnMini; spawnMini = function () { _sm(); log.boss.push({ t0: S.t, e: S.ennemis[S.ennemis.length - 1], mini: true }) } }
   majHud = () => { }; majArmes = () => { }; annonce = () => { }; vibrer = () => { };
@@ -36,7 +38,7 @@ window.SIM = function (opts) {
   nouvellePartie(); enJeu = false;
   for (let i = 0; i < niv("vip"); i++) { const pool = offresPossibles(); if (pool.length) appliquer(pool[Math.floor(Math.random() * pool.length)]) }
   JOY.actif = true; JOY.ox = 0; JOY.oy = 0;
-  const dt = opts.dt || 1 / 30, maxT = opts.maxT || VICTOIRE + 1;
+  const dt = opts.dt || 1 / 30, maxT = opts.maxT || VICTOIRE + 240;
   let prochain = 1, hpPrec = S.p.hp;
   let reflexe = 0;
   while (!fini && S.t < maxT) {
@@ -84,6 +86,7 @@ window.SIM = function (opts) {
       degats = 0; entrant = 0; subis = 0; prochain++;
     }
   }
+  if (log.chef) { const c = log.chef, e = S.chefE; c.duree = Math.round(S.t - c.t0); c.mort = e.hp <= 0; c.ttk = c.mort ? Math.round((log.chef.t1 || S.t) - c.t0) : null; c.dps = Math.round(c.deg / Math.max(1, S.t - c.t0)); c.pv = Math.round(c.pv); c.deg = Math.round(c.deg) }
   log.fin = fini || "temps"; log.t = Math.round(S.t); log.niveau = S.p.niv; log.kills_total = S.kills; log.argent = S.argent;
   log.armes = Object.assign({}, S.armes); log.objets = Object.assign({}, S.objets);
   log.boss = log.boss.map(b => ({ mini: !!b.mini, t0: Math.round(b.t0), ttk: b.t1 != null ? Math.round(b.t1 - b.t0) : null }));

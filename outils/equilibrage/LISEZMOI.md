@@ -10,4 +10,4 @@ python3 outils/equilibrage/analyse.py resultats.json
 
 Profils de `cfg.json` : débutant (vestiaire vide), vestiaire moyen, vestiaire au max. Options d'un profil : `perso`, `lieu`, `amelio`, `reaction`, `fuite`, `bruit`, `armes` (outils autorisés), `immobile` (s'arrête de bouger après N s), `sansTranspa`.
 
-Tous les réglages sont dans la constante `EQ` en haut du jeu. Repères visés (bot) : victoire ≈ 35 % débutant, ≈ 80 % vestiaire moyen, ≈ 100 % vestiaire max ; niveau ≈ 12 à 5:00 et ≈ 23 à 10:00 ; semi tué en 40-60 s.
+Tous les réglages sont dans la constante `EQ` en haut du jeu. Repères visés (bot) : victoire ≈ 35 % débutant, ≈ 80 % vestiaire moyen, ≈ 100 % vestiaire max ; niveau ≈ 12 à 5:00 et ≈ 23 à 10:00 ; semi tué en 40-60 s ; boss de fin (10:00) tué en ~40 s au quai à ~75 s aux promos avec le vestiaire attendu du lieu (option `chefPv` pour fixer sa vie, journal `chef` : dégâts, dps, durée).
