@@ -351,6 +351,28 @@ button { touch-action: manipulation; }
   .detail-carte { box-sizing: border-box; width: auto; max-width: none; justify-self: stretch; margin-inline: 4px; }
   .detail-carte .prendre { box-sizing: border-box; }
 }
+/* coffre : une carte, Prendre ou Relancer ; booster plus grand */
+.coffre-btns { display: none; gap: 12px; justify-content: center; flex-wrap: wrap; }
+#niveau.mode-coffre .coffre-btns { display: flex; }
+#niveau.revel .coffre-btns { visibility: hidden; }
+.coffre-btns .btn { font-size: 24px; padding: 8px 26px; }
+.coffre-btns .relancer { background: #cfe8ff; }
+.coffre-btns .relancer[disabled] { opacity: .45; }
+.mode-coffre #cartes.cartes { grid-template-columns: minmax(0, 1fr) !important; max-width: calc(min(320px, (100dvh - 340px) * .747) + 70px); padding: 26px 52px 16px 18px !important; }
+.mode-coffre #niveau .aide, #niveau.mode-coffre .aide { display: none; }
+.pack-jeu { width: 230px; height: 322px; }
+.pack-jeu .pk1 { font-size: 21px; } .pack-jeu .pk2 { font-size: 44px; }
+@media (max-height: 520px) and (orientation: landscape) {
+  .mode-coffre #cartes.cartes { max-width: calc((100dvh - 200px) * .747 + 60px); padding: 18px 42px 10px 14px !important; }
+  .coffre-btns .btn { font-size: 18px; padding: 4px 16px; }
+  .pack-jeu { width: 170px; height: 238px; } .pack-jeu .pk2 { font-size: 34px; }
+}
+@media (max-width: 700px) {
+  .pack-jeu { width: min(64vw, 300px); height: calc(min(64vw, 300px) * 1.4); }
+  .pack-jeu .pk1 { font-size: 22px; } .pack-jeu .pk2 { font-size: 50px; }
+  #niveau.mode-coffre .detail-carte .prendre { display: none; }
+  .coffre-btns { width: 100%; } .coffre-btns .btn { flex: 1; font-size: 22px; padding: 8px 10px; }
+}
 </style>
 
 <canvas id="jeu"></canvas>
@@ -408,6 +430,7 @@ button { touch-action: manipulation; }
     <div class="ouvrir" id="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
     <div class="cartes" id="cartes"></div>
     <div class="detail-carte" id="detailCarte"></div>
+    <div class="coffre-btns" id="coffreBtns"><button class="btn go" id="coffrePrendre">Prendre</button><button class="btn relancer" id="coffreRelancer">Relancer (2)</button></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Glisse pour voir les cartes, touche celle du milieu pour la prendre</span></div>
   </div>
 </div>
@@ -1521,50 +1544,57 @@ async function retourner(b, tenue) {
   await ani(b, [{ transform: "rotateY(180deg) scale(1)" }, { transform: "rotateY(90deg) scale(1.12) translateY(-10px)", offset: .5 }, { transform: "rotateY(0deg) scale(1)" }], { duration: 480, easing: "cubic-bezier(.3,1.3,.5,1)", fill: "none" });
   if (tenue) tenue.cancel();
 }
-/* coffre : machine à sous, 3 rouleaux qui s'arrêtent bien cadrés ; si une évolution est prête, elle tombe au milieu */
-/* deux sortes de coffres : le petit (colis « fragile ») donne une carte ; le gros (semi, hors gabarit, objectif réussi)
-   soigne complètement et c'est le seul qui contient les évolutions, comme le coffre de boss de Vampire Survivors */
+/* coffre : une seule carte, trois tirages possibles (Prendre, ou Relancer deux fois).
+   Le petit coffre (colis « fragile ») et le gros (semi, hors gabarit, objectif) ; seul le gros contient les évolutions, sans relance. */
 function ouvrirCoffre(gros) {
   if (choix) { (S.coffresEnAttente = S.coffresEnAttente || []).push(!!gros); return }
-  const p = S.p;   // les coffres ne soignent plus : la vie revient par les machines à café
   const id = gros ? evoPrete() : null;
-  offres = tirer(id ? 2 : 3);
-  if (id) offres.splice(1, 0, { id, kind: "evo", l: EVO });
+  S.coffre = { evo: id, relances: id ? 0 : 2, vus: [] };
   $("choixTitre").textContent = id ? "★ Jackpot ! ★" : gros ? "Gros coffre !" : "Coffre !";
   $("niveau").classList.add("mode-coffre");
-  const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
-  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
-    const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
-    return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="tag">${i + 1} · ${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span>${DOS}</button>`;
-  }).join("");
-  $("slots").textContent = "Choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
-  sel = id ? 1 : 0; revelMachine();
+  tirageCoffre(false);
 }
-async function revelMachine() {
+function tirageCoffre(relance) {
+  const C = S.coffre;
+  let o = C.evo ? { id: C.evo, kind: "evo", l: EVO } : null;
+  if (!o) { const pool = tirer(12); o = pool.find(x => !C.vus.includes(x.kind + x.id)) || pool[0] }
+  C.vus.push(o.kind + o.id); offres = [o]; sel = 0;
+  const { d, tag, indice } = infosCarte(o), pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img), n = 14;
+  const imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
+  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>`
+    + `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="0"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="tag">${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
+  $("slots").textContent = C.evo ? "Ton évolution !" : C.relances ? `Tirage ${3 - C.relances} / 3` : "Dernier tirage";
+  $("coffreRelancer").textContent = C.relances ? `Relancer (${C.relances})` : "Plus de relance";
+  $("coffreRelancer").disabled = !C.relances; $("coffreRelancer").hidden = !!C.evo;
+  revelMachine(relance);
+}
+/* machine à sous : on actionne le levier (un appui la première fois), le rouleau tourne et s'arrête bien cadré */
+async function revelMachine(relance) {
   revelEnCours = true; revelType = "machine"; revel = []; $("niveau").classList.add("revel");
-  const zone = $("cartes"), m = zone.querySelector(".machine-jeu"), cartes = [...zone.querySelectorAll(".carte")];
-  // les 3 cartes attendent de dos ; on appuie pour actionner le levier
-  const tenues = cartes.map(b => b.animate([{ transform: "rotateY(180deg)" }, { transform: "rotateY(180deg)" }], { duration: 1, fill: "both" }));
-  $("ouvrir").innerHTML = '<span class="clavier"><kbd>Espace</kbd> pour actionner la machine</span><span class="tactile">Touche la machine pour la lancer</span>';
-  await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 450, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
-  const attend = m.querySelector(".levier-jeu").animate([{ transform: "rotate(0)" }, { transform: "rotate(10deg)" }, { transform: "rotate(0)" }], { duration: 700, iterations: Infinity, easing: "ease-in-out" });
-  $("niveau").classList.add("attente");
-  await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
-  $("niveau").classList.remove("attente"); attend.cancel(); vibrer(30);
-  ani(m.querySelector(".levier-jeu"), [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 700, fill: "none" });
-  await new Promise(r => setTimeout(r, 250));
-  await Promise.all(cartes.map((b, i) => new Promise(r => setTimeout(r, i * 140)).then(() => retourner(b, tenues[i]))));
-  await Promise.all(cartes.map((b, i) => {
-    const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
-    bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
-    return ani(bande, [{ transform: "translateY(0)", filter: "blur(0)" }, { transform: `translateY(${-n * h * .5}px)`, filter: "blur(2px)", offset: .5 }, { transform: `translateY(${-n * h}px)`, filter: "blur(0)" }], { duration: 1700 + i * 750, easing: "cubic-bezier(.35,0,.25,1.04)" }).then(() => {
-      ani(b, [{ transform: "translateY(0)" }, { transform: "translateY(6px)" }, { transform: "translateY(0)" }], { duration: 260, fill: "none" });
-      b.classList.add("arrete");
-    });
-  }));
-  m.classList.add("fete"); vibrer(offres.some(o => o.kind === "evo") ? 120 : 40);
+  const zone = $("cartes"), m = zone.querySelector(".machine-jeu"), b = zone.querySelector(".carte"), levier = m.querySelector(".levier-jeu");
+  if (!relance) {
+    $("ouvrir").innerHTML = '<span class="clavier"><kbd>Espace</kbd> pour actionner la machine</span><span class="tactile">Touche la machine pour la lancer</span>';
+    await ani(zone, [{ transform: "scale(.7)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 450, easing: "cubic-bezier(.3,1.5,.6,1)", fill: "none" });
+    const attend = levier.animate([{ transform: "rotate(0)" }, { transform: "rotate(10deg)" }, { transform: "rotate(0)" }], { duration: 700, iterations: Infinity, easing: "ease-in-out" });
+    $("niveau").classList.add("attente");
+    await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
+    $("niveau").classList.remove("attente"); attend.cancel();
+  }
+  vibrer(30);
+  ani(levier, [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 700, fill: "none" });
+  await new Promise(r => setTimeout(r, 300));
+  const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
+  bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
+  await ani(bande, [{ transform: "translateY(0)", filter: "blur(0)" }, { transform: `translateY(${-n * h * .5}px)`, filter: "blur(2px)", offset: .5 }, { transform: `translateY(${-n * h}px)`, filter: "blur(0)" }], { duration: 1700, easing: "cubic-bezier(.35,0,.25,1.04)" });
+  ani(b, [{ transform: "translateY(0)" }, { transform: "translateY(6px)" }, { transform: "translateY(0)" }], { duration: 260, fill: "none" });
+  b.classList.add("arrete"); m.classList.add("fete"); vibrer(offres[0].kind === "evo" ? 120 : 40);
   finRevel();
+}
+async function relancerCoffre() {
+  const C = S.coffre; if (!choix || revelEnCours || !C || !C.relances) return;
+  C.relances--; vibrer(20);
+  tirageCoffre(true);
 }
 function prendre(i) {
   const o = offres[i]; if (!o || !choix) return;
@@ -1575,10 +1605,12 @@ function prendre(i) {
     for (let k = 0; k < 36; k++) { const a = k / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: k % 2 ? "#ffe14d" : "#fff" }) }
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
   } else appliquer(o);
-  choix = false; $("niveau").hidden = true; majArmes(); last = performance.now();
+  choix = false; S.coffre = null; $("niveau").hidden = true; majArmes(); last = performance.now();
   if (S.coffresEnAttente && S.coffresEnAttente.length) return ouvrirCoffre(S.coffresEnAttente.shift());
   if (p.xp >= p.next) gagnerXp(0);
 }
+$("coffrePrendre").onclick = () => { if (!revelEnCours) prendre(0) };
+$("coffreRelancer").onclick = relancerCoffre;
 $("cartes").addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
 $("niveau").addEventListener("pointerdown", e => { if (attenteOuverture) { e.preventDefault(); ouvrirBooster() } else if (revelEnCours && revelType === "machine") passerRevel() });
 /* au doigt : on fait glisser la pile de cartes (téléphone debout) */
@@ -2944,6 +2976,7 @@ addEventListener("keydown", e => {
   }
   if (choix) {
     // choix de carte : ZQSD / flèches pour se déplacer, Espace ou Entrée pour valider (1 2 3 marchent toujours)
+    if (e.code === "KeyR" && S.coffre && $("niveau").classList.contains("mode-coffre")) return relancerCoffre();
     if (/^(Digit|Numpad)[123]$/.test(e.code)) return prendre(+e.code.slice(-1) - 1);
     const n = offres.length;
     if (["KeyA", "KeyW", "ArrowLeft", "ArrowUp"].includes(e.code)) { e.preventDefault(); sel = (sel - 1 + n) % n; return majSel() }
