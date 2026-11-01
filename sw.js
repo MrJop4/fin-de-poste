@@ -1,6 +1,6 @@
 /* Service worker de Fin de Poste : rend le jeu installable et jouable hors ligne.
    La page passe d'abord par le réseau (pour avoir la dernière version), les images viennent du cache. */
-const CACHE = "fin-de-poste-v1";
+const CACHE = "fin-de-poste-v2";
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(["/", "/manifest.webmanifest", "/icone-192.png", "/icone-512.png"]))); self.skipWaiting() });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())) });
 self.addEventListener("fetch", e => {
