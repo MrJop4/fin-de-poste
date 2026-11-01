@@ -358,6 +358,10 @@ button { touch-action: manipulation; }
 .coffre-btns .btn { font-size: 24px; padding: 8px 26px; }
 .coffre-btns .relancer { background: #cfe8ff; }
 .coffre-btns .relancer[disabled] { opacity: .45; }
+.coffre-btns .btn.vise { outline: 4px solid #fff; outline-offset: 3px; transform: translateY(-3px); }
+.coffre-aide { display: none !important; }
+#niveau.mode-coffre .coffre-aide { display: block !important; }
+#niveau.mode-coffre.revel .coffre-aide { visibility: hidden; }
 .mode-coffre #cartes.cartes { grid-template-columns: minmax(0, 1fr) !important; max-width: calc(min(320px, (100dvh - 340px) * .747) + 70px); padding: 26px 52px 16px 18px !important; }
 .mode-coffre #niveau .aide, #niveau.mode-coffre .aide { display: none; }
 .pack-jeu { width: 230px; height: 322px; }
@@ -373,6 +377,11 @@ button { touch-action: manipulation; }
   #niveau.mode-coffre .detail-carte .prendre { display: none; }
   .coffre-btns { width: 100%; } .coffre-btns .btn { flex: 1; font-size: 22px; padding: 8px 10px; }
 }
+.prix-relance { font-family: var(--ui, inherit); font-weight: 900; font-size: .8em; background: rgba(23,19,15,.12); border-radius: 999px; padding: 1px 8px; margin-left: 4px; }
+.btn-son { position: fixed; z-index: 30; left: max(12px, env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); width: 44px; height: 44px; display: grid; place-items: center; padding: 0; font-size: 20px; line-height: 1; cursor: pointer; border: 3px solid var(--encre); border-radius: 12px; background: var(--papier); box-shadow: 3px 3px 0 var(--encre); }
+.btn-son.off { background: #b9b2a6; }
+.piece-ui { display: inline-block; width: .95em; height: .95em; margin-right: 4px; vertical-align: -.12em; border-radius: 50%; border: 2px solid var(--encre); background: radial-gradient(circle at 35% 30%, #fff4b0, #ffc21a 50%, #b77c00); }
+.prix-relance { display: inline-flex; align-items: center; }
 </style>
 
 <canvas id="jeu"></canvas>
@@ -384,6 +393,7 @@ button { touch-action: manipulation; }
 </div>
 
 <div class="voile" id="accueil">
+  <button class="btn-son" id="btnSon1" aria-label="Son"></button>
   <div class="acc">
     <div class="acc-g">
       <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">10 minutes + le boss !</span></h1>
@@ -431,6 +441,7 @@ button { touch-action: manipulation; }
     <div class="cartes" id="cartes"></div>
     <div class="detail-carte" id="detailCarte"></div>
     <div class="coffre-btns" id="coffreBtns"><button class="btn go" id="coffrePrendre">Prendre</button><button class="btn relancer" id="coffreRelancer">Relancer (2)</button></div>
+    <div class="aide coffre-aide"><span class="clavier"><kbd>←</kbd><kbd>→</kbd> · <kbd>Espace</kbd> · <kbd>R</kbd></span></div>
     <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Glisse pour voir les cartes, touche celle du milieu pour la prendre</span></div>
   </div>
 </div>
@@ -447,6 +458,7 @@ button { touch-action: manipulation; }
 </div>
 
 <div class="voile" id="pause" hidden>
+  <button class="btn-son" id="btnSon2" aria-label="Son"></button>
   <div class="panneau large"><h2>Pause café</h2>
     <div class="boutons"><button class="btn go" id="reprendre">Reprendre</button><button class="btn" id="abandon">Quitter la partie</button></div>
     <div class="aide clavier"><kbd>Échap</kbd> pour reprendre</div>
@@ -504,6 +516,66 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 const lsGet = k => { try { return localStorage.getItem(k) } catch (e) { return null } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v) } catch (e) { } };
+/* ---------- sons : tout est synthétisé (Web Audio), aucun fichier ---------- */
+const SON = (() => {
+  let ac = null, maitre = null, bruitBuf = null, coupe = false;
+  const dernier = {};
+  function init() {
+    if (ac) { if (ac.state === "suspended") ac.resume(); return true }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    ac = new AC(); maitre = ac.createGain(); maitre.gain.value = .55;
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    maitre.connect(comp); comp.connect(ac.destination);
+    bruitBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = bruitBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return true;
+  }
+  const t0 = () => ac.currentTime;
+  function env(g, t, a, v, r) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + r) }
+  function ton(f, { type = "sine", t = 0, a = .005, v = .3, r = .15, f2 = null, glis = .1, dest = maitre, det = 0 } = {}) {
+    const o = ac.createOscillator(), g = ac.createGain(), s = t0() + t; o.type = type; o.frequency.setValueAtTime(f, s); o.detune.value = det;
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, s + glis);
+    env(g, s, a, v, r); o.connect(g); g.connect(dest); o.start(s); o.stop(s + a + r + .05);
+  }
+  function bruit({ t = 0, a = .002, v = .3, r = .1, filtre = "bandpass", f = 1200, f2 = null, q = 1, glis = .1 } = {}) {
+    const n = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain(), s = t0() + t; n.buffer = bruitBuf;
+    fl.type = filtre; fl.frequency.setValueAtTime(f, s); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, s + glis); fl.Q.value = q;
+    env(g, s, a, v, r); n.connect(fl); fl.connect(g); g.connect(maitre); n.start(s, Math.random() * .5); n.stop(s + a + r + .05);
+  }
+  // limiter les sons très répétés (ramassage, coups) pour ne pas saturer
+  const peut = (k, ms) => { const n = performance.now(); if (n - (dernier[k] || 0) < ms) return false; dernier[k] = n; return true };
+  let combo = 0, comboT = 0;
+  const S = {
+    etiquette() { if (!peut("etq", 35)) return; const n = performance.now(); combo = n - comboT < 450 ? Math.min(combo + 1, 14) : 0; comboT = n;
+      const f = 880 * Math.pow(2, [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33][combo] / 12); ton(f, { type: "triangle", v: .16, r: .09 }); ton(f * 2, { v: .05, r: .06 }) },
+    piece() { if (!peut("piece", 45)) return; ton(1568, { type: "square", v: .07, r: .05 }); ton(2093, { type: "square", t: .055, v: .08, r: .18 }) },
+    coup() { if (!peut("coup", 40)) return; bruit({ filtre: "lowpass", f: 900 + Math.random() * 400, v: .22, r: .06 }); ton(150 + Math.random() * 40, { v: .18, r: .06, f2: 70, glis: .06 }) },
+    carton() { if (!peut("carton", 30)) return; bruit({ filtre: "bandpass", f: 700, q: .8, v: .32, r: .09 }); ton(220 + Math.random() * 60, { type: "triangle", v: .16, r: .08, f2: 90, glis: .08 }); bruit({ t: .02, filtre: "highpass", f: 3000, v: .07, r: .05 }) },
+    aie() { ton(320, { type: "sawtooth", v: .16, r: .14, f2: 120, glis: .14 }); bruit({ filtre: "lowpass", f: 600, v: .25, r: .12 }) },
+    niveau() { [523, 659, 784, 1047].forEach((f, i) => { ton(f, { type: "triangle", t: i * .07, v: .2, r: .22 }); ton(f * 2, { t: i * .07, v: .05, r: .15 }) }) },
+    booster() { bruit({ filtre: "highpass", f: 2500, f2: 6000, glis: .25, v: .2, a: .05, r: .25 }); ton(300, { type: "sawtooth", v: .08, a: .02, r: .25, f2: 1200, glis: .25 }); ton(1568, { type: "triangle", t: .25, v: .16, r: .3 }); ton(2093, { type: "triangle", t: .32, v: .14, r: .4 }) },
+    carte() { bruit({ filtre: "bandpass", f: 2400, f2: 900, glis: .08, q: 1.5, v: .22, r: .08 }); ton(660, { type: "triangle", t: .05, v: .1, r: .1 }) },
+    choisir() { ton(1320, { type: "triangle", v: .08, r: .04 }) },
+    prendre() { ton(784, { type: "square", v: .08, r: .06 }); ton(1175, { type: "square", t: .06, v: .09, r: .16 }) },
+    levier() { bruit({ filtre: "lowpass", f: 500, v: .3, r: .12 }); ton(90, { type: "square", v: .12, r: .1, f2: 50, glis: .1 }) },
+    rouleau(duree = 1.7) { let t = 0, pas = .045; while (t < duree) { bruit({ t, filtre: "bandpass", f: 3200, q: 4, v: .1, r: .02 }); t += pas; pas *= t > duree * .55 ? 1.12 : 1.0 } },
+    jackpot() { [1047, 1319, 1568, 2093, 1568, 2093].forEach((f, i) => ton(f, { type: "square", t: i * .075, v: .07, r: .12 })); ton(2093, { type: "triangle", t: .45, v: .15, r: .6 }) },
+    ding() { ton(1760, { type: "triangle", v: .18, r: .5 }); ton(2637, { v: .06, r: .35 }) },
+    cafe() { [0, .07, .14].forEach((t, i) => bruit({ t, filtre: "bandpass", f: 900 + i * 300, q: 6, v: .12, r: .05 })); ton(523, { type: "sine", t: .12, v: .14, a: .03, r: .3, f2: 784, glis: .25 }) },
+    casse() { bruit({ filtre: "lowpass", f: 2500, f2: 300, glis: .3, v: .4, r: .3 }); for (let i = 0; i < 4; i++) ton(1200 + Math.random() * 1500, { type: "triangle", t: .03 + i * .04, v: .06, r: .08 }) },
+    klaxon() { ton(415, { type: "sawtooth", v: .12, a: .01, r: .35 }); ton(523, { type: "sawtooth", v: .1, a: .01, r: .35 }) },
+    transpa() { ton(880, { type: "square", v: .07, r: .1 }); ton(880, { type: "square", t: .22, v: .07, r: .1 }); ton(880, { type: "square", t: .44, v: .07, r: .1 }) },
+    boss() { ton(55, { type: "sawtooth", v: .25, a: .2, r: 1.2 }); ton(82, { type: "sawtooth", v: .18, a: .2, r: 1.2, det: 8 }); bruit({ filtre: "lowpass", f: 200, v: .4, a: .3, r: 1 }); [0, .45].forEach(t => ton(196, { type: "square", t: .3 + t, v: .1, r: .3 })) },
+    bossKo() { bruit({ filtre: "lowpass", f: 1500, f2: 80, glis: .8, v: .5, r: .9 }); ton(110, { type: "sawtooth", v: .2, r: .8, f2: 30, glis: .8 }); [523, 659, 784, 1047, 1319].forEach((f, i) => ton(f, { type: "triangle", t: .6 + i * .09, v: .16, r: .35 })) },
+    victoire() { [[523, 0], [659, .12], [784, .24], [1047, .36], [784, .52], [1047, .64]].forEach(([f, t]) => { ton(f, { type: "square", t, v: .08, r: .2 }); ton(f / 2, { type: "triangle", t, v: .1, r: .25 }) }); ton(1047, { type: "triangle", t: .8, v: .18, r: .9 }) },
+    defaite() { [392, 370, 349, 262].forEach((f, i) => ton(f, { type: "triangle", t: i * .22, v: .16, r: i === 3 ? .7 : .2 })) },
+    evolution() { for (let i = 0; i < 8; i++) ton(523 * Math.pow(2, i / 4), { type: "triangle", t: i * .05, v: .12, r: .2 }); ton(2093, { type: "sine", t: .45, v: .15, a: .05, r: 1 }); bruit({ t: .4, filtre: "highpass", f: 5000, v: .1, a: .1, r: .6 }) },
+    debloquer() { ton(392, { type: "square", v: .08, r: .1 }); ton(784, { type: "square", t: .1, v: .09, r: .1 }); S.piece(); ton(1568, { type: "triangle", t: .2, v: .15, r: .4 }) },
+  };
+  return { init, joue(nom, ...a) { if (coupe || !init() || !S[nom]) return; try { S[nom](...a) } catch (e) { } }, couper(v) { coupe = v }, get coupe() { return coupe }, liste: Object.keys(S) };
+})();
+
+try { SON.couper(lsGet("poste-son") === "0") } catch (e) { }
+const son = (n, ...a) => SON.joue(n, ...a);
 
 /* ---------- armes et objets ---------- */
 const ARMES = {
@@ -751,7 +823,7 @@ function spawnChef() {
   const C = chefDuLieu(); spawn("leviathan"); const e = S.ennemis[S.ennemis.length - 1];
   e.type = "chef"; e.chef = C; e.r = C.r; e.hp = e.max = e.hp * C.pv; e.vit = C.vit; e.xp = 200; e.coul = "#ffc21a";
   e.at = { etat: "marche", t: 4, n: 0 };
-  S.chefE = e; S.tirsChef = []; annonce("⚠ " + C.nom + " arrive !"); vibrer(200);
+  S.chefE = e; S.tirsChef = []; son("boss"); annonce("⚠ " + C.nom + " arrive !"); vibrer(200);
 }
 /* le joueur reçoit un coup d'une attaque du boss */
 function toucheChef(deg, lent) {
@@ -999,13 +1071,15 @@ function contraindreEv(e) {
 
 /* ---------- dégâts ---------- */
 function blesser(e, d, kx, ky) {
+  if (!e.decor) son("coup");
   d *= S.p.deg; if ((e.ch && e.ch.etat === "sonne") || (e.at && e.at.etat === "sonne")) d *= 1.5; if (e.gel > 0) d *= 1.5; e.hp -= d; e.flash = .1;
   if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
 }
 function mourir(e) {
-  if (e.decor) return casser(e);
+  if (e.decor) { son("casse"); return casser(e) }
+  son("carton");
   if (e.type === "glace") { for (let i = 0; i < 5; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-120, 120), vy: rnd(-120, 120), t: .4, c: "#e8f8ff" }); S.gemmes.push({ x: e.x, y: e.y, v: 1, att: false }); return }
   if (e.type === "presentoir") { for (let i = 0; i < 3; i++) S.gemmes.push({ x: e.x + rnd(-20, 20), y: e.y + rnd(-20, 20), argent: Math.round(5 * LL().gain), att: false }); for (let i = 0; i < 12; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-150, 150), vy: rnd(-150, 150), t: .5, c: ["#ff46be", "#50f0dc", "#ffe14d"][i % 3] }); return }
   S.kills++;
@@ -1048,7 +1122,7 @@ function armes(dt) {
   }
   // corne de brume
   if (A.corne && (S.timers.corne -= dt) <= 0) {
-    const l = A.corne; S.timers.corne = (3.6 - .15 * l) * cd;
+    const l = A.corne; S.timers.corne = (3.6 - .15 * l) * cd; son("klaxon");
     S.ondes.push({ x: p.x, y: p.y, r: 10, max: 90 + 22 * l + (l >= EVO ? 70 : 0), deg: 12 + 7 * l, deja: new Set(), evo: l >= EVO });
     if (l >= EVO) S.ondes.push({ x: p.x, y: p.y, r: -110, max: 260, deg: 12 + 7 * l, deja: new Set(), evo: true });
   }
@@ -1283,7 +1357,7 @@ function lancerTranspa(vise) {
   if (h) { tp.y = vise ? p.y : p.y + rnd(-.38, .38) * H; tp.x = p.x - sens * (W / 2 + 90); tp.vx = sens * v; tp.vy = 0; tp.long = W + 300 }
   else { tp.x = vise ? p.x : p.x + rnd(-.38, .38) * W; tp.y = p.y - sens * (H / 2 + 90); tp.vx = 0; tp.vy = sens * v; tp.long = H + 300 }
   if (M) { if (h) tp.y = Math.round(tp.y / M.ch) * M.ch; else tp.x = Math.round(tp.x / M.cw) * M.cw }   // calée au milieu d'une allée
-  S.transpas.push(tp);
+  S.transpas.push(tp); son("transpa");
   if (!S.transpaVu) { S.transpaVu = true; annonce("Attention, " + LL().tpNom + " !") }
 }
 function transpalettes(dt) {
@@ -1401,7 +1475,7 @@ function maj(dt) {
     if (g.jet > 0) { g.jet -= dt; g.x += g.vx * dt; g.y += g.vy * dt; continue }
     if (d < p.aimant) g.att = true;
     if (g.att) { const v = 420 + (p.aimant - Math.min(d, p.aimant)) * 2; g.x += dx / (d || 1) * v * dt; g.y += dy / (d || 1) * v * dt }
-    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.cafe) { p.hp = Math.min(p.max, p.hp + g.cafe); S.textes.push({ x: p.x, y: p.y - 30, v: "+" + g.cafe + " vie", t: .6, c: "#5ff07a" }) } else if (g.coffre) ouvrirCoffre(g.gros); else gagnerXp(g.v) }
+    if (d < p.r + 6) { g.pris = true; if (g.argent) { S.argent += g.argent; son("piece") } else if (g.cafe) { son("cafe"); p.hp = Math.min(p.max, p.hp + g.cafe); S.textes.push({ x: p.x, y: p.y - 30, v: "+" + g.cafe + " vie", t: .6, c: "#5ff07a" }) } else if (g.coffre) ouvrirCoffre(g.gros); else { son("etiquette"); gagnerXp(g.v) } }
   }
   S.gemmes = S.gemmes.filter(g => !g.pris);
   if (S.gemmes.length > 500) { const pieces = S.gemmes.filter(g => g.argent || g.coffre || g.cafe), autres = S.gemmes.filter(g => !g.argent && !g.coffre && !g.cafe); S.gemmes = pieces.concat(autres.slice(-(500 - pieces.length))) }
@@ -1412,13 +1486,15 @@ function maj(dt) {
   S.textes = S.textes.filter(t => t.t > 0);
   annonceT -= dt;
 
+  if (p.hp < (S.hpVu ?? p.hp) - .5 && performance.now() - (S.aieT || 0) > 260) { S.aieT = performance.now(); son("aie") }
+  S.hpVu = p.hp;
   if (p.hp <= 0 && p.relance > 0) {
     p.relance--; p.hp = p.max / 2; p.inv = 2; annonce("Seconde chance !");
     for (const e of S.ennemis) if (!e.decor) { const dd = Math.hypot(e.x - p.x, e.y - p.y) || 1; if (dd < 260) { e.kb.x += (e.x - p.x) / dd * 14; e.kb.y += (e.y - p.y) / dd * 14 } }
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
   }
   if (p.hp <= 0) return mortJoueur();
-  if (S.chefE && S.chefE.hp <= 0 && !S.chefMort) { S.chefMort = 1.6; annonce(S.chefE.chef.nom + " est KO !"); S.secousse = .6; vibrer(250) }
+  if (S.chefE && S.chefE.hp <= 0 && !S.chefMort) { S.chefMort = 1.6; son("bossKo"); annonce(S.chefE.chef.nom + " est KO !"); S.secousse = .6; vibrer(250) }
   if (S.chefMort > 0 && !S.infini && (S.chefMort -= dt) <= 0) return finir(true);
   majHud();
 }
@@ -1434,13 +1510,14 @@ function gagnerXp(v) {
     p.xp -= p.next; p.niv++;
     p.next = coutNiveau(p.niv);
     if (p.niv === PALIER) annonce("Palier ! Expérience ×2");
-    ouvrirChoix();
+    son("niveau"); ouvrirChoix();
   }
 }
 
 /* ---------- montée de niveau ---------- */
 let offres = [], sel = 0;
 function majSel() {
+  if (majSel.der !== sel && choix && !revelEnCours) son("choisir"); majSel.der = sel;
   $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); b.style.setProperty("--off", i - sel); b.style.setProperty("--abs", Math.abs(i - sel)); if (i === sel) b.focus({ preventScroll: true }) });
   // téléphone debout : le texte de la carte choisie s'affiche en grand sous les cartes, avec un bouton pour la prendre
   const b = $("cartes").querySelector(".carte.sel"), dc = $("detailCarte");
@@ -1521,7 +1598,7 @@ async function revelBooster() {
   const tremble = pack.animate([{ transform: "translate(-50%,-50%) rotate(-3deg)" }, { transform: "translate(-50%,-50%) rotate(3deg) translateY(-4px) scale(1.03)" }, { transform: "translate(-50%,-50%) rotate(-3deg)" }], { duration: 520, iterations: Infinity, easing: "ease-in-out" });
   $("niveau").classList.add("attente");
   await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
-  $("niveau").classList.remove("attente"); tremble.cancel(); vibrer(30); pack.style.zIndex = 0;
+  $("niveau").classList.remove("attente"); tremble.cancel(); vibrer(30); son("booster"); pack.style.zIndex = 0;
   // ouverture : la languette s'arrache, flash, les cartes jaillissent une par une en se retournant
   ani(pack.querySelector(".pack-haut"), [{ transform: "none", opacity: 1 }, { transform: "translate(60px,-120px) rotate(40deg)", opacity: 0 }], { duration: 650 });
   await ani(pack, [{ transform: "translate(-50%,-50%) rotate(-3deg) scale(1)", filter: "brightness(1)" }, { transform: "translate(-50%,-50%) rotate(-3deg) scale(1.12)", filter: "brightness(2.6)" }], { duration: 420, easing: "ease-out" });
@@ -1540,7 +1617,7 @@ async function revelBooster() {
 }
 /* retourne une carte posée de dos (tenue par l'animation « tenue ») */
 async function retourner(b, tenue) {
-  vibrer(12);
+  vibrer(12); son("carte");
   await ani(b, [{ transform: "rotateY(180deg) scale(1)" }, { transform: "rotateY(90deg) scale(1.12) translateY(-10px)", offset: .5 }, { transform: "rotateY(0deg) scale(1)" }], { duration: 480, easing: "cubic-bezier(.3,1.3,.5,1)", fill: "none" });
   if (tenue) tenue.cancel();
 }
@@ -1555,6 +1632,14 @@ function ouvrirCoffre(gros) {
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
   tirageCoffre(false);
 }
+/* une fois les 2 relances gratuites utilisées, on peut relancer avec les pièces de la partie ; le prix monte à chaque fois */
+const prixRelance = () => Math.round(15 * Math.pow(1.6, S.relancesPayees || 0) / 5) * 5;
+function majBtnsCoffre() {
+  const C = S.coffre; if (!C) return;
+  if (C.evo) C.btn = 0;
+  $("coffrePrendre").classList.toggle("vise", !C.btn); $("coffreRelancer").classList.toggle("vise", !!C.btn);
+  if (son && majBtnsCoffre.der !== C.btn) son("choisir"); majBtnsCoffre.der = C.btn;
+}
 function tirageCoffre(relance) {
   const C = S.coffre;
   let o = C.evo ? { id: C.evo, kind: "evo", l: EVO } : null;
@@ -1564,9 +1649,10 @@ function tirageCoffre(relance) {
   const imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
   $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>`
     + `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="0"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="tag">${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
-  $("slots").textContent = C.evo ? "Ton évolution !" : C.relances ? `Tirage ${3 - C.relances} / 3` : "Dernier tirage";
-  $("coffreRelancer").textContent = C.relances ? `Relancer (${C.relances})` : "Plus de relance";
-  $("coffreRelancer").disabled = !C.relances; $("coffreRelancer").hidden = !!C.evo;
+  $("slots").textContent = C.evo ? "Ton évolution !" : "Choisis ta récompense";
+  const prix = prixRelance();
+  $("coffreRelancer").innerHTML = C.relances ? `Relancer (${C.relances})` : `Relancer <span class="prix-relance"><i class="piece-ui"></i>${prix}</span>`;
+  $("coffreRelancer").disabled = !C.relances && S.argent < prix; $("coffreRelancer").hidden = !!C.evo; majBtnsCoffre();
   revelMachine(relance);
 }
 /* machine à sous : on actionne le levier (un appui la première fois), le rouleau tourne et s'arrête bien cadré */
@@ -1581,19 +1667,21 @@ async function revelMachine(relance) {
     await new Promise(r => attenteOuverture = r);   // Espace, Entrée ou un tap
     $("niveau").classList.remove("attente"); attend.cancel();
   }
-  vibrer(30);
+  vibrer(30); son("levier"); setTimeout(() => son("rouleau", 1.7), 300);
   ani(levier, [{ transform: "rotate(0)" }, { transform: "rotate(38deg) scaleY(.82)" }, { transform: "rotate(0)" }], { duration: 700, fill: "none" });
   await new Promise(r => setTimeout(r, 300));
   const bande = b.querySelector(".bande-jeu"), n = +bande.dataset.n, h = b.querySelector(".fenetre-jeu").clientHeight;
   bande.querySelectorAll("img").forEach(im => im.style.height = h + "px");   // chaque image fait pile la hauteur de la fenêtre : arrêt bien cadré
   await ani(bande, [{ transform: "translateY(0)", filter: "blur(0)" }, { transform: `translateY(${-n * h * .5}px)`, filter: "blur(2px)", offset: .5 }, { transform: `translateY(${-n * h}px)`, filter: "blur(0)" }], { duration: 1700, easing: "cubic-bezier(.35,0,.25,1.04)" });
   ani(b, [{ transform: "translateY(0)" }, { transform: "translateY(6px)" }, { transform: "translateY(0)" }], { duration: 260, fill: "none" });
-  b.classList.add("arrete"); m.classList.add("fete"); vibrer(offres[0].kind === "evo" ? 120 : 40);
+  b.classList.add("arrete"); m.classList.add("fete"); vibrer(offres[0].kind === "evo" ? 120 : 40); son(offres[0].kind === "evo" ? "jackpot" : "ding");
   finRevel();
 }
 async function relancerCoffre() {
-  const C = S.coffre; if (!choix || revelEnCours || !C || !C.relances) return;
-  C.relances--; vibrer(20);
+  const C = S.coffre; if (!choix || revelEnCours || !C || C.evo) return;
+  if (C.relances) C.relances--;
+  else { const prix = prixRelance(); if (S.argent < prix) { vibrer(60); return } S.argent -= prix; S.relancesPayees = (S.relancesPayees || 0) + 1; son("piece"); majHud() }
+  vibrer(20);
   tirageCoffre(true);
 }
 function prendre(i) {
@@ -1601,10 +1689,10 @@ function prendre(i) {
   if (revelEnCours) return;
   const p = S.p;
   if (o.kind === "evo") {
-    S.armes[o.id] = EVO; annonce("★ " + EVOS[o.id].nom + " ★"); vibrer(120);
+    S.armes[o.id] = EVO; annonce("★ " + EVOS[o.id].nom + " ★"); vibrer(120); son("evolution");
     for (let k = 0; k < 36; k++) { const a = k / 36 * 6.28; S.fx.push({ x: p.x, y: p.y, vx: Math.cos(a) * 260, vy: Math.sin(a) * 260, t: .45, c: k % 2 ? "#ffe14d" : "#fff" }) }
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
-  } else appliquer(o);
+  } else { appliquer(o); son("prendre") }
   choix = false; S.coffre = null; $("niveau").hidden = true; majArmes(); last = performance.now();
   if (S.coffresEnAttente && S.coffresEnAttente.length) return ouvrirCoffre(S.coffresEnAttente.shift());
   if (p.xp >= p.next) gagnerXp(0);
@@ -1663,6 +1751,7 @@ function finir(gagne) {
     $("finArt").src = IMG(gagne ? "jourdepaie" : "tetereposee");
     $("bilan").innerHTML = `<span><b>${fmt(S.t)}</b>tenu</span><span><b>${S.kills}</b>colis</span><span><b>${S.p.niv}</b>niveau</span><span><b>+${paie} €</b>${gagne ? "avec la prime" : "de paie"}</span>`;
   }
+  son(gagne ? "victoire" : "defaite");
   $("continuer").hidden = !(gagne && !S.infini);
   $("fin").hidden = false; setTimeout(() => $(gagne && !S.infini ? "continuer" : "rejouer").focus(), 30);
 }
@@ -1692,7 +1781,7 @@ function majAccueil() {
 function debloquer(cle) {
   const id = SAVE[cle], D = cle === "perso" ? PERSOS[id] : LIEUX[id], liste = cle === "perso" ? SAVE.persos : SAVE.lieux;
   if (liste.includes(id) || SAVE.banque < D.prix) return false;
-  SAVE.banque -= D.prix; liste.push(id); sauver(); majAccueil(); vibrer(60);
+  SAVE.banque -= D.prix; liste.push(id); sauver(); majAccueil(); vibrer(60); son("debloquer");
   const el = cle === "perso" ? $("cartePerso") : document.querySelector(".lieu-sel"); el.classList.remove("debloque"); void el.offsetWidth; el.classList.add("debloque");
   return true;
 }
@@ -2976,7 +3065,12 @@ addEventListener("keydown", e => {
   }
   if (choix) {
     // choix de carte : ZQSD / flèches pour se déplacer, Espace ou Entrée pour valider (1 2 3 marchent toujours)
-    if (e.code === "KeyR" && S.coffre && $("niveau").classList.contains("mode-coffre")) return relancerCoffre();
+    if (S.coffre && $("niveau").classList.contains("mode-coffre")) {
+      if (e.code === "KeyR") { e.preventDefault(); return relancerCoffre() }
+      if (["KeyA", "KeyW", "KeyD", "KeyS", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"].includes(e.code)) { e.preventDefault(); S.coffre.btn = S.coffre.btn || S.coffre.evo || $("coffreRelancer").disabled ? 0 : 1; return majBtnsCoffre() }
+      if (e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); if (e.repeat) return; return S.coffre.btn ? relancerCoffre() : prendre(0) }
+      return;
+    }
     if (/^(Digit|Numpad)[123]$/.test(e.code)) return prendre(+e.code.slice(-1) - 1);
     const n = offres.length;
     if (["KeyA", "KeyW", "ArrowLeft", "ArrowUp"].includes(e.code)) { e.preventDefault(); sel = (sel - 1 + n) % n; return majSel() }
@@ -3003,6 +3097,10 @@ cv.addEventListener("pointermove", e => {
 const lacher = e => { if (e.pointerId === JOY.id) { JOY.actif = false; JOY.id = null } };
 cv.addEventListener("pointerup", lacher); cv.addEventListener("pointercancel", lacher);
 $("btnPause").onclick = () => basculerPause();
+function majBtnSon() { for (const id of ["btnSon1", "btnSon2"]) { $(id).textContent = SON.coupe ? "🔇" : "🔊"; $(id).classList.toggle("off", SON.coupe) } }
+for (const id of ["btnSon1", "btnSon2"]) $(id).onclick = () => { SON.couper(!SON.coupe); lsSet("poste-son", SON.coupe ? "0" : "1"); majBtnSon(); son("choisir") };
+majBtnSon();
+addEventListener("pointerdown", () => { if (!SON.coupe) SON.init() }, { once: true }); addEventListener("keydown", () => { if (!SON.coupe) SON.init() }, { once: true });
 $("abandon").onclick = () => { if (!enJeu) return; enPause = false; $("pause").hidden = true; finir(false) };
 const vibrer = ms => { try { if (TACTILE && navigator.vibrate) navigator.vibrate(ms) } catch (e) { } };
 $("jouer").onclick = demarrer; $("rejouer").onclick = demarrer; $("reprendre").onclick = basculerPause;
