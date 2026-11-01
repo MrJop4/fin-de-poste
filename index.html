@@ -97,6 +97,11 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .carte-perso .arme { display: inline-block; margin-top: 6px; font-size: 13px; background: var(--jaune); border: 2px solid var(--encre); border-radius: 8px; padding: 1px 8px; }
 .carte-perso.verrou img { filter: grayscale(1) brightness(.55); }
 .cadenas { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-6deg); font-family: var(--display); font-size: 24px; color: #fff; background: var(--rouge); border: 3px solid var(--encre); border-radius: 12px; padding: 6px 14px 3px; box-shadow: 4px 4px 0 var(--encre); white-space: nowrap; }
+.debloquer { display: block; margin: 8px auto 0; font-size: 18px; padding: 6px 14px; background: var(--vert); color: #fff; position: relative; z-index: 2; }
+.debloquer:disabled { background: #b9b2a3; color: #fff; opacity: 1; cursor: default; }
+.debloquer.petit { font-size: 14px; padding: 3px 10px; margin-top: 4px; }
+@keyframes debloque { 0% { transform: scale(1) } 30% { transform: scale(1.08) rotate(-2deg); filter: brightness(1.4) } 100% { transform: scale(1) } }
+.carte-perso.debloque, .lieu-sel.debloque { animation: debloque .5s ease-out; }
 .compteur { text-align: center; font-size: 14px; color: var(--encre); margin-top: 6px; }
 @media (max-width: 760px) {
   .acc { grid-template-columns: 1fr; justify-items: center; gap: 14px; }
@@ -292,7 +297,7 @@ button { touch-action: manipulation; }
       <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">Tiens 10 minutes !</span></h1>
       <div class="lieu-sel">
         <button class="fleche" id="lieuPrec" aria-label="Lieu précédent">‹</button>
-        <div class="nom"><b id="lieuNom">Quai de nuit</b><small id="lieuInfo"></small></div>
+        <div class="nom"><b id="lieuNom">Quai de nuit</b><small id="lieuInfo"></small><button class="btn debloquer petit" id="lieuAchat" hidden></button></div>
         <button class="fleche" id="lieuSuiv" aria-label="Lieu suivant">›</button>
       </div>
       <button class="btn go" id="jouer">Jouer</button>
@@ -303,7 +308,7 @@ button { touch-action: manipulation; }
     <div class="acc-dw">
       <div class="acc-d">
         <button class="fleche grande" id="persoPrec" aria-label="Personnage précédent">‹</button>
-        <div class="carte-perso" id="cartePerso"><img id="persoImg" alt=""><div class="nom" id="persoNom"></div><div class="court" id="persoCourt"></div><span class="arme" id="persoArme"></span><div class="cadenas" id="persoCadenas" hidden></div></div>
+        <div class="carte-perso" id="cartePerso"><img id="persoImg" alt=""><div class="nom" id="persoNom"></div><div class="court" id="persoCourt"></div><span class="arme" id="persoArme"></span><button class="btn debloquer" id="persoAchat" hidden></button><div class="cadenas" id="persoCadenas" hidden></div></div>
         <button class="fleche grande" id="persoSuiv" aria-label="Personnage suivant">›</button>
       </div>
       <div class="compteur" id="persoCompteur"></div>
@@ -318,7 +323,7 @@ button { touch-action: manipulation; }
     <div class="regle"><span class="ico">🏷️</span><span>Ramasse les étiquettes pour monter de niveau et choisir une carte.</span></div>
     <div class="regle"><span class="ico">🚨</span><span>Lumière rouge = une transpalette arrive. Dégage !</span></div>
     <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
-    <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : dépense-la au vestiaire.</span></div>
+    <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : débloque persos et lieux depuis l'accueil (flèches puis « Débloquer »), et achète des améliorations au vestiaire.</span></div>
     <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un gros coffre (semi, hors gabarit) = évolution !</span></div>
     <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
     <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes et c'est la fin du poste.</span></div>
@@ -341,10 +346,6 @@ button { touch-action: manipulation; }
     <h2>Vestiaire</h2>
     <div class="caisse">Caisse : <b id="banque">0</b> €</div>
     <button class="bascule" id="modeTest"></button>
-    <h3 class="cat cat-lieu">Lieu de travail <small>Où se passe ta nuit de boulot. Chaque lieu a ses propres colis, un moment spécial et paie plus… mais il est plus dur.</small></h3>
-    <div class="grille g-lieu" id="lieux"></div>
-    <h3 class="cat cat-perso">Personnage <small>Qui tu joues. Chacun a ses forces et son outil de départ ; en débloquer un ajoute aussi son outil unique aux cartes de toutes tes parties.</small></h3>
-    <div class="grille g-perso" id="persos"></div>
     <h3 class="cat cat-amelio">Améliorations permanentes <small>Achetées avec ta paie, elles restent pour toutes les parties : plus de vie, de vitesse, de dégâts…</small></h3>
     <div class="grille g-amelio" id="amelios"></div>
     <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button></div>
@@ -664,12 +665,10 @@ function machines(dt) {
 function casser(e) {
   const p = S.p;
   for (let i = 0; i < 14; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-160, 160), vy: rnd(-160, 160), t: .45, c: i % 2 ? "#9aa0a8" : "#ffc21a" });
-  if (e.kind === "cafe") { p.hp = Math.min(p.max, p.hp + 25); annonce("Café : +25 vie") }
+  if (e.kind === "cafe") { const a = rnd(0, 6.28); S.gemmes.push({ x: e.x, y: e.y, cafe: 25, att: false, jet: .35, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110 }); annonce("Café servi : ramasse la tasse") }
   else if (e.kind === "friandises") {
-    const pool = offresPossibles();
-    if (!pool.length) { p.hp = Math.min(p.max, p.hp + 40); annonce("Friandise : +40 vie"); return }
-    const o = pool[Math.floor(Math.random() * pool.length)], d = o.kind === "arme" ? ARMES[o.id] : OBJETS[o.id];
-    appliquer(o); majArmes(); annonce("Friandise : " + d.nom + (o.l > 1 ? " niv. " + o.l : ""));
+    for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28 + rnd(-.3, .3), d = rnd(18, 34); S.gemmes.push({ x: e.x, y: e.y, argent: Math.round(5 * LL().gain), att: false, jet: .35, vx: Math.cos(a) * d * 4, vy: Math.sin(a) * d * 4 }) }
+    annonce("Distributeur : 5 pièces !");
   }
   else if (e.kind === "extincteur") {
     for (const m of S.ennemis) if (!m.decor && Math.hypot(m.x - e.x, m.y - e.y) < 320) { const dd = Math.hypot(m.x - e.x, m.y - e.y) || 1; blesser(m, 25 + S.t / 10, (m.x - e.x) / dd * 9, (m.y - e.y) / dd * 9) }
@@ -1119,12 +1118,13 @@ function maj(dt) {
   // éclats d'écume (expérience)
   for (const g of S.gemmes) {
     const dx = p.x - g.x, dy = p.y - g.y, d = Math.hypot(dx, dy);
+    if (g.jet > 0) { g.jet -= dt; g.x += g.vx * dt; g.y += g.vy * dt; continue }
     if (d < p.aimant) g.att = true;
     if (g.att) { const v = 420 + (p.aimant - Math.min(d, p.aimant)) * 2; g.x += dx / (d || 1) * v * dt; g.y += dy / (d || 1) * v * dt }
-    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.coffre) ouvrirCoffre(g.gros); else gagnerXp(g.v) }
+    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.cafe) { p.hp = Math.min(p.max, p.hp + g.cafe); S.textes.push({ x: p.x, y: p.y - 30, v: "+" + g.cafe + " vie", t: .6, c: "#5ff07a" }) } else if (g.coffre) ouvrirCoffre(g.gros); else gagnerXp(g.v) }
   }
   S.gemmes = S.gemmes.filter(g => !g.pris);
-  if (S.gemmes.length > 500) { const pieces = S.gemmes.filter(g => g.argent || g.coffre), autres = S.gemmes.filter(g => !g.argent && !g.coffre); S.gemmes = pieces.concat(autres.slice(-(500 - pieces.length))) }
+  if (S.gemmes.length > 500) { const pieces = S.gemmes.filter(g => g.argent || g.coffre || g.cafe), autres = S.gemmes.filter(g => !g.argent && !g.coffre && !g.cafe); S.gemmes = pieces.concat(autres.slice(-(500 - pieces.length))) }
 
   for (const f of S.fx) { f.t -= dt; if (f.vx) { f.x += f.vx * dt; f.y += f.vy * dt } }
   S.fx = S.fx.filter(f => f.t > 0);
@@ -1248,7 +1248,7 @@ async function revelBooster() {
    soigne complètement et c'est le seul qui contient les évolutions, comme le coffre de boss de Vampire Survivors */
 function ouvrirCoffre(gros) {
   if (choix) { (S.coffresEnAttente = S.coffresEnAttente || []).push(!!gros); return }
-  const p = S.p; p.hp = gros ? p.max : Math.min(p.max, p.hp + 30);
+  const p = S.p;   // les coffres ne soignent plus : la vie revient par les machines à café
   const id = gros ? evoPrete() : null;
   offres = tirer(id ? 2 : 3);
   if (id) offres.splice(1, 0, { id, kind: "evo", l: EVO });
@@ -1259,7 +1259,7 @@ function ouvrirCoffre(gros) {
     const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
     return `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
-  $("slots").textContent = (gros ? "Vie au max" : "+30 vie") + " · choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
+  $("slots").textContent = "Choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
   sel = id ? 1 : 0; revelMachine();
 }
@@ -1343,11 +1343,22 @@ function majAccueil() {
   $("persoImg").src = IMG(P.img); $("persoNom").textContent = P.nom; $("persoCourt").textContent = P.court;
   $("persoArme").textContent = "Arme : " + ARMES[P.arme].nom;
   $("cartePerso").classList.toggle("verrou", !okP); $("persoCadenas").hidden = okP; $("persoCadenas").textContent = "🔒 " + P.prix + " €";
+  const achat = (b, prix) => { b.hidden = false; const ok = SAVE.banque >= prix; b.disabled = !ok; b.textContent = ok ? "Débloquer · " + prix + " €" : "Il manque " + (prix - SAVE.banque) + " €" };
+  if (okP) $("persoAchat").hidden = true; else achat($("persoAchat"), P.prix);
+  if (okL) $("lieuAchat").hidden = true; else achat($("lieuAchat"), L.prix);
   $("persoCompteur").textContent = (LP.indexOf(SAVE.perso) + 1) + " / " + LP.length;
-  $("lieuNom").textContent = L.nom; $("lieuInfo").textContent = okL ? L.info : "🔒 " + L.prix + " € au vestiaire";
+  $("lieuNom").textContent = L.nom; $("lieuInfo").textContent = okL ? L.info : "🔒 " + L.info;
   $("jouer").disabled = !(okP && okL); $("jouer").textContent = okP && okL ? "Jouer" : "À débloquer";
   const b = +(lsGet("poste-record") || 0);
   $("puces").innerHTML = `<span class="puce">💰 ${SAVE.banque} €</span>` + (b ? `<span class="puce">🏆 ${fmt(b)}</span>` : "") + (+(lsGet("poste-infini") || 0) ? `<span class="puce">∞ +${fmt(+lsGet("poste-infini"))}</span>` : "") + (SAVE.test ? `<span class="puce test">Mode test</span>` : "");
+}
+/* débloquer un perso ou un lieu directement depuis l'accueil */
+function debloquer(cle) {
+  const id = SAVE[cle], D = cle === "perso" ? PERSOS[id] : LIEUX[id], liste = cle === "perso" ? SAVE.persos : SAVE.lieux;
+  if (liste.includes(id) || SAVE.banque < D.prix) return false;
+  SAVE.banque -= D.prix; liste.push(id); sauver(); majAccueil(); vibrer(60);
+  const el = cle === "perso" ? $("cartePerso") : document.querySelector(".lieu-sel"); el.classList.remove("debloque"); void el.offsetWidth; el.classList.add("debloque");
+  return true;
 }
 function tourner(liste, cle, sens) { const i = liste.indexOf(SAVE[cle]); SAVE[cle] = liste[(i + sens + liste.length) % liste.length]; sauver(); majAccueil(); if (cle === "lieu") demo() }
 
@@ -1965,6 +1976,13 @@ function barre(x, y, w, h, k, c1, c2) {
 /* --- objets à ramasser --- */
 const spriteEtiquette = or => sprite("etiq" + or, () => cuire(20, 16, 10, 8, x => { rrect(x, -8, -6, 16, 12, 2); x.fillStyle = or ? "#ffe680" : "#fff"; x.fill(); x.lineWidth = 2; x.strokeStyle = or ? "#c98a00" : "#13a8d6"; x.stroke(); x.fillStyle = ENCRE; for (let i = -5; i < 6; i += 2) x.fillRect(i, -3.5, i % 3 ? .9 : 1.4, 7) }));
 const spritePiece = () => sprite("piece", () => cuire(20, 20, 10, 10, x => { x.beginPath(); x.arc(0, 0, 7.5, 0, 7); x.fillStyle = radg(x, -2, -3, 10, [[0, "#fff4b0"], [.5, "#ffc21a"], [1, "#b77c00"]]); x.fill(); trait(x, 2); x.font = "9px 'Luckiest Guy', Impact"; x.textAlign = "center"; x.fillStyle = "#8a5a00"; x.fillText("€", 0, 3.5) }));
+const spriteTasse = () => sprite("tasse", () => cuire(30, 32, 14, 18, x => {
+  x.beginPath(); x.arc(9, 0, 5, -1.4, 1.4); x.lineWidth = 3.4; x.strokeStyle = "#17130f"; x.stroke(); x.lineWidth = 1.6; x.strokeStyle = "#f4efe6"; x.stroke();
+  x.beginPath(); x.moveTo(-9, -6); x.lineTo(9, -6); x.lineTo(7, 9); x.quadraticCurveTo(0, 12, -7, 9); x.closePath(); x.fillStyle = lin(x, -9, 0, 9, 0, [[0, "#ffffff"], [1, "#cfc8bc"]]); x.fill(); trait(x, 2);
+  x.beginPath(); x.ellipse(0, -6, 9, 2.6, 0, 0, 7); x.fillStyle = "#5a3418"; x.fill(); trait(x, 1.6);
+  x.fillStyle = "#e8412c"; x.fillRect(-7, 0, 14, 3);
+  x.strokeStyle = "rgba(255,255,255,.75)"; x.lineWidth = 1.6; for (const k of [-3, 3]) { x.beginPath(); x.moveTo(k, -10); x.quadraticCurveTo(k + 3, -13, k, -16); x.stroke() }
+}));
 const spriteCoffre = gros => sprite("coffre" + gros, () => cuire(40, 34, 20, 18, x => {
   const k = gros ? 1.25 : 1; x.scale(k, k);
   rrect(x, -13, -4, 26, 16, 3); x.fillStyle = lin(x, 0, -4, 0, 12, gros ? [[0, "#ffe680"], [1, "#c98a00"]] : [[0, "#b07a45"], [1, "#6e4a26"]]); x.fill(); trait(x, 2.2);
@@ -2090,6 +2108,7 @@ function dessinerJeu() {
     const x = X(g.x), y = Y(g.y); if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
     const b = Math.sin(S.t * 4 + g.x * .05) * 1.5, lum = S.gemmes.length < 220;
     if (g.argent) { ajouter(lueur("255,194,26"), x, y, 34, 34, .45); poser(spritePiece(), x, y - 4 + b, 0, 1, 1); continue }
+    if (g.cafe) { ajouter(lueur("95,240,122"), x, y - 4, 40, 40, .35 + .15 * Math.sin(S.t * 5)); ombreSol(x, y + 8, 9, 3); poser(spriteTasse(), x, y - 6 + b, 0, 1, 1); continue }
     if (g.coffre) { const k = .5 + .5 * Math.sin(S.t * 6); ajouter(lueur(g.gros ? "255,214,70" : "255,236,190"), x, y - 4, g.gros ? 90 : 50, g.gros ? 90 : 50, (g.gros ? .5 : .3) + .2 * k); ombreSol(x, y + 9, 14, 4); poser(spriteCoffre(!!g.gros), x, y - 4 + b, 0, 1, 1); continue }
     const or = g.v >= 4; if (lum) ajouter(lueur(or ? "255,200,60" : "63,224,255"), x, y, 26, 26, .4 + .15 * Math.sin(S.t * 5 + g.y)); poser(spriteEtiquette(or), x, y - 3 + b, 0, 1, 1);
   }
@@ -2266,7 +2285,7 @@ function dessinerJeu() {
   cx.textAlign = "center"; cx.lineJoin = "round";
   for (const t of S.textes) {
     const k = 1 - t.t / .6, gros = typeof t.v !== "number" || t.v >= 40, sz = (gros ? 21 : 16) * (k < .15 ? 1.5 - k * 3.3 : 1);
-    cx.globalAlpha = Math.min(1, t.t * 4); cx.font = `${sz}px 'Luckiest Guy', Impact, sans-serif`; cx.lineWidth = 4.5; cx.strokeStyle = ENCRE; cx.strokeText(t.v, X(t.x), Y(t.y)); cx.fillStyle = gros ? "#ffe14d" : "#fff"; cx.fillText(t.v, X(t.x), Y(t.y));
+    cx.globalAlpha = Math.min(1, t.t * 4); cx.font = `${sz}px 'Luckiest Guy', Impact, sans-serif`; cx.lineWidth = 4.5; cx.strokeStyle = ENCRE; cx.strokeText(t.v, X(t.x), Y(t.y)); cx.fillStyle = t.c || (gros ? "#ffe14d" : "#fff"); cx.fillText(t.v, X(t.x), Y(t.y));
   }
   cx.globalAlpha = 1;
   // annonce
@@ -2599,7 +2618,7 @@ addEventListener("keydown", e => {
     if (["KeyD", "ArrowRight"].includes(e.code)) return tourner(LP, "perso", 1);
     if (["KeyW", "ArrowUp"].includes(e.code)) return tourner(LLX, "lieu", -1);
     if (["KeyS", "ArrowDown"].includes(e.code)) return tourner(LLX, "lieu", 1);
-    if ((e.code === "Space" || e.code === "Enter") && !e.repeat) { e.preventDefault(); return demarrer() }
+    if ((e.code === "Space" || e.code === "Enter") && !e.repeat) { e.preventDefault(); if (!aPerso(SAVE.perso)) return debloquer("perso"); if (!aLieu(SAVE.lieu)) return debloquer("lieu"); return demarrer() }
     return;
   }
   if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
@@ -2657,16 +2676,6 @@ function dessinerVestiaire() {
   $("banque").textContent = SAVE.banque;
   $("modeTest").textContent = SAVE.test ? "Mode test : tout est débloqué (clic pour jouer pour de vrai)" : "Progression réelle (clic pour tout débloquer)";
   $("modeTest").classList.toggle("on", SAVE.test); $("raz").hidden = !SAVE.test; $("modeTest").hidden = !SAVE.test;
-  $("lieux").innerHTML = Object.entries(LIEUX).map(([id, L]) => {
-    const a = aLieu(id), actif = lieuActif() === id, peut = a || SAVE.banque >= L.prix;
-    const etat = actif ? "Choisi" : a ? "Choisir" : "Débloquer : " + L.prix + " €";
-    return `<button class="carte${actif ? " actif" : ""}" data-lieu="${id}"${peut && !actif ? "" : " disabled"}><img class="art" src="${IMG(L.img)}" alt=""><span class="corps"><strong>${L.nom}</strong><span class="txt">${L.desc}</span><span class="prix">${etat}</span></span></button>`;
-  }).join("");
-  $("persos").innerHTML = Object.entries(PERSOS).map(([id, P]) => {
-    const a = aPerso(id), actif = persoActif() === id, peut = a || SAVE.banque >= P.prix;
-    const etat = actif ? "Équipé" : a ? "Choisir" : "Débloquer : " + P.prix + " €";
-    return `<button class="carte${actif ? " actif" : ""}" data-perso="${id}"${peut && !actif ? "" : " disabled"}><img class="art" src="${IMG(P.img)}" alt=""><span class="corps"><strong>${P.nom}</strong><span class="txt">${P.desc}</span><span class="prix">${etat}</span></span></button>`;
-  }).join("");
   $("amelios").innerHTML = Object.entries(AMELIOS).map(([id, A]) => {
     const n = niv(id), max = n >= A.max, prix = max ? 0 : prixAmelio(id, n), peut = !max && (SAVE.test || SAVE.banque >= prix);
     const pips = Array.from({ length: A.max }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
@@ -2691,6 +2700,7 @@ $("vestiaire").addEventListener("click", e => {
   sauver(); dessinerVestiaire(); record();
 });
 $("vest1").onclick = () => ouvrirVestiaire("accueil");
+$("persoAchat").onclick = e => { e.stopPropagation(); debloquer("perso") }; $("lieuAchat").onclick = e => { e.stopPropagation(); debloquer("lieu") };
 $("vest2").onclick = () => ouvrirVestiaire("fin");
 $("modeTest").onclick = () => { SAVE.test = !SAVE.test; sauver(); dessinerVestiaire(); record() };
 $("raz").onclick = () => { SAVE.amelioTest = {}; sauver(); dessinerVestiaire() };
