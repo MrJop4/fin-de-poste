@@ -1,0 +1,1 @@
+[{"nom":"debutant","reaction":0.25},{"nom":"vestiaire_moyen","reaction":0.25,"amelio":{"vie":2,"vitesse":2,"degats":2,"cadence":2,"regen":1,"aimant":2,"xp":2}},{"nom":"vestiaire_max","reaction":0.25,"amelio":{"vie":5,"vitesse":5,"degats":5,"cadence":5,"regen":3,"aimant":5,"xp":5,"seconde":1}}]

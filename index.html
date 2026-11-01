@@ -297,7 +297,7 @@ button { touch-action: manipulation; }
     <div class="regle"><span class="ico">🚨</span><span>Lumière rouge = une transpalette arrive. Dégage !</span></div>
     <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
     <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : dépense-la au vestiaire.</span></div>
-    <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un coffre = évolution !</span></div>
+    <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un gros coffre (semi, hors gabarit) = évolution !</span></div>
     <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
     <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes et c'est la fin du poste.</span></div>
     <div class="boutons"><button class="btn go" id="aideOk">C'est parti</button></div>
@@ -364,6 +364,21 @@ addEventListener("resize", resize); resize();
 
 const $ = id => document.getElementById(id);
 const VICTOIRE = 600;
+/* équilibrage, réglé avec un simulateur (parties jouées par un bot, 16 par profil) :
+   la pression vient du nombre de colis présents (une cible qui monte), pas d'un débit fixe.
+   Repères pour 10 min : niveau ~6 à 2:30, ~12 à 5:00, ~18 à 7:30, ~23 à 10:00 ;
+   semi tué en 40-60 s avec un build moyen ; victoire pour ~45 % des débutants, ~75 % avec un vestiaire moyen. */
+const EQ = {
+  vivantsDebut: 18, vivantsFin: 125, vivantsMax: 220,   // colis présents visés au début, à 10:00, puis en heures sup
+  vague: { toutes: 60, duree: 12, bonus: .45 },         // une vague par minute : +45 % de colis pendant 12 s
+  debitMax: 8,                                          // au plus 8 colis par seconde (+1 toutes les 25 s) : une vague arrive, elle ne tombe pas d'un coup
+  pvTemps: 115,                                         // PV des colis ×(1 + t / pvTemps)
+  vitTemps: 2000,                                       // vitesse ×(1 + t / vitTemps), plafonnée à 15 min
+  degTemps: 300,                                        // dégâts ×(1 + t / degTemps)
+  mini: [120, 420], miniPv: 8,                          // colis hors gabarit (mini-boss) : moments, et PV ×8 d'une palette
+  fragile: [40, 60],                                    // un colis « fragile » (petit coffre) toutes les 40 à 60 s
+  xp: 1.3,                                              // multiplicateur de la courbe d'expérience
+};
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(Math.floor(s % 60)).padStart(2, "0");
@@ -383,7 +398,7 @@ const ARMES = {
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
-/* évolutions, comme dans Vampire Survivors : arme au niveau max + son équipement associé, puis on ouvre un coffre (lâché par les colis « fragile » et les semis) */
+/* évolutions, comme dans Vampire Survivors : arme au niveau max + son équipement associé, puis on ouvre un gros coffre (semis, colis hors gabarit, objectif réussi) */
 const EVOS = {
   lanterne: { nom: "Scanner industriel", avec: "huile", desc: "Quatre rayons cyan qui balaient tout autour de toi." },
   harpon: { nom: "Lame infinie", avec: "meule", desc: "Cinq cutters dorés qui traversent tout." },
@@ -411,7 +426,7 @@ const TYPES = {
   feu: { r: 9, hp: 6, vit: 80, deg: 5, xp: 1, coul: "#f2f0e6" },        /* bordereau qui s'envole */
   noye: { r: 16, hp: 46, vit: 36, deg: 12, xp: 4, coul: "#c8a46a" },     /* palette qui tangue */
   murene: { r: 13, hp: 26, vit: 66, deg: 9, xp: 2, coul: "#3d8bd9" },    /* diable fou */
-  leviathan: { r: 46, hp: 2400, vit: 44, deg: 26, xp: 60, coul: "#d63b2f", boss: true },  /* semi-remorque en retard */
+  leviathan: { r: 46, hp: 1600, vit: 44, deg: 26, xp: 60, coul: "#d63b2f", boss: true },  /* semi-remorque en retard */
 };
 
 /* ---------- entre les parties : caisse, vestiaire, personnages (sauvegardés dans le navigateur) ---------- */
@@ -493,7 +508,7 @@ function nouvellePartie() {
   S = {
     t: 0, kills: 0, spawnAcc: 0, bossFaits: 0,
     perso: persoActif(), lieu: lieuActif(), argent: 0, coups: [], cles: [], arcs: [], cleId: 0,
-    p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 6, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
+    p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
     armes: { [P.arme]: 1 }, objets: {},
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8 },
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [],
@@ -515,12 +530,20 @@ function nouvellePartie() {
 /* ---------- apparition ---------- */
 function spawn(type, elite) {
   const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + 60;
-  const L = LL(), mult = (1 + S.t / 135) * L.pv, hp = T.hp * mult * (elite ? 6 : 1);
-  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / 3000), deg: T.deg * (1 + S.t / 400) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
+  const L = LL(), mult = (1 + S.t / EQ.pvTemps) * L.pv, hp = T.hp * mult * (elite ? 6 : 1);
+  S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / EQ.vitTemps), deg: T.deg * (1 + S.t / EQ.degTemps) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
+}
+function cibleVivants(t) {
+  let c = EQ.vivantsDebut + (EQ.vivantsFin - EQ.vivantsDebut) * Math.min(1, t / VICTOIRE);
+  if (t > VICTOIRE) c = Math.min(EQ.vivantsMax, EQ.vivantsFin + (t - VICTOIRE) / 4);
+  if (t > 50 && t % EQ.vague.toutes > EQ.vague.toutes - EQ.vague.duree) c *= 1 + EQ.vague.bonus;
+  return c * LL().spawn * (S.ev ? .4 : 1);
 }
 function vagues(dt) {
-  const t = S.t, plafond = S.infini ? 11 + Math.min(12, (t - VICTOIRE) / 25) : 11;
-  const taux = Math.min(plafond, .8 + t / 30) * LL().spawn * (S.ev ? .4 : 1);
+  const t = S.t; S.eliteT = (S.eliteT ?? 0) - dt;
+  let vivants = 0; for (const e of S.ennemis) if (!e.decor && !e.boss && !e.ev) vivants++;
+  const manque = cibleVivants(t) - vivants;
+  const taux = manque > 0 ? Math.min(EQ.debitMax + t / 25, .6 + manque * .8) : 0;
   S.spawnAcc += taux * dt;
   while (S.spawnAcc >= 1 && S.ennemis.length < 300) {
     S.spawnAcc--;
@@ -529,15 +552,23 @@ function vagues(dt) {
     if (t > 50 && r < .35) type = "feu";
     if (t > 120 && r > .78) type = "noye";
     if (t > 210 && r > .55 && r < .7) type = "murene";
-    spawn(type, t > 90 && Math.random() < .006);
+    const fragile = t > 90 && S.eliteT <= 0; if (fragile) S.eliteT = rnd(EQ.fragile[0], EQ.fragile[1]);
+    spawn(type, fragile);
   }
   if (S.ev) return;
+  if ((S.miniFaits || 0) < EQ.mini.length && t >= EQ.mini[S.miniFaits || 0]) { S.miniFaits = (S.miniFaits || 0) + 1; spawnMini() }
   if (S.bossFaits === 0 && t >= 300) { spawn("leviathan"); S.bossFaits = 1; annonce(LL().boss1) }
   if (S.bossFaits === 1 && t >= 510) { spawn("leviathan"); spawn("leviathan"); S.bossFaits = 2; annonce(LL().boss2) }
   if (S.infini && t >= S.prochainBoss) {
     const n = 1 + Math.floor((t - VICTOIRE) / 240); for (let i = 0; i < n; i++) spawn("leviathan");
     S.prochainBoss += 120; annonce(n > 1 ? n + " semis d'un coup !" : "Heures sup : un semi arrive !");
   }
+}
+/* colis hors gabarit : une palette énorme, lente et solide, qui lâche un coffre (le mini-boss entre deux semis) */
+function spawnMini() {
+  spawn("noye", true); const e = S.ennemis[S.ennemis.length - 1];
+  e.mini = true; e.r = 30; e.hp = e.max = e.hp / 6 * EQ.miniPv; e.vit *= .8; e.xp = 40;
+  annonce("Colis hors gabarit !");
 }
 let annonceTxt = "", annonceT = 0;
 function annonce(t) { annonceTxt = t; annonceT = 3 }
@@ -622,7 +653,7 @@ function finirEv(reussi) {
   for (const e of S.ennemis) { delete e.cote; if (e.ev && e.type !== "leviathan") e.parti = true }
   if (!reussi) return annonce(ev.id === "glace" ? "La glace a fondu…" : "Trop tard, les promos sont finies");
   const p = S.p, gain = Math.round(5 * LL().gain * (1 + .1 * niv("paie")));
-  { const a = rnd(0, 6.28); S.gemmes.push({ x: p.x + Math.cos(a) * 140, y: p.y + Math.sin(a) * 140, coffre: true, att: false }) }
+  { const a = rnd(0, 6.28); S.gemmes.push({ x: p.x + Math.cos(a) * 140, y: p.y + Math.sin(a) * 140, coffre: true, gros: true, att: false }) }
   for (let i = 0; i < 10; i++) { const a = i / 10 * 6.28; S.gemmes.push({ x: p.x + Math.cos(a) * 60, y: p.y + Math.sin(a) * 60, argent: gain, att: false }) }
   annonce("Objectif réussi ! Coffre + prime"); vibrer(120);
 }
@@ -668,7 +699,7 @@ function contraindreEv(e) {
 
 /* ---------- dégâts ---------- */
 function blesser(e, d, kx, ky) {
-  d *= S.p.deg; e.hp -= d; e.flash = .1;
+  d *= S.p.deg; if (e.ch && e.ch.etat === "sonne") d *= 1.5; e.hp -= d; e.flash = .1;
   if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
 }
@@ -679,7 +710,7 @@ function mourir(e) {
   S.kills++;
   const n = e.boss ? 14 : 1;
   for (let i = 0; i < n; i++) S.gemmes.push({ x: e.x + (n > 1 ? rnd(-40, 40) : 0), y: e.y + (n > 1 ? rnd(-40, 40) : 0), v: e.boss ? Math.ceil(e.xp / n) : e.xp, att: false });
-  if (e.boss || e.elite) S.gemmes.push({ x: e.x, y: e.y, coffre: true, att: false });
+  if (e.boss || e.elite) S.gemmes.push({ x: e.x, y: e.y, coffre: true, gros: !!(e.boss || e.mini), att: false });
   // la paie : les semis lâchent un tas de pièces, les colis « fragile » quelques-unes
   const nb = e.boss ? 12 : e.elite ? 2 : 0;
   for (let i = 0; i < nb; i++) { const a = rnd(0, 6.28), d = rnd(10, e.boss ? 70 : 24); S.gemmes.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, argent: Math.round(5 * LL().gain * (1 + .1 * niv("paie"))), att: false }) }
@@ -903,6 +934,18 @@ function maj(dt) {
       for (const o of a) { if (o === e) continue; const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy), min = e.r + o.r; if (od > 0 && od < min) { const f = (min - od) / min * 140; vx += ox / od * f; vy += oy / od * f } }
     }
     const vmax = e.vit * 1.25, vn = Math.hypot(vx, vy); if (vn > vmax) { vx *= vmax / vn; vy *= vmax / vn }
+    if (e.type === "leviathan") {
+      /* le semi : il suit, s'arrête et vise (ligne rouge), fonce tout droit, puis reste sonné : c'est là qu'il faut taper (dégâts ×1,5) */
+      const c = e.ch || (e.ch = { etat: "suit", t: rnd(3, 5) }), rage = e.hp < e.max * .5; c.t -= dt;
+      if (rage && !c.rage) { c.rage = true; if (!S.ev) annonce("Le semi s'énerve !") }
+      if (c.etat === "suit" && c.t <= 0 && d < 560) { c.etat = "vise"; c.t = rage ? .9 : 1.2; c.a = Math.atan2(dy, dx) }
+      else if (c.etat === "vise" && c.t <= 0) { c.etat = "fonce"; c.t = .9 }
+      else if (c.etat === "fonce" && c.t <= 0) { c.etat = "sonne"; c.t = rage ? 1.3 : 1.8; for (let i = 0; i < 10; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-120, 120), vy: rnd(-120, 120), t: .45, c: "#cfc6b4" }) }
+      else if (c.etat === "sonne" && c.t <= 0) { c.etat = "suit"; c.t = rage ? 3 : 4.5 }
+      if (c.etat === "vise") { c.a += Math.atan2(Math.sin(Math.atan2(dy, dx) - c.a), Math.cos(Math.atan2(dy, dx) - c.a)) * Math.min(1, dt * 1.5); vx = 0; vy = 0 }
+      else if (c.etat === "sonne") { vx = 0; vy = 0 }
+      else if (c.etat === "fonce") { vx = Math.cos(c.a) * e.vit * 7; vy = Math.sin(c.a) * e.vit * 7 }
+    }
     e.x += (vx + e.kb.x * 60) * dt; e.y += (vy + e.kb.y * 60) * dt;
     if (murs) pousserHorsMurs(e, e.r);
     if (S.ev) contraindreEv(e);
@@ -919,7 +962,7 @@ function maj(dt) {
     const dx = p.x - g.x, dy = p.y - g.y, d = Math.hypot(dx, dy);
     if (d < p.aimant) g.att = true;
     if (g.att) { const v = 420 + (p.aimant - Math.min(d, p.aimant)) * 2; g.x += dx / (d || 1) * v * dt; g.y += dy / (d || 1) * v * dt }
-    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.coffre) ouvrirCoffre(); else gagnerXp(g.v) }
+    if (d < p.r + 6) { g.pris = true; if (g.argent) S.argent += g.argent; else if (g.coffre) ouvrirCoffre(g.gros); else gagnerXp(g.v) }
   }
   S.gemmes = S.gemmes.filter(g => !g.pris);
   if (S.gemmes.length > 500) { const pieces = S.gemmes.filter(g => g.argent || g.coffre), autres = S.gemmes.filter(g => !g.argent && !g.coffre); S.gemmes = pieces.concat(autres.slice(-(500 - pieces.length))) }
@@ -943,11 +986,13 @@ function maj(dt) {
 function evoPrete() { return Object.keys(S.armes).find(id => S.armes[id] === ARMES[id].max && (S.objets[EVOS[id].avec] || 0) > 0) }
 
 const PALIER = 20;
+/* expérience pour passer au niveau suivant : courbe un peu plus que linéaire, ×3 au palier (où l'expérience compte double) */
+const coutNiveau = n => Math.round(EQ.xp * (6 + 2 * n + 1.4 * n * n) * (n === PALIER ? 3 : 1));
 function gagnerXp(v) {
   const p = S.p; p.xp += v * p.xpm * (p.niv === PALIER ? 2 : 1);   // pendant le palier : expérience ×2
   if (p.xp >= p.next && !choix) {
     p.xp -= p.next; p.niv++;
-    p.next = Math.round((6 + 2 * p.niv + 1.4 * p.niv * p.niv) * (p.niv === PALIER ? 3 : 1));
+    p.next = coutNiveau(p.niv);
     if (p.niv === PALIER) annonce("Palier ! Expérience ×2");
     ouvrirChoix();
   }
@@ -1010,7 +1055,7 @@ function ouvrirChoix() {
     const visuel = `<img class="art" src="${IMG(d.img)}" alt=""${o.kind !== "objet" ? ' style="object-position:50% 60%"' : ""}>`;
     return `<button class="carte" data-i="${i}">${visuel}<span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
-  const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ une évolution t'attend dans le prochain coffre !" : "");
+  const nbA = Object.keys(S.armes).length; $("slots").textContent = "Outils " + nbA + " / " + NB_ARMES + (evoPrete() ? " · ★ évolution prête : ouvre un gros coffre (semi, hors gabarit) !" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(25);
   sel = 0; revelBooster();
 }
@@ -1040,20 +1085,22 @@ async function revelBooster() {
   pack.remove(); finRevel();
 }
 /* coffre : machine à sous, 3 rouleaux qui s'arrêtent bien cadrés ; si une évolution est prête, elle tombe au milieu */
-function ouvrirCoffre() {
-  const p = S.p; p.hp = Math.min(p.max, p.hp + 30);
-  if (choix) { S.coffresEnAttente = (S.coffresEnAttente || 0) + 1; return }
-  const id = evoPrete();
+/* deux sortes de coffres : le petit (colis « fragile ») donne une carte ; le gros (semi, hors gabarit, objectif réussi)
+   soigne complètement et c'est le seul qui contient les évolutions, comme le coffre de boss de Vampire Survivors */
+function ouvrirCoffre(gros) {
+  if (choix) { (S.coffresEnAttente = S.coffresEnAttente || []).push(!!gros); return }
+  const p = S.p; p.hp = gros ? p.max : Math.min(p.max, p.hp + 30);
+  const id = gros ? evoPrete() : null;
   offres = tirer(id ? 2 : 3);
   if (id) offres.splice(1, 0, { id, kind: "evo", l: EVO });
-  $("choixTitre").textContent = id ? "★ Jackpot ! ★" : "Coffre !";
+  $("choixTitre").textContent = id ? "★ Jackpot ! ★" : gros ? "Gros coffre !" : "Coffre !";
   $("niveau").classList.add("mode-coffre");
   const pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img);
   $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>` + offres.map((o, i) => {
     const { d, tag, indice } = infosCarte(o), n = 10 + i * 4, imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
     return `<button class="carte${o.kind === "evo" ? " evo-carte" : ""}" data-i="${i}"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="corps"><span class="tag">${i + 1} · ${tag}</span><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   }).join("");
-  $("slots").textContent = "+30 vie · choisis ta récompense";
+  $("slots").textContent = (gros ? "Vie au max" : "+30 vie") + " · choisis ta récompense" + (!gros && evoPrete() ? " · l'évolution sera dans un gros coffre" : "");
   choix = true; $("niveau").hidden = false; JOY.actif = false; vibrer(40);
   sel = id ? 1 : 0; revelMachine();
 }
@@ -1084,7 +1131,7 @@ function prendre(i) {
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 });
   } else appliquer(o);
   choix = false; $("niveau").hidden = true; majArmes(); last = performance.now();
-  if (S.coffresEnAttente > 0) { S.coffresEnAttente--; return ouvrirCoffre() }
+  if (S.coffresEnAttente && S.coffresEnAttente.length) return ouvrirCoffre(S.coffresEnAttente.shift());
   if (p.xp >= p.next) gagnerXp(0);
 }
 $("cartes").addEventListener("mousemove", e => { const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
@@ -1338,6 +1385,7 @@ function dessinerJeu() {
   for (const g of S.gemmes) {
     const x = X(g.x), y = Y(g.y); if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
     if (g.argent) { cx.fillStyle = "#b88a00"; cx.beginPath(); cx.arc(x, y + 1.5, 7, 0, 7); cx.fill(); cx.fillStyle = "#ffd447"; cx.beginPath(); cx.arc(x, y, 7, 0, 7); cx.fill(); cx.fillStyle = "#8a6400"; cx.font = "700 10px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillText("€", x, y + 3.5); continue }
+    if (g.coffre && g.gros) { const k = .5 + .5 * Math.sin(S.t * 6); cx.fillStyle = `rgba(255,214,70,${.18 + .2 * k})`; cx.beginPath(); cx.arc(x, y, 26, 0, 7); cx.fill(); cx.fillStyle = "#b8860b"; cx.fillRect(x - 14, y - 8, 28, 16); cx.fillStyle = "#ffd447"; cx.fillRect(x - 14, y - 13, 28, 6); cx.fillStyle = "#17130f"; cx.fillRect(x - 3, y - 4, 6, 6); continue }
     if (g.coffre) { cx.fillStyle = "#7a5230"; cx.fillRect(x - 10, y - 6, 20, 12); cx.fillStyle = "#e4e2dc"; cx.fillRect(x - 6, y - 10, 12, 5); continue }
     cx.fillStyle = g.v >= 4 ? "#ffc21a" : "#f2f0e6"; cx.fillRect(x - 6, y - 4, 12, 8);
     cx.fillStyle = "#15171a"; for (let k = -4; k <= 4; k += 2) cx.fillRect(x + k, y - 2, k % 4 ? 1 : 1.5, 4);
@@ -1429,9 +1477,15 @@ function dessinerJeu() {
       cx.fillStyle = "#ffc21a"; cx.fillRect(e.r * 1.72, -e.r * .7, 4, 8); cx.fillRect(e.r * 1.72, e.r * .7 - 8, 4, 8);
       cx.font = "16px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#d63b2f"; cx.fillText("EN RETARD", -e.r * .7, 6);
     }
-    if (e.elite) { cx.strokeStyle = "#ffc21a"; cx.lineWidth = 2; cx.setLineDash([4, 3]); cx.strokeRect(-e.r * 1.3, -e.r * 1.3, e.r * 2.6, e.r * 2.6); cx.setLineDash([]); cx.font = "11px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#ffc21a"; cx.fillText("FRAGILE", 0, -e.r * 1.4) }
+    if (e.elite) { cx.strokeStyle = "#ffc21a"; cx.lineWidth = 2; cx.setLineDash([4, 3]); cx.strokeRect(-e.r * 1.3, -e.r * 1.3, e.r * 2.6, e.r * 2.6); cx.setLineDash([]); cx.font = "11px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#ffc21a"; cx.fillText(e.mini ? "HORS GABARIT" : "FRAGILE", 0, -e.r * 1.4) }
     cx.restore();
     if (e.boss || e.elite) { const w = e.r * 2; cx.fillStyle = "rgba(0,0,0,.5)"; cx.fillRect(x - w / 2, y - e.r - 20, w, 5); cx.fillStyle = "#ff5a1f"; cx.fillRect(x - w / 2, y - e.r - 20, w * Math.max(0, e.hp / e.max), 5) }
+  }
+  // le semi qui vise : couloir rouge ; sonné : étoiles
+  for (const e of S.ennemis) {
+    if (!e.ch) continue; const x = X(e.x), y = Y(e.y);
+    if (e.ch.etat === "vise") { cx.save(); cx.translate(x, y); cx.rotate(e.ch.a); const k = .5 + .5 * Math.sin(S.t * 30); cx.fillStyle = `rgba(255,42,31,${.12 + .18 * k})`; cx.fillRect(0, -e.r * .9, 7 * e.vit * .9, e.r * 1.8); cx.strokeStyle = `rgba(255,70,50,${.5 + .4 * k})`; cx.setLineDash([14, 9]); cx.lineWidth = 2; cx.strokeRect(0, -e.r * .9, 7 * e.vit * .9, e.r * 1.8); cx.setLineDash([]); cx.restore() }
+    if (e.ch.etat === "sonne") { for (let i = 0; i < 3; i++) { const a = S.t * 5 + i * 2.09; cx.fillStyle = "#ffe14d"; cx.beginPath(); cx.arc(x + Math.cos(a) * e.r * .9, y - e.r - 6 + Math.sin(a) * 6, 5, 0, 7); cx.fill() } cx.font = "14px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#ffe14d"; cx.fillText("SONNÉ ! ×1,5", x, y - e.r - 26) }
   }
   // transpalettes en route
   for (const tp of S.transpas) {
