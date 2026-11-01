@@ -420,13 +420,20 @@ const ARMES = {
   // armes liées aux persos : elles entrent dans les cartes quand le perso est débloqué
   fourches: { nom: "Fourches", img: "fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
   cle: { nom: "Clé à molette", img: "cle", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
-  sabre: { nom: "Sabre de déballage", img: "nyho", max: 6, perso: "nyho", desc: l => l === 1 ? "Un grand coup de sabre en arc devant toi, qui tranche tout ce qu'il touche." : l === 4 ? "Le sabre frappe aussi dans ton dos." : `Arc plus large, ${20 + 9 * l} dégâts.` },
-  tronc: { nom: "Lancer de tronc", img: "nauud", max: 6, perso: "nauud", desc: l => l === 1 ? "Lance un tronc qui roule et écrase tous les colis sur son passage." : `${1 + Math.floor(l / 3)} tronc(s), ${24 + 10 * l} dégâts, gros recul.` },
-  scotch: { nom: "Dévidoir de scotch", img: "zuzuletroll", max: 6, perso: "zuzu", desc: l => l === 1 ? "En courant, tu laisses une traînée de scotch qui colle et abîme les colis." : `Scotch plus large et plus durable, ${8 + 4 * l} dégâts, ralentit de ${30 + 3 * l} %.` },
-  co2: { nom: "Extincteur à CO2", img: "djefrais", max: 6, perso: "djefrais", desc: l => l === 1 ? "Un jet de froid devant toi : abîme et ralentit les colis de moitié." : l === 4 ? "Un deuxième jet part dans ton dos." : `Jet plus long, ${5 + 3 * l} dégâts.` },
+  sabre: { nom: "Sabre de déballage", img: "sabre", max: 6, perso: "nyho", desc: l => l === 1 ? "Un grand coup de sabre en arc devant toi, qui tranche tout ce qu'il touche." : l === 4 ? "Le sabre frappe aussi dans ton dos." : `Arc plus large, ${20 + 9 * l} dégâts.` },
+  tronc: { nom: "Lancer de tronc", img: "tronc", max: 6, perso: "nauud", desc: l => l === 1 ? "Lance un tronc qui roule et écrase tous les colis sur son passage." : `${1 + Math.floor(l / 3)} tronc(s), ${24 + 10 * l} dégâts, gros recul.` },
+  scotch: { nom: "Dévidoir de scotch", img: "scotch", max: 6, perso: "zuzu", desc: l => l === 1 ? "En courant, tu laisses une traînée de scotch qui colle et abîme les colis." : `Scotch plus large et plus durable, ${8 + 4 * l} dégâts, ralentit de ${30 + 3 * l} %.` },
+  co2: { nom: "Extincteur à CO2", img: "co2", max: 6, perso: "djefrais", desc: l => l === 1 ? "Un jet de froid devant toi : abîme et ralentit les colis de moitié." : l === 4 ? "Un deuxième jet part dans ton dos." : `Jet plus long, ${5 + 3 * l} dégâts.` },
   talkie: { nom: "Talkie-walkie", img: "talkie", max: 6, perso: "chef", desc: l => l === 1 ? "Un appel qui rebondit de colis en colis (3 cibles)." : `${2 + l} cibles, ${15 + 7 * l} dégâts.` },
 };
 const IMG = n => "cartes/" + n + ".webp";
+/* illustrations pas encore livrées : on affiche une image de secours (l'arme de base pour une évolution, le perso pour une arme unique) */
+const REPLI = { sabre: "nyho", tronc: "nauud", scotch: "zuzuletroll", co2: "djefrais" };
+document.addEventListener("error", e => {
+  const t = e.target; if (!t || t.tagName !== "IMG") return;
+  const m = /cartes\/(evo-)?([\w]+)\.webp/.exec(t.getAttribute("src") || ""); if (!m) return;
+  if (m[1] && ARMES[m[2]]) t.src = IMG(ARMES[m[2]].img); else if (REPLI[m[2]]) t.src = IMG(REPLI[m[2]]);
+}, true);
 /* évolutions, comme dans Vampire Survivors : arme au niveau max + son équipement associé, puis on ouvre un gros coffre (semis, colis hors gabarit, objectif réussi) */
 const EVOS = {
   lanterne: { nom: "Scanner industriel", avec: "huile", desc: "Quatre rayons cyan qui balaient tout autour de toi." },
@@ -1132,7 +1139,7 @@ function appliquer(o) {
 }
 const CASSE_CROUTE = { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
 function infosCarte(o) {
-  if (o.kind === "evo") return { d: { nom: EVOS[o.id].nom, img: ARMES[o.id].img, desc: () => EVOS[o.id].desc }, tag: "★ Évolution", indice: "" };
+  if (o.kind === "evo") return { d: { nom: EVOS[o.id].nom, img: "evo-" + o.id, desc: () => EVOS[o.id].desc }, tag: "★ Évolution", indice: "" };
   const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : CASSE_CROUTE;
   const tag = o.kind === "soin" ? "Soin" : o.kind === "arme" ? (o.l === 1 ? "Nouvel outil" : "Outil · niv. " + o.l) : (o.l === 1 ? "Nouvel équipement" : "Équipement · niv. " + o.l);
   let indice = "";
@@ -1246,7 +1253,7 @@ $("cartes").addEventListener("click", e => { if (revelEnCours) return; const b =
 /* ---------- interface ---------- */
 function majArmes() {
   const tuile = (img, nom, txt, cls) => `<span class="tuile ${cls}" title="${nom}"><img src="${IMG(img)}" alt="${nom}"><b>${txt}</b></span>`;
-  const a = Object.entries(S.armes).map(([id, l]) => l >= EVO ? tuile(ARMES[id].img, EVOS[id].nom, "★", "evo") : tuile(ARMES[id].img, ARMES[id].nom, l === ARMES[id].max ? "MAX" : l, "arme" + (l === ARMES[id].max ? " max" : "")));
+  const a = Object.entries(S.armes).map(([id, l]) => l >= EVO ? tuile("evo-" + id, EVOS[id].nom, "★", "evo") : tuile(ARMES[id].img, ARMES[id].nom, l === ARMES[id].max ? "MAX" : l, "arme" + (l === ARMES[id].max ? " max" : "")));
   const o = Object.entries(S.objets).map(([id, l]) => tuile(OBJETS[id].img, OBJETS[id].nom, l === OBJETS[id].max ? "MAX" : l, "objet" + (l === OBJETS[id].max ? " max" : "")));
   $("armes").innerHTML = a.join("") + (o.length ? '<i class="sep"></i>' : "") + o.join("");
 }
@@ -2461,7 +2468,7 @@ function dessinerInventaire() {
     const A = ARMES[id], E = EVOS[id], O = OBJETS[E.avec], evo = l >= EVO, max = l >= A.max, aObj = (S.objets[E.avec] || 0) > 0;
     const recette = evo ? `<span class="ok">★ Évoluée !</span>`
       : `<span class="${max ? "ok" : "ko"}">${max ? "✓" : "○"} Niveau max</span><span class="${aObj ? "ok" : "ko"}">${aObj ? "✓" : "○"} ${O.nom}</span><span class="${max && aObj ? "pret" : "ko"}">${max && aObj ? "★ Prête : ouvre un coffre !" : "○ Un coffre"}</span>`;
-    return `<div class="inv-carte k-arme${evo ? " evo" : ""}"><img src="${IMG(A.img)}" alt=""><div><strong>${evo ? "★ " + E.nom : A.nom}</strong>${evo ? `<span class="niv-txt">${E.desc}</span>` : pips(l, A.max)}<span class="evo-titre">${evo ? "" : "Évolution : " + E.nom}</span><span class="recette">${recette}</span></div></div>`;
+    return `<div class="inv-carte k-arme${evo ? " evo" : ""}"><img src="${IMG(evo ? "evo-" + id : A.img)}" alt=""><div><strong>${evo ? "★ " + E.nom : A.nom}</strong>${evo ? `<span class="niv-txt">${E.desc}</span>` : pips(l, A.max)}<span class="evo-titre">${evo ? "" : "Évolution : " + E.nom}</span><span class="recette">${recette}</span></div></div>`;
   }).join("") + Array.from({ length: Math.max(0, NB_ARMES - nb) }, () => `<div class="inv-carte vide"><div><strong>Emplacement libre</strong><span class="niv-txt">Choisis un nouvel outil en montant de niveau.</span></div></div>`).join("");
   const objs = Object.entries(S.objets);
   $("invObjets").innerHTML = objs.length ? objs.map(([id, l]) => {
