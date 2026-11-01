@@ -382,7 +382,7 @@ const EQ = {
   mini: [120, 420], miniPv: 8,                          // colis hors gabarit (mini-boss) : moments, et PV ×8 d'une palette
   fragile: [40, 60],                                    // un colis « fragile » (petit coffre) toutes les 40 à 60 s
   xp: 1.3,                                              // multiplicateur de la courbe d'expérience
-  plante: { grace: 15, avert: 3, apres: 5, debit: .9, hausse: .2 },   // après 0:15, immobile 3 s : avertissement ; 5 s : des colis tombent à tes pieds (0,9 par s, +0,2 par s chaque seconde)
+  plante: { grace: 15, avert: 3, apres: 5, debit: .9, hausse: .2, dist: 260, vitesse: 2.6 },   // après 0:15, immobile 3 s : avertissement ; 5 s : des colis surgissent à 260 px et foncent sur toi (×2,6), 0,9 par s puis +0,2 par s chaque seconde
   cercle: { debut: 60, toutes: 60, n: 22, parSec: 10, max: 60, pv: 1.2, vit: 1.15 },   // encerclement : à 1:00 puis chaque minute, 22 colis + 1 toutes les 10 s, un peu plus solides et rapides
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -561,7 +561,7 @@ function vagues(dt) {
     const fragile = t > 90 && S.eliteT <= 0; if (fragile) S.eliteT = rnd(EQ.fragile[0], EQ.fragile[1]);
     spawn(type, fragile);
   }
-  // planté sur place : le chef t'envoie du boulot, des colis tombent des racks juste à tes pieds
+  // planté sur place : le chef t'envoie du boulot, des colis surgissent et foncent sur toi (le temps de réagir)
   const bouge = Math.hypot(S.p.vx, S.p.vy) > 25;
   S.plante = bouge || S.ev || t < EQ.plante.grace ? 0 : (S.plante || 0) + dt;
   if (S.plante > EQ.plante.avert && !S.planteAverti) { S.planteAverti = true; annonce("Bouge ! Le chef arrive…") }
@@ -570,9 +570,9 @@ function vagues(dt) {
     if (!S.planteVu) { S.planteVu = true; annonce("Tu restes planté ? Le chef t'envoie du boulot !") }
     S.planteAcc = (S.planteAcc || 0) + dt * (EQ.plante.debit + (S.plante - EQ.plante.apres) * EQ.plante.hausse);
     while (S.planteAcc >= 1) {
-      S.planteAcc--; const a = rnd(0, 6.28), dd = rnd(18, 40);
+      S.planteAcc--; const a = rnd(0, 6.28), dd = Math.min(Math.hypot(W, H) / 2 * .8, EQ.plante.dist);
       spawn(Math.random() < .25 ? "noye" : "crabe"); const e = S.ennemis[S.ennemis.length - 1];
-      e.x = S.p.x + Math.cos(a) * dd; e.y = S.p.y + Math.sin(a) * dd; e.xp = 0;
+      e.x = S.p.x + Math.cos(a) * dd; e.y = S.p.y + Math.sin(a) * dd; e.xp = 0; e.vit *= EQ.plante.vitesse;
       for (let i = 0; i < 6; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-90, 90), vy: rnd(-90, 90), t: .4, c: "#cfc6b4" });
     }
   } else S.planteAcc = 0;
