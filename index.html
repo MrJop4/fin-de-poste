@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icone-192.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Black+Ops+One&family=Nunito:wght@700;800;900&display=swap">
 <style>
 /* Style BD : contours noirs épais, ombres décalées, couleurs franches, comme les cartes illustrées. Le jeu reste de nuit, les menus sont en papier. */
 :root {
@@ -395,6 +395,55 @@ button { touch-action: manipulation; }
 .install span { font-size: 14px; line-height: 1.25; color: #3a332a; }
 .install-btns { grid-column: 1 / -1; display: flex; gap: 10px; } .install-btns .btn { flex: 1; font-size: 18px; padding: 6px 10px; }
 @keyframes monte { from { transform: translate(-50%, 40px); opacity: 0 } }
+/* écrans de choix sur téléphone debout : le contenu remplit la hauteur au lieu de se tasser en haut */
+@media (max-width: 700px) {
+  #niveau .panneau { min-height: calc(100dvh - 20px); align-content: space-evenly; }
+  #niveau .pack-jeu { top: 55%; }
+  #pause .panneau { padding-top: 46px; }
+}
+/* machine à sous « quai industriel » : tôle larmée, bandeau de sécurité, gyrophares, rampes de lampes colorées */
+.machine-jeu.quai { border-radius: 16px; background:
+  radial-gradient(circle at 25% 25%, rgba(255,255,255,.2) 0 2px, transparent 3px) 0 0 / 14px 14px, radial-gradient(circle at 75% 75%, rgba(0,0,0,.25) 0 2px, transparent 3px) 0 0 / 14px 14px,
+  linear-gradient(90deg, #ff6a10 0 14px, transparent 14px calc(100% - 14px), #ff6a10 calc(100% - 14px)), linear-gradient(160deg, #8c949e, #4c535c);
+  box-shadow: 8px 8px 0 var(--encre), inset 0 2px 0 rgba(255,255,255,.4), 0 0 40px rgba(255,150,40,.25); }
+.machine-jeu.quai .fronton { left: -4px; right: -4px; top: -4px; transform: none; height: 54px; border: 4px solid var(--encre); border-radius: 16px 16px 0 0; padding: 0; display: grid; place-items: center;
+  background: repeating-linear-gradient(-45deg, #ffc21a 0 16px, #17130f 16px 32px); box-shadow: none; }
+.machine-jeu.quai .fronton b { font-family: "Black Ops One", var(--display); font-weight: 400; font-size: 21px; white-space: nowrap; letter-spacing: .05em; color: #ffc21a; background: #17130f; padding: 3px 12px 1px; border-radius: 6px; transform: rotate(-2deg); box-shadow: 0 0 0 3px #ffc21a, 0 0 18px rgba(255,194,26,.6); text-shadow: 0 0 8px rgba(255,194,26,.7); }
+.machine-jeu.quai .gyro { position: absolute; top: -24px; width: 30px; height: 22px; z-index: 2; border-radius: 14px 14px 4px 4px; border: 3px solid var(--encre); }
+.machine-jeu.quai .gyro.g { left: 18px; background: radial-gradient(circle at 50% 70%, #ffd36b, #ff8a00); } .machine-jeu.quai .gyro.d { right: 18px; background: radial-gradient(circle at 50% 70%, #8fd3ff, #1f7ae0); }
+.machine-jeu.quai .gyro::after { content: ""; position: absolute; left: 50%; top: 40%; width: 160px; height: 80px; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgba(255,160,0,.5), transparent 65%); animation: gyro 1s infinite; pointer-events: none; }
+.machine-jeu.quai .gyro.d::after { background: radial-gradient(ellipse, rgba(60,160,255,.5), transparent 65%); animation-delay: .5s; }
+@keyframes gyro { 50% { opacity: 0 } }
+.machine-jeu.quai .vis { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #eee, #777); border: 2px solid var(--encre); }
+.vis.hg { left: 20px; top: 60px } .vis.hd { right: 20px; top: 60px } .vis.bg { left: 20px; bottom: 8px } .vis.bd { right: 20px; bottom: 8px }
+.machine-jeu.quai .lampes { position: absolute; display: flex; justify-content: space-between; pointer-events: none; }
+.machine-jeu.quai .lampes.h { left: 34px; right: 52px; top: 58px; } .machine-jeu.quai .lampes.b { left: 34px; right: 52px; bottom: 30px; }
+.machine-jeu.quai .lampes.cg, .machine-jeu.quai .lampes.cd { flex-direction: column; top: 74px; bottom: 44px; } .machine-jeu.quai .lampes.cg { left: 3px; } .machine-jeu.quai .lampes.cd { right: 3px; }
+.machine-jeu.quai .lampes i { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--encre); --c: #ffb800; background: var(--c); box-shadow: 0 0 8px var(--c); animation: chenille 1.2s steps(1) infinite; }
+.machine-jeu.quai .lampes i:nth-child(4n+2) { --c: #ff3b30; } .machine-jeu.quai .lampes i:nth-child(4n+3) { --c: #2ee86b; } .machine-jeu.quai .lampes i:nth-child(4n+4) { --c: #2fb4ff; }
+.machine-jeu.quai .lampes i:nth-child(3n+1) { animation-delay: -.4s; } .machine-jeu.quai .lampes i:nth-child(3n+2) { animation-delay: -.8s; }
+.machine-jeu.quai.fete .lampes i { animation-duration: .3s; }
+@keyframes chenille { 33% { background: #3a3a3a; box-shadow: none; } }
+.machine-jeu.quai .etiq-lot { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; white-space: nowrap; background: #fff6e3; color: var(--encre); border: 3px solid var(--encre); border-radius: 6px; padding: 1px 9px; font: 900 9px var(--ui, Nunito), sans-serif; letter-spacing: .08em; }
+.machine-jeu.quai .etiq-lot i { width: 46px; height: 11px; background: repeating-linear-gradient(90deg, #17130f 0 2px, transparent 2px 3px, #17130f 3px 4px, transparent 4px 7px); }
+.machine-jeu.quai .levier-jeu::before { background: linear-gradient(90deg, #333, #aaa, #333); }
+.machine-jeu.quai .levier-jeu::after { background: radial-gradient(circle at 35% 30%, #ffe08a, #ff6a10 50%, #a83a00); }
+.mode-coffre #cartes.cartes { padding-top: 70px !important; padding-bottom: 46px !important; padding-left: 26px !important; }
+@media (max-width: 700px) {
+  .mode-coffre #cartes.cartes { height: calc(min(60vw, 280px) * 1.338 + 120px); padding: 0 !important; }
+  .mode-coffre #cartes .carte { top: 66px !important; width: min(60vw, 280px) !important; margin-left: calc(min(60vw, 280px) / -2 - 8px) !important; }
+  .mode-coffre #cartes .machine-jeu { inset: 0 calc(50% - min(60vw, 280px) / 2 - 36px) !important; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .mode-coffre #cartes.cartes { padding: 50px 40px 34px 22px !important; max-width: calc((100dvh - 230px) * .747 + 62px) !important; min-width: 210px; }
+  .machine-jeu.quai .fronton { height: 44px; } .machine-jeu.quai .fronton b { font-size: 14px; padding: 2px 8px 0; }
+  .machine-jeu.quai .lampes.h { top: 46px; } .machine-jeu.quai .lampes.b { bottom: 24px; } .vis.hg, .vis.hd { top: 48px; }
+  .machine-jeu.quai .etiq-lot { font-size: 7px; bottom: 3px; } .machine-jeu.quai .gyro { top: -20px; width: 24px; height: 18px; }
+  #niveau.mode-coffre .panneau { gap: 6px; } #niveau.mode-coffre .coffre-aide { display: none !important; }
+}
+/* coffre : la machine se suffit, pas de titre ni de bandeau au-dessus */
+#niveau.mode-coffre #choixTitre, #niveau.mode-coffre .slots { display: none !important; }
+#niveau.mode-coffre .panneau { padding-top: 24px; }
 </style>
 </head>
 <body>
@@ -961,7 +1010,8 @@ function dessinerAlertesChef(X, Y) {
 /* grande barre de vie en haut de l'écran */
 function barreChef() {
   const e = S.chefE; if (!e || e.hp <= 0 || !enJeu) return;
-  const w = Math.min(W * .7, 560), y = H < 500 ? 96 : 126;
+  // en bas de l'écran : le haut est déjà occupé par le HUD
+  const w = Math.min(W * .8, 560), y = H - (H < 500 ? 22 : 34);
   cx.font = (H < 500 ? 17 : 22) + "px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineJoin = "round"; cx.lineWidth = 5; cx.strokeStyle = ENCRE; cx.strokeText(e.chef.nom, W / 2, y - 6); cx.fillStyle = "#ffe14d"; cx.fillText(e.chef.nom, W / 2, y - 6);
   barre(W / 2, y, w, H < 500 ? 10 : 14, e.hp / e.max, "#ff6b57", "#a8231a");
 }
@@ -1668,7 +1718,7 @@ function tirageCoffre(relance) {
   C.vus.push(o.kind + o.id); offres = [o]; sel = 0;
   const { d, tag, indice } = infosCarte(o), pool = Object.values(ARMES).concat(Object.values(OBJETS)).map(x => x.img), n = 14;
   const imgs = Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]).concat(d.img);
-  $("cartes").innerHTML = `<div class="machine-jeu"><div class="fronton">JACKPOT DU QUAI</div><div class="levier-jeu"></div>${Array.from({ length: 22 }, (_, i) => `<span class="ampoule" style="--i:${i}"></span>`).join("")}</div>`
+  $("cartes").innerHTML = `<div class="machine-jeu quai"><span class="gyro g"></span><span class="gyro d"></span><div class="fronton"><b>JACKPOT DU QUAI</b></div>${["hg", "hd", "bg", "bd"].map(c => `<span class="vis ${c}"></span>`).join("")}<div class="levier-jeu"></div><div class="lampes h">${"<i></i>".repeat(11)}</div><div class="lampes b">${"<i></i>".repeat(11)}</div><div class="lampes cg">${"<i></i>".repeat(7)}</div><div class="lampes cd">${"<i></i>".repeat(7)}</div><div class="etiq-lot">LOT N° 07 <i></i> QUAI 7</div></div>`
     + `<button class="carte k-${o.kind}${o.kind === "evo" ? " evo-carte" : ""}" data-i="0"><span class="fenetre-jeu"><span class="bande-jeu" data-n="${n}">${imgs.map(m => `<img src="${IMG(m)}" alt="">`).join("")}</span></span><span class="tag">${tag}</span><span class="corps"><strong>${d.nom}</strong><span class="txt">${d.desc(o.l)}</span>${indice}</span></button>`;
   $("slots").textContent = C.evo ? "Ton évolution !" : "Choisis ta récompense";
   const prix = prixRelance();
