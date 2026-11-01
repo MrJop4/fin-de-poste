@@ -5,6 +5,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
 <link rel="apple-touch-icon" href="icone-192.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -382,6 +383,13 @@ button { touch-action: manipulation; }
 .btn-son.off { background: #b9b2a6; }
 .piece-ui { display: inline-block; width: .95em; height: .95em; margin-right: 4px; vertical-align: -.12em; border-radius: 50%; border: 2px solid var(--encre); background: radial-gradient(circle at 35% 30%, #fff4b0, #ffc21a 50%, #b77c00); }
 .prix-relance { display: inline-flex; align-items: center; }
+.btn-installer { left: calc(max(12px, env(safe-area-inset-left)) + 54px); background: var(--jaune); font-size: 22px; font-weight: 900; }
+.install { position: fixed; z-index: 40; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(440px, calc(100vw - 24px)); display: grid; grid-template-columns: 56px 1fr; gap: 10px 12px; align-items: center; padding: 12px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 16px; box-shadow: 5px 5px 0 var(--encre); animation: monte .35s cubic-bezier(.3,1.4,.6,1); text-align: left; }
+.install img { width: 56px; height: 56px; border-radius: 12px; border: 3px solid var(--encre); }
+.install b { display: block; font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.05; }
+.install span { font-size: 14px; line-height: 1.25; color: #3a332a; }
+.install-btns { grid-column: 1 / -1; display: flex; gap: 10px; } .install-btns .btn { flex: 1; font-size: 18px; padding: 6px 10px; }
+@keyframes monte { from { transform: translate(-50%, 40px); opacity: 0 } }
 </style>
 
 <canvas id="jeu"></canvas>
@@ -394,6 +402,12 @@ button { touch-action: manipulation; }
 
 <div class="voile" id="accueil">
   <button class="btn-son" id="btnSon1" aria-label="Son"></button>
+  <button class="btn-son btn-installer" id="btnInstaller" aria-label="Installer" hidden>⬇</button>
+  <div class="install" id="install" hidden>
+    <img src="icone-192.png" alt="">
+    <div><b>Installer Fin de Poste</b><span id="installTxt">Sur ton écran d'accueil, en plein écran, même sans réseau.</span></div>
+    <div class="install-btns"><button class="btn go" id="installOui">Installer</button><button class="btn" id="installNon">Plus tard</button></div>
+  </div>
   <div class="acc">
     <div class="acc-g">
       <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">10 minutes + le boss !</span></h1>
@@ -3156,6 +3170,29 @@ function demo() {
   nouvellePartie(); S.armes = { lanterne: 2, sel: 1 }; S.p.regen = 0; for (let i = 0; i < 40; i++) spawn(i % 3 ? "crabe" : "feu");
   S.ennemis.forEach((e, i) => { const a = i / 40 * Math.PI * 2, d = 160 + (i % 5) * 40; e.x = Math.cos(a) * d; e.y = Math.sin(a) * d });
 }
+
+/* installation : service worker (hors ligne + installable), proposition à la première visite, bouton ⬇ tant que ce n'est pas installé */
+if ("serviceWorker" in navigator && location.protocol === "https:" && !SAVE.apercu) navigator.serviceWorker.register("sw.js").catch(() => { });
+(() => {
+  const installe = matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches || navigator.standalone;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  let invite = null;
+  const montrer = () => { if (installe || $("accueil").hidden) return; $("install").hidden = false };
+  const fermer = () => { $("install").hidden = true; lsSet("poste-install-vu", "1") };
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); invite = e; $("btnInstaller").hidden = false; if (!lsGet("poste-install-vu")) setTimeout(montrer, 1200) });
+  addEventListener("appinstalled", () => { $("btnInstaller").hidden = true; fermer() });
+  $("installOui").onclick = async () => {
+    if (invite) { invite.prompt(); const r = await invite.userChoice.catch(() => null); if (r && r.outcome === "accepted") $("btnInstaller").hidden = true; invite = null; fermer() }
+    else fermer();
+  };
+  $("installNon").onclick = fermer;
+  $("btnInstaller").onclick = () => { if (invite) $("installOui").onclick(); else montrer() };
+  if (ios && !installe) {   // Safari ne propose pas d'installation automatique : on explique le geste
+    $("installTxt").innerHTML = "Touche <b style='display:inline;font:inherit;font-weight:900'>Partager</b> puis « Sur l'écran d'accueil ».";
+    $("installOui").textContent = "Compris"; $("btnInstaller").hidden = false;
+    if (!lsGet("poste-install-vu")) setTimeout(montrer, 1200);
+  }
+})();
 demo();
 record(); requestAnimationFrame(boucle);
 })();
