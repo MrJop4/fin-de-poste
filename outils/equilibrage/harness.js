@@ -13,7 +13,7 @@ window.SIM = function (opts) {
   const policy = (o) => {
     const nbA = Object.keys(S.armes).length;
     let s = Math.random() * (opts.bruit ?? 12);
-    if (o.kind === "arme") s += (S.armes[o.id] ? 50 + o.l : 40);
+    if (o.kind === "arme") s += (S.armes[o.id] ? 50 + o.l : 40) - (opts.armes && !opts.armes.includes(o.id) ? 200 : 0);
     else if (o.kind === "objet") {
       const lie = Object.keys(S.armes).some(id => EVOS[id].avec === o.id);
       s += (lie && !S.objets[o.id] ? 60 : 0) + ({ meule: 30, huile: 30, cire: 24, soupe: 18, bottes: 16, boussole: 12 })[o.id];
@@ -65,6 +65,8 @@ window.SIM = function (opts) {
         if (m && md > 120) { vx += (m.x - p.x) / md; vy += (m.y - p.y) / md } }
       vx += -p.x / 4000; vy += -p.y / 4000;
     }
+    if (opts.immobile != null && S.t > opts.immobile) { vx = 0; vy = 0 }
+    if (opts.sansTranspa) S.transpaT = 1e9;
     const n = Math.hypot(vx, vy);
     if (n > .05) { JOY.x = vx / n * 60; JOY.y = vy / n * 60 } else { JOY.x = 0; JOY.y = 0 }
     if (S.ev) { const ev = S.ev; const d = Math.hypot(p.x - ev.cx, p.y - ev.cy); if (d > ev.r * .7) { JOY.x += (ev.cx - p.x) / d * 40; JOY.y += (ev.cy - p.y) / d * 40 } }

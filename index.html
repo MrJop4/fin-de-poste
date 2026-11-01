@@ -373,7 +373,7 @@ const VICTOIRE = 600;
    Repères pour 10 min : niveau ~6 à 2:30, ~12 à 5:00, ~18 à 7:30, ~23 à 10:00 ;
    semi tué en 40-60 s avec un build moyen ; victoire pour ~45 % des débutants, ~75 % avec un vestiaire moyen. */
 const EQ = {
-  vivantsDebut: 18, vivantsFin: 125, vivantsMax: 220,   // colis présents visés au début, à 10:00, puis en heures sup
+  vivantsDebut: 18, vivantsFin: 110, vivantsMax: 220,   // colis présents visés au début, à 10:00, puis en heures sup
   vague: { toutes: 60, duree: 12, bonus: .45 },         // une vague par minute : +45 % de colis pendant 12 s
   debitMax: 8,                                          // au plus 8 colis par seconde (+1 toutes les 25 s) : une vague arrive, elle ne tombe pas d'un coup
   pvTemps: 115,                                         // PV des colis ×(1 + t / pvTemps)
@@ -382,6 +382,8 @@ const EQ = {
   mini: [120, 420], miniPv: 8,                          // colis hors gabarit (mini-boss) : moments, et PV ×8 d'une palette
   fragile: [40, 60],                                    // un colis « fragile » (petit coffre) toutes les 40 à 60 s
   xp: 1.3,                                              // multiplicateur de la courbe d'expérience
+  plante: { grace: 15, avert: 3, apres: 5, debit: .9, hausse: .2 },   // après 0:15, immobile 3 s : avertissement ; 5 s : des colis tombent à tes pieds (0,9 par s, +0,2 par s chaque seconde)
+  cercle: { debut: 60, toutes: 60, n: 22, parSec: 10, max: 60, pv: 1.2, vit: 1.15 },   // encerclement : à 1:00 puis chaque minute, 22 colis + 1 toutes les 10 s, un peu plus solides et rapides
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -559,7 +561,33 @@ function vagues(dt) {
     const fragile = t > 90 && S.eliteT <= 0; if (fragile) S.eliteT = rnd(EQ.fragile[0], EQ.fragile[1]);
     spawn(type, fragile);
   }
+  // planté sur place : le chef t'envoie du boulot, des colis tombent des racks juste à tes pieds
+  const bouge = Math.hypot(S.p.vx, S.p.vy) > 25;
+  S.plante = bouge || S.ev || t < EQ.plante.grace ? 0 : (S.plante || 0) + dt;
+  if (S.plante > EQ.plante.avert && !S.planteAverti) { S.planteAverti = true; annonce("Bouge ! Le chef arrive…") }
+  if (S.plante < EQ.plante.avert) S.planteAverti = false;
+  if (S.plante > EQ.plante.apres) {
+    if (!S.planteVu) { S.planteVu = true; annonce("Tu restes planté ? Le chef t'envoie du boulot !") }
+    S.planteAcc = (S.planteAcc || 0) + dt * (EQ.plante.debit + (S.plante - EQ.plante.apres) * EQ.plante.hausse);
+    while (S.planteAcc >= 1) {
+      S.planteAcc--; const a = rnd(0, 6.28), dd = rnd(18, 40);
+      spawn(Math.random() < .25 ? "noye" : "crabe"); const e = S.ennemis[S.ennemis.length - 1];
+      e.x = S.p.x + Math.cos(a) * dd; e.y = S.p.y + Math.sin(a) * dd; e.xp = 0;
+      for (let i = 0; i < 6; i++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-90, 90), vy: rnd(-90, 90), t: .4, c: "#cfc6b4" });
+    }
+  } else S.planteAcc = 0;
   if (S.ev) return;
+  // encerclement : chaque minute, un anneau de colis apparaît autour de toi et se resserre ; immobile, tu te fais écraser
+  if (t >= (S.cercleT ?? EQ.cercle.debut)) {
+    S.cercleT = (S.cercleT ?? EQ.cercle.debut) + EQ.cercle.toutes;
+    const n = Math.min(EQ.cercle.max, Math.round(EQ.cercle.n + t / EQ.cercle.parSec)), R = Math.min(Math.hypot(W, H) / 2 * .8, 520), a0 = rnd(0, 6.28), trou = Math.floor(rnd(0, n));
+    for (let i = 0; i < n; i++) {
+      if (i === trou || i === (trou + 1) % n) continue;   // un passage pour s'échapper
+      spawn(t > 180 && i % 3 === 0 ? "noye" : "crabe"); const e = S.ennemis[S.ennemis.length - 1], a = a0 + i / n * Math.PI * 2;
+      e.x = S.p.x + Math.cos(a) * R; e.y = S.p.y + Math.sin(a) * R; e.cercle = true; e.hp = e.max = e.hp * EQ.cercle.pv; e.vit *= EQ.cercle.vit;
+    }
+    annonce("Ils t'encerclent !");
+  }
   if ((S.miniFaits || 0) < EQ.mini.length && t >= EQ.mini[S.miniFaits || 0]) { S.miniFaits = (S.miniFaits || 0) + 1; spawnMini() }
   if (S.bossFaits === 0 && t >= 300) { spawn("leviathan"); S.bossFaits = 1; annonce(LL().boss1) }
   if (S.bossFaits === 1 && t >= 510) { spawn("leviathan"); spawn("leviathan"); S.bossFaits = 2; annonce(LL().boss2) }
