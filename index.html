@@ -330,6 +330,27 @@ button { touch-action: manipulation; }
   .detail-carte .prendre { align-self: stretch; margin-top: 4px; font-size: 22px; padding: 6px 12px; }
   #niveau .aide .tactile { font-size: 13px; }
 }
+/* téléphone debout : titre en petit à gauche, compteur à droite, cartes en pile qu'on fait défiler au doigt */
+@media (max-width: 700px) {
+  #niveau .panneau { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 8px; }
+  #niveau .panneau > * { grid-column: 1 / -1; }
+  #niveau #choixTitre { grid-column: 1; justify-self: start; text-align: left; font-size: 28px; text-shadow: 3px 3px 0 var(--encre), -1px -1px 0 var(--encre), 1px -1px 0 var(--encre), -1px 1px 0 var(--encre); }
+  #niveau .slots { grid-column: 2; justify-self: end; margin: 0; font-size: 13px; padding: 2px 10px; max-width: 58vw; text-align: center; }
+  #niveau .ouvrir { justify-self: center; }
+  #cartes.cartes, .mode-coffre #cartes.cartes { display: block !important; position: relative; height: calc(min(64vw, 300px) * 1.338 + 26px); max-width: none; padding: 0 !important; touch-action: pan-y; --drag: 0px; }
+  #cartes .carte, #niveau.revel #cartes .carte { position: absolute !important; left: 50%; top: 13px; width: min(64vw, 300px); margin-left: calc(min(64vw, 300px) / -2);
+    translate: calc(var(--off, 0) * 58% + var(--drag)) 0; scale: calc(1 - var(--abs, 0) * .17); rotate: calc(var(--off, 0) * 6deg); z-index: calc(10 - var(--abs, 0));
+    transition: translate .28s cubic-bezier(.2,.8,.2,1), scale .28s, rotate .28s; }
+  #cartes.glisse .carte { transition: none; }
+  #cartes .carte > :not(.dos) { transition: filter .28s; } #cartes .carte:not(.sel) > :not(.dos) { filter: brightness(.55); }   /* pas de filtre sur la carte elle-même : il aplatirait le retournement */
+  #cartes .carte:hover, #cartes .carte.sel { transform: none; }
+  #cartes .carte strong { font-size: 24px !important; }
+  #cartes .carte .tag { font-size: 11px; }
+  #cartes .carte .corps { padding: 40% 10px 10px; }
+  .mode-coffre #cartes .machine-jeu { inset: 0 -6px; }
+  .detail-carte { box-sizing: border-box; width: auto; max-width: none; justify-self: stretch; margin-inline: 4px; }
+  .detail-carte .prendre { box-sizing: border-box; }
+}
 </style>
 
 <canvas id="jeu"></canvas>
@@ -387,7 +408,7 @@ button { touch-action: manipulation; }
     <div class="ouvrir" id="ouvrir"><span class="clavier"><kbd>Espace</kbd> pour ouvrir le booster</span><span class="tactile">Touche le booster pour l'ouvrir</span></div>
     <div class="cartes" id="cartes"></div>
     <div class="detail-carte" id="detailCarte"></div>
-    <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Touche une carte pour la lire, touche-la encore pour la prendre</span></div>
+    <div class="aide"><span class="clavier"><kbd>Q</kbd><kbd>D</kbd> choisir · <kbd>Espace</kbd> valider</span><span class="tactile">Glisse pour voir les cartes, touche celle du milieu pour la prendre</span></div>
   </div>
 </div>
 
@@ -1397,7 +1418,7 @@ function gagnerXp(v) {
 /* ---------- montée de niveau ---------- */
 let offres = [], sel = 0;
 function majSel() {
-  $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); if (i === sel) b.focus({ preventScroll: true }) });
+  $("cartes").querySelectorAll(".carte").forEach((b, i) => { b.classList.toggle("sel", i === sel); b.style.setProperty("--off", i - sel); b.style.setProperty("--abs", Math.abs(i - sel)); if (i === sel) b.focus({ preventScroll: true }) });
   // téléphone debout : le texte de la carte choisie s'affiche en grand sous les cartes, avec un bouton pour la prendre
   const b = $("cartes").querySelector(".carte.sel"), dc = $("detailCarte");
   if (!b) { dc.innerHTML = ""; return }
@@ -1560,8 +1581,21 @@ function prendre(i) {
 }
 $("cartes").addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const b = e.target.closest(".carte"); if (b && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel() } });
 $("niveau").addEventListener("pointerdown", e => { if (attenteOuverture) { e.preventDefault(); ouvrirBooster() } else if (revelEnCours && revelType === "machine") passerRevel() });
+/* au doigt : on fait glisser la pile de cartes (téléphone debout) */
+let glisse = null, dernierGlisse = 0;
+$("cartes").addEventListener("pointerdown", e => { if (e.pointerType === "mouse" || revelEnCours || !choix) return; glisse = { x: e.clientX, y: e.clientY, dx: 0 } });
+$("cartes").addEventListener("pointermove", e => {
+  if (!glisse) return; glisse.dx = e.clientX - glisse.x;
+  if (Math.abs(glisse.dx) > 8 && matchMedia("(max-width: 700px)").matches) { $("cartes").classList.add("glisse"); $("cartes").style.setProperty("--drag", glisse.dx * .8 + "px") }
+});
+const finGlisse = () => {
+  if (!glisse) return; const dx = glisse.dx; glisse = null;
+  $("cartes").classList.remove("glisse"); $("cartes").style.setProperty("--drag", "0px");
+  if (Math.abs(dx) > 35 && matchMedia("(max-width: 700px)").matches) { const n = Math.max(0, Math.min(offres.length - 1, sel - Math.sign(dx))); if (n !== sel) { sel = n; majSel(); vibrer(10) } dernierGlisse = performance.now() }
+};
+addEventListener("pointerup", finGlisse); addEventListener("pointercancel", finGlisse);
 $("cartes").addEventListener("click", e => {
-  if (revelEnCours) return; const b = e.target.closest(".carte"); if (!b) return;
+  if (revelEnCours || performance.now() - dernierGlisse < 350) return; const b = e.target.closest(".carte"); if (!b) return;
   // au doigt : une première touche choisit la carte (on lit son texte), une seconde la prend
   if (matchMedia("(pointer: coarse)").matches && +b.dataset.i !== sel) { sel = +b.dataset.i; majSel(); vibrer(10); return }
   prendre(+b.dataset.i);
