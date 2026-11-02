@@ -766,8 +766,8 @@ const LIEUX = {
     boss1: "Un semi arrive en réparation !", boss2: "Deux semis en panne à l'atelier", coul: {} },
   incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
     sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
-    ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
-    murs: { type: "decombres", cw: 520, ch: 480, w: 140, h: 90, trou: 0, amas: [.3, .55], vars: [{ img: "ruine-rack-grille", w: 370, h: 310, larg: 420 }, { img: "ruine-rack-brule", w: 285, h: 370, larg: 330 }, { img: "ruine-gravats", w: 250, h: 240, larg: 320 }, { img: "ruine-palettes", w: 250, h: 225, larg: 320 }] },
+    ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, couloir: { haut: -480, bas: 960, case: 480, vertical: true }, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
+    murs: { type: "decombres", cw: 480, ch: 480, w: 140, h: 90, trou: 0, amas: [.18, .42], garde: [.55, .2, .02], vars: [{ img: "ruine-rack-grille", w: 370, h: 310, larg: 420 }, { img: "ruine-rack-brule", w: 285, h: 370, larg: 330 }, { img: "ruine-gravats", w: 250, h: 240, larg: 320 }, { img: "ruine-palettes", w: 250, h: 225, larg: 320 }] },
     boss1: "Le camion des pompiers est en panne !", boss2: "Deux camions de pompiers bloqués", coul: {} },
 };
 const AMELIOS = {
@@ -804,9 +804,13 @@ const niv = id => (SAVE.test ? SAVE.amelioTest[id] : SAVE.amelio[id]) || 0;
 const armeDispo = id => !ARMES[id].perso || aPerso(ARMES[id].perso);
 const LL = () => LIEUX[(S && S.lieu) || "quai"];
 /* promos : couloir de 3 grandes cases du sol (3 × 480 px) fermé par deux murs */
-function bornerCouloir(o, r) { const C = LL().couloir; if (C) o.y = clamp(o.y, C.haut + r, C.bas - r) }
+function bornerCouloir(o, r) { const C = LL().couloir; if (!C) return; if (C.vertical) o.x = clamp(o.x, C.haut + r, C.bas - r); else o.y = clamp(o.y, C.haut + r, C.bas - r) }
 /* un colis qui apparaîtrait dans un mur arrive plutôt par le côté de l'écran */
-function placerCouloir(e) { const C = LL().couloir; if (!C || (e.y > C.haut + e.r && e.y < C.bas - e.r)) return; e.y = clamp(e.y, C.haut + e.r, C.bas - e.r); e.x = S.p.x + (e.x < S.p.x ? -1 : 1) * (W / 2 + 60 + rnd(0, 120)) }
+function placerCouloir(e) {
+  const C = LL().couloir; if (!C) return;
+  if (C.vertical) { if (e.x > C.haut + e.r && e.x < C.bas - e.r) return; e.x = clamp(e.x, C.haut + e.r, C.bas - e.r); e.y = S.p.y + (e.y < S.p.y ? -1 : 1) * (H / 2 + 60 + rnd(0, 120)); return }
+  if (e.y > C.haut + e.r && e.y < C.bas - e.r) return; e.y = clamp(e.y, C.haut + e.r, C.bas - e.r); e.x = S.p.x + (e.x < S.p.x ? -1 : 1) * (W / 2 + 60 + rnd(0, 120));
+}
 
 let S = null, enJeu = false, enPause = false, choix = false, last = 0;
 /* joystick : on pose le doigt n'importe où, on glisse dans la direction voulue */
@@ -1083,7 +1087,7 @@ const DECOR = {
 };
 const DECOR_IDS = Object.keys(DECOR);
 function poserDecor(x, y, kind) {
-  if (LL().couloir) y = clamp(y, LL().couloir.haut + 34, LL().couloir.bas - 34);
+  if (LL().couloir) { const C = LL().couloir; if (C.vertical) x = clamp(x, C.haut + 34, C.bas - 34); else y = clamp(y, C.haut + 34, C.bas - 34) }
   if (LL().murs) { let k = 0; while (dansMur(x, y, 30) && k++ < 12) { x += rnd(-120, 120); y += rnd(-120, 120) } if (dansMur(x, y, 30)) return }
   if (!kind) { const sac = ["cafe", "cafe", "cafe", "extincteur", "extincteur", "casier", "casier", "fontaine", "fontaine", "friandises"]; kind = sac[Math.floor(Math.random() * sac.length)] }
   const D = DECOR[kind], hp = D.hp * (1 + S.t / 300);
@@ -1131,7 +1135,7 @@ function entiteEv(type, x, y, r, hp, vit, deg, coul) {
 function demarrerEv() {
   const id = LL().ev, E = EVENTS[id], p = S.p, mult = (1 + S.t / 135) * LL().pv;
   const C0 = LL().couloir, R = Math.min(300, Math.min(W, H) * .44);
-  S.ev = { id, E, cx: p.x, cy: C0 ? clamp(p.y, C0.haut + R, C0.bas - R) : p.y, r: R, t: 0, total: 0, reste: 0 };
+  S.ev = { id, E, cx: C0 && C0.vertical ? clamp(p.x, C0.haut + R, C0.bas - R) : p.x, cy: C0 && !C0.vertical ? clamp(p.y, C0.haut + R, C0.bas - R) : p.y, r: R, t: 0, total: 0, reste: 0 };
   S.transpas = [];
   for (const e of S.ennemis) e.cote = Math.hypot(e.x - p.x, e.y - p.y) < R ? "in" : "out";
   if (id === "glace") {
@@ -1206,9 +1210,9 @@ function blesser(e, d, kx, ky) {
 }
 /* entrepôt en perdition : la situation empire de 0:00 à 10:00 */
 const chaos = () => clamp(S.t / VICTOIRE, 0, 1);
-function lancerFil(x, y, alerte) { S.dangers.push({ k: "fil", x, y, t: 0, alerte, r: EQ.sinistre.fil.r, ph: rnd(0, 6) }); }
-function pointLibre(cx2, cy2, dmin, dmax) { for (let k = 0; k < 8; k++) { const a = rnd(0, 6.28), d = rnd(dmin, dmax), x = cx2 + Math.cos(a) * d, y = cy2 + Math.sin(a) * d; if (!LL().murs || !dansMur(x, y, 40)) return { x, y } } return null }
-function allumerFeu(x, y) { const F = EQ.sinistre.feu; if (S.dangers.filter(d => d.k === "feu" && !d.trainee).length >= F.max) return; if (S.dangers.some(d => d.k === "eau" && Math.hypot(d.x - x, d.y - y) < d.r)) return; S.dangers.push({ k: "feu", x, y, t: 0, r: rnd(F.r[0], F.r[1]), vie: F.vie * rnd(.8, 1.3), prop: F.propage * rnd(.8, 1.3), ph: rnd(0, 6) }) }
+function lancerFil(x, y, alerte) { const C = LL().couloir; if (C && C.vertical) x = clamp(x, C.haut + 50, C.bas - 50); S.dangers.push({ k: "fil", x, y, t: 0, alerte, r: EQ.sinistre.fil.r, ph: rnd(0, 6) }); }
+function pointLibre(cx2, cy2, dmin, dmax) { const C = LL().couloir; for (let k = 0; k < 8; k++) { const a = rnd(0, 6.28), d = rnd(dmin, dmax), x = cx2 + Math.cos(a) * d, y = cy2 + Math.sin(a) * d; if (C && C.vertical && (x < C.haut + 50 || x > C.bas - 50)) continue; if (!LL().murs || !dansMur(x, y, 40)) return { x, y } } return null }
+function allumerFeu(x, y) { const F = EQ.sinistre.feu, CV = LL().couloir; if (CV && CV.vertical && (x < CV.haut + 40 || x > CV.bas - 40)) return; if (S.dangers.filter(d => d.k === "feu" && !d.trainee).length >= F.max) return; if (S.dangers.some(d => d.k === "eau" && Math.hypot(d.x - x, d.y - y) < d.r)) return; S.dangers.push({ k: "feu", x, y, t: 0, r: rnd(F.r[0], F.r[1]), vie: F.vie * rnd(.8, 1.3), prop: F.propage * rnd(.8, 1.3), ph: rnd(0, 6) }) }
 function arcElectrique(o) {
   const F = EQ.sinistre.fil, p = S.p, mult = (1 + S.t / 400) * (LL().deg || 1);
   S.flashT = .18; S.secousse = Math.max(S.secousse || 0, .25); son("casse");
@@ -1233,6 +1237,7 @@ function sinistre(dt) {
     if (t > G.eau.des && (S.eauT = (S.eauT ?? 0) - dt) <= 0) {
       S.eauT = entre(G.eau.toutes) * rnd(.8, 1.2);
       const feux = S.dangers.filter(d => d.k === "feu"), cible = feux.length && Math.random() < .5 ? feux[Math.floor(Math.random() * feux.length)] : pointLibre(p.x, p.y, 60, 300);
+      if (cible && LL().couloir) cible.x = clamp(cible.x, LL().couloir.haut + 60, LL().couloir.bas - 60);
       if (cible) S.dangers.push({ k: "eau", x: cible.x, y: cible.y, t: 0, r: G.eau.r * rnd(.85, 1.15), vie: G.eau.vie, elec: 0, ph: rnd(0, 6) });
       if (!S.eauVu) { S.eauVu = true; annonce("Les gicleurs se déclenchent !") }
     }
@@ -1336,8 +1341,11 @@ function dessinerAmbianceSinistre(camx, camy) {
   cx.fillStyle = `rgba(12,4,2,${.08 + .4 * k})`; cx.fillRect(0, 0, W, H);   // ça s'assombrit
   if (k > .15) {   // gyrophares rouges de l'alarme incendie
     const pu = .5 + .5 * Math.sin(S.t * 5);
-    for (let i = Math.floor((camx - 300) / 700); i <= Math.floor((camx + W + 300) / 700); i++) for (let j = Math.floor((camy - 300) / 700); j <= Math.floor((camy + H + 300) / 700); j++) {
-      const x = i * 700 + 350 - camx, y = j * 700 + 200 - camy, a = S.t * 3 + i + j;
+    const CV = LL().couloir && LL().couloir.vertical ? LL().couloir : null, pos = [];
+    if (CV) { for (let j = Math.floor((camy - 300) / 620); j <= Math.floor((camy + H + 300) / 620); j++) { pos.push([CV.haut + 30, j * 620 + 200, j, 0]); pos.push([CV.bas - 30, j * 620 + 510, j, 1]) } }
+    else for (let i = Math.floor((camx - 300) / 700); i <= Math.floor((camx + W + 300) / 700); i++) for (let j = Math.floor((camy - 300) / 700); j <= Math.floor((camy + H + 300) / 700); j++) pos.push([i * 700 + 350, j * 700 + 200, j, i]);
+    for (const [wx, wy, j, i] of pos) {
+      const x = wx - camx, y = wy - camy, a = S.t * 3 + i + j;
       ajouter(lueur("255,40,20"), x, y, 500, 500, Math.min(.45, (k - .15) * .8) * pu);
       cx.save(); cx.translate(x, y); cx.rotate(a); cx.globalAlpha = Math.min(.35, (k - .15) * .6); cx.drawImage(faisceau("255,60,30").c, 0, -40, 420, 80); cx.restore();
       const lp = lampeIndus(pu > .5); if (lp) { cx.drawImage(lp, x - 15, y - 30, 30, 42); if (pu > .5) ajouter(lueur("255,60,40"), x, y - 10, 70, 70, .9) }
@@ -1660,12 +1668,13 @@ function mursZone(x0, y0, x1, y1) {
   const out = [];
   for (let i = Math.floor(x0 / M.cw) - 1; i <= Math.floor(x1 / M.cw) + 1; i++) for (let j = Math.floor(y0 / M.ch) - 1; j <= Math.floor(y1 / M.ch) + 1; j++) {
     if (M.amas) {   // décombres en amas : zones encombrées et zones dégagées qui alternent (par blocs de 4 × 4 cases)
-      const z = hash2(Math.floor(i / 4) * 17 + 3, Math.floor(j / 4) * 29 + 7), garde = z < M.amas[0] ? .8 : z < M.amas[1] ? .3 : .05;
+      const z = hash2(Math.floor(i / 4) * 17 + 3, Math.floor(j / 4) * 29 + 7), G = M.garde || [.8, .3, .05], garde = z < M.amas[0] ? G[0] : z < M.amas[1] ? G[1] : G[2];
       if (hash2(i * 7 + 3, j * 13 + 5) > garde || (Math.abs(i) <= 1 && Math.abs(j) <= 1)) continue;
     } else if (hash(i * 7 + 3, j * 13 + 5) < M.trou) continue;
     const v = M.vars ? M.vars[Math.floor(hash2(i, j) * M.vars.length)] : M, w = v.w, h = v.h;
     let x = i * M.cw + (M.cw - w) / 2, y = j * M.ch + (M.ch - h) / 2;
     if (M.amas) { x += (hash2(i * 3 + 1, j + 9) - .5) * (M.cw - w) * .7; y += (hash2(i + 4, j * 3 + 2) - .5) * (M.ch - h) * .7 }
+    const CV = LL().couloir; if (CV && CV.vertical && (x < CV.haut + 30 || x + w > CV.bas - 30)) continue;   // jamais collé aux murs du couloir
     if (x > x1 || x + w < x0 || y > y1 || y + h < y0) continue;
     out.push({ x, y, w, h, i, j, v });   // jamais retournés : l'ombre dessinée doit rester en bas
   }
@@ -1744,12 +1753,12 @@ function lancerTranspa(vise) {
     if (!S.croiseVu) { S.croiseVu = true; annonce("Croisement de pneus !") }
     return;
   }
-  const M = LL().murs, p = S.p, h = LL().couloir || (M && M.horizontal) ? true : Math.random() < .55, sens = Math.random() < .5 ? 1 : -1, v = 760 + Math.min(320, S.t * .6);
+  const M = LL().murs, p = S.p, h = LL().couloir ? !LL().couloir.vertical : M && M.horizontal ? true : Math.random() < .55, sens = Math.random() < .5 ? 1 : -1, v = 760 + Math.min(320, S.t * .6);
   const tp = { ax: h ? "h" : "v", sens, v, alerte: TP_ALERTE, parcours: 0, deja: new Set(), deg: 28 * (1 + S.t / 400) * (LL().deg || 1), ph: Math.random() * 6 };
   if (h) { tp.y = vise ? p.y : p.y + rnd(-.38, .38) * H; tp.x = p.x - sens * (W / 2 + 90); tp.vx = sens * v; tp.vy = 0; tp.long = W + 300 }
   else { tp.x = vise ? p.x : p.x + rnd(-.38, .38) * W; tp.y = p.y - sens * (H / 2 + 90); tp.vx = 0; tp.vy = sens * v; tp.long = H + 300 }
   if (M) { if (h) tp.y = Math.round(tp.y / M.ch) * M.ch; else tp.x = Math.round(tp.x / M.cw) * M.cw }   // calée au milieu d'une allée
-  const C = LL().couloir; if (C) { if (!vise) tp.y = clamp(tp.y, C.haut + 60, C.bas - 60) }   // dans le couloir
+  const C = LL().couloir; if (C) { if (C.vertical) tp.x = clamp(tp.x, C.haut + 60, C.bas - 60); else if (!vise) tp.y = clamp(tp.y, C.haut + 60, C.bas - 60) }   // dans le couloir
   S.transpas.push(tp); son("transpa");
   if (!S.transpaVu) { S.transpaVu = true; annonce("Attention, " + LL().tpNom + " !") }
 }
@@ -2398,6 +2407,38 @@ function dessinerCouloir(camx, X, Y) {
     const g = cx.createLinearGradient(0, yy, 0, yy + (yy === yh ? 50 : -50)); g.addColorStop(0, "rgba(255,70,190,.28)"); g.addColorStop(1, "rgba(255,70,190,0)");
     cx.fillStyle = g; if (yy === yh) cx.fillRect(0, yy, W, 50); else cx.fillRect(0, yy - 50, W, 50);
     cx.fillStyle = ENCRE; cx.fillRect(0, yy - 4, W, 8); cx.fillStyle = "#ff46be"; cx.fillRect(0, yy - 2, W, 4); cx.fillStyle = "#ffd0f0"; cx.fillRect(0, yy - .5, W, 1);
+  }
+}
+/* entrepôt en perdition : couloir vertical entre deux murs de béton fissurés qui brûlent de plus en plus */
+function dessinerCouloirSinistre(camy, X, Y) {
+  const C = LL().couloir, k = chaos(), ep = 46;
+  for (const [cote, xm] of [[-1, X(C.haut)], [1, X(C.bas)]]) {
+    const dehors = cote < 0 ? [0, xm - ep] : [xm + ep, W];
+    if (dehors[1] > dehors[0]) { cx.fillStyle = "#0d0907"; cx.fillRect(dehors[0], 0, dehors[1] - dehors[0], H) }
+    const x0 = cote < 0 ? xm - ep : xm; if (x0 > W + 10 || x0 + ep < -10) continue;
+    cx.fillStyle = lin(cx, x0, 0, x0 + ep, 0, cote < 0 ? [[0, "#3a3532"], [1, "#5a534e"]] : [[0, "#5a534e"], [1, "#3a3532"]]); cx.fillRect(x0, 0, ep, H);
+    const j0 = Math.floor((camy - 200) / 120), j1 = Math.floor((camy + H + 200) / 120);
+    for (let j = j0; j <= j1; j++) {   // blocs de béton, fissures, suie
+      const y = j * 120 - camy, h1 = hash2(j * 3 + (cote > 0 ? 7 : 1), 5);
+      cx.fillStyle = "rgba(0,0,0,.35)"; cx.fillRect(x0, y, ep, 2);
+      if (h1 < .4) { cx.strokeStyle = "rgba(0,0,0,.55)"; cx.lineWidth = 1.5; cx.beginPath(); let a = x0 + ep * h1 * 2, b = y + 10; cx.moveTo(a, b); for (let q = 0; q < 4; q++) { a = clamp(a + (hash2(j, q) - .5) * 20, x0 + 2, x0 + ep - 2); b += 22; cx.lineTo(a, b) } cx.stroke() }
+      if (h1 > .55) { cx.fillStyle = radg(cx, x0 + ep / 2, y + 60, 60, [[0, "rgba(5,3,2,.6)"], [1, "rgba(5,3,2,0)"]]); cx.fillRect(x0 - 20, y, ep + 40, 120) }
+    }
+    const bx = cote < 0 ? xm - 8 : xm;   // bande de sécurité jaune et noire côté couloir
+    cx.save(); cx.beginPath(); cx.rect(bx, 0, 8, H); cx.clip(); cx.fillStyle = "#ffc21a"; cx.fillRect(bx, 0, 8, H); cx.fillStyle = "#17130f";
+    for (let y = -((camy % 28) + 28) % 28 - 28; y < H + 28; y += 28) { cx.beginPath(); cx.moveTo(bx, y); cx.lineTo(bx + 8, y + 8); cx.lineTo(bx + 8, y + 22); cx.lineTo(bx, y + 14); cx.closePath(); cx.fill() }
+    cx.restore(); cx.fillStyle = ENCRE; cx.fillRect(cote < 0 ? xm - 1 : xm - 1, 0, 2, H);
+    const jf0 = Math.floor((camy - 200) / 260), jf1 = Math.floor((camy + H + 200) / 260);   // le mur prend feu de plus en plus
+    for (let j = jf0; j <= jf1; j++) {
+      if (hash2(j * 5 + (cote > 0 ? 3 : 0), 11) > .12 + .55 * k) continue;
+      const y = j * 260 + 130 - camy, fx = xm + cote * -6, n = 4;
+      ajouter(lueur("255,120,30"), fx, y, 160, 220, .5 + .15 * Math.sin(S.t * 8 + j));
+      for (let i = 0; i < n; i++) {
+        const yy = y + (i - n / 2) * 18, hh = 26 + 16 * Math.sin(S.t * 7 + i * 1.9 + j), dir = -cote;
+        cx.fillStyle = "rgba(255,90,20,.85)"; cx.beginPath(); cx.moveTo(fx, yy - 9); cx.quadraticCurveTo(fx + dir * hh * .6, yy - 6, fx + dir * hh, yy + Math.sin(S.t * 9 + i) * 4); cx.quadraticCurveTo(fx + dir * hh * .6, yy + 6, fx, yy + 9); cx.closePath(); cx.fill();
+        cx.fillStyle = "rgba(255,220,90,.9)"; cx.beginPath(); cx.moveTo(fx, yy - 4); cx.quadraticCurveTo(fx + dir * hh * .35, yy - 3, fx + dir * hh * .55, yy); cx.quadraticCurveTo(fx + dir * hh * .35, yy + 3, fx, yy + 4); cx.closePath(); cx.fill();
+      }
+    }
   }
 }
 function dessinerEnclos(X, Y) {
@@ -3233,7 +3274,7 @@ function dessinerJeu() {
   sol(camx, camy);
   lumieres(camx, camy);
   if (LL().murs) dessinerMurs(camx, camy, X, Y);
-  if (LL().couloir) dessinerCouloir(camx, X, Y);
+  if (LL().couloir) { if (LL().couloir.vertical) dessinerCouloirSinistre(camy, X, Y); else dessinerCouloir(camx, X, Y) }
   if (S.ev) dessinerEnclos(X, Y);
   // étiquettes scannées (expérience) et casse-croûte
   for (const g of S.gemmes) {
