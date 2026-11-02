@@ -593,6 +593,7 @@ const EQ = {
     des: 20, toutes: [16, 5], alerte: 2.2, colis: [7, 22], debit: .12, pas: 320, larg: 200,
     niveleur: { h: 92, deg: 34, colis: 140 },   // la rampe devant la porte se rabat quand le camion arrive
   },
+  feuilles: { toutes: .3, vit: [170, 260], vie: 2.4, deg: 9, r: 14 },   // le chef pressé sème des feuilles en courant : à éviter
   filmeur: { des: 35, toutes: [11, 5], max: 4, point: .07, vie: 4.5, r: 15 },   // rouleau de film : tourne autour de toi et laisse un film collant qui ralentit
   detrempe: { des: 30, toutes: [9, 4.5], max: 6, petits: 3 },   // colis détrempé : se divise en 3 petits colis rapides quand on le tue
   huile: { case: 300, part: .14, rMin: 40, rMax: 66, vitesse: 1.25, traces: 4 },   // atelier : taches d'huile fixes au sol (une case de 300 px sur 7 environ) ; on y glisse tout droit à 125 % de sa vitesse jusqu'à en sortir, puis on laisse des traces de pas pendant 4 s
@@ -1268,6 +1269,19 @@ function quaiCharge(dt) {
   let colle = false; for (const f of S.films) if (Math.abs(f.x - p.x) < F.r + p.r && Math.abs(f.y - p.y) < F.r + p.r && Math.hypot(f.x - p.x, f.y - p.y) < F.r + p.r * .6) { colle = true; break }
   if (colle) { p.lent = Math.max(p.lent || 0, .15); if ((p.colT = (p.colT || 0) - dt) <= 0) { p.colT = .5; S.textes.push({ x: p.x, y: p.y - 28, v: "ÇA COLLE", t: .5, c: "#e8eef4" }) } }
   S.sifflet = Math.max(0, (S.sifflet || 0) - dt);
+  if (LL().chefPresse) {   // feuilles semées par le chef pressé
+    const FE = EQ.feuilles; S.feuilles = S.feuilles || [];
+    for (const tp of S.transpas) {
+      if (tp.alerte > 0 || (tp.feuT = (tp.feuT ?? .15) - dt) > 0) continue;
+      tp.feuT = FE.toutes * rnd(.7, 1.3); const h = tp.ax === "h", cote = Math.random() < .5 ? -1 : 1, v = rnd(FE.vit[0], FE.vit[1]);
+      S.feuilles.push({ x: tp.x, y: tp.y - 10, vx: (h ? tp.vx * .25 : cote * v), vy: (h ? cote * v : tp.vy * .25), t: 0, rot: rnd(0, 6), vr: rnd(-8, 8) });
+    }
+    for (const f of S.feuilles) {
+      f.t += dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(.45, dt); f.vy *= Math.pow(.45, dt); f.rot += f.vr * dt; f.x += Math.sin(f.t * 6 + f.rot) * 30 * dt;
+      if (!f.fini && !S.mort && Math.hypot(f.x - p.x, f.y - p.y) < FE.r + p.r) { f.fini = true; if (p.inv <= 0) { p.hp -= FE.deg * (1 + t / 400) * (LL().deg || 1); p.inv = .35; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }); S.textes.push({ x: p.x, y: p.y - 30, v: "PAPERASSE !", t: .6, c: "#f4f1e8" }) } }
+    }
+    S.feuilles = S.feuilles.filter(f => !f.fini && f.t < FE.vie);
+  }
   if (S.sifOndes) { for (const o of S.sifOndes) o.t += dt; S.sifOndes = S.sifOndes.filter(o => o.t < .9) }
 }
 /* murs du quai : en haut, les portes de quai ; en bas, la barrière de la zone de tri */
@@ -1895,7 +1909,8 @@ function transpalettes(dt) {
       if (e.boss) blesser(e, tp.pneu ? 80 : 250, tp.vx / 200, tp.vy / 200); else if (tp.pneu) blesser(e, EQ.pneus.degColis * (1 + S.t / EQ.pvTemps), tp.vx / 150, tp.vy / 150); else { e.hp = 0; if (S.textes.length < 60) S.textes.push({ x: e.x, y: e.y - e.r, v: "écrasé", t: .6 }) }
     }
   }
-  S.transpas = S.transpas.filter(tp => tp.parcours < tp.long);
+  // le chef pressé ne disparaît qu'une fois sorti de l'écran
+  S.transpas = S.transpas.filter(tp => tp.parcours < tp.long || (LL().chefPresse && tp.parcours < tp.long * 3 && Math.abs(tp.x - p.x) < W / 2 + 140 && Math.abs(tp.y - p.y) < H / 2 + 140));
 }
 
 /* ---------- boucle ---------- */
@@ -3509,6 +3524,14 @@ function dessinerJeu() {
     if (!e.ch) continue; const x = X(e.x), y = Y(e.y);
     if (e.ch.etat === "vise") { cx.save(); cx.translate(x, y); cx.rotate(e.ch.a); const k = .5 + .5 * Math.sin(S.t * 30); cx.fillStyle = `rgba(255,42,31,${.12 + .18 * k})`; cx.fillRect(0, -e.r * .9, 7 * e.vit * .9, e.r * 1.8); cx.strokeStyle = `rgba(255,70,50,${.5 + .4 * k})`; cx.setLineDash([14, 9]); cx.lineWidth = 2; cx.strokeRect(0, -e.r * .9, 7 * e.vit * .9, e.r * 1.8); cx.setLineDash([]); cx.restore() }
     if (e.ch.etat === "sonne") { for (let i = 0; i < 3; i++) { const a = S.t * 5 + i * 2.09; cx.fillStyle = "#ffe14d"; cx.beginPath(); cx.arc(x + Math.cos(a) * e.r * .9, y - e.r - 6 + Math.sin(a) * 6, 5, 0, 7); cx.fill() } cx.font = "14px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#ffe14d"; cx.fillText("SONNÉ ! ×1,5", x, y - e.r - 26) }
+  }
+  for (const f of S.feuilles || []) {   // feuilles du chef pressé
+    const x = X(f.x), y = Y(f.y), al = Math.min(1, (EQ.feuilles.vie - f.t) / .4); if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
+    cx.save(); cx.globalAlpha = al; cx.translate(x, y); cx.rotate(f.rot); cx.scale(1.45, 1.45 * (.6 + .4 * Math.abs(Math.sin(f.t * 5 + f.rot))));
+    cx.fillStyle = "rgba(0,0,0,.25)"; cx.fillRect(-7, -9 + 4, 16, 20);
+    cx.fillStyle = "#f8f6ef"; cx.fillRect(-8, -10, 16, 20); cx.lineWidth = 1.6; cx.strokeStyle = ENCRE; cx.strokeRect(-8, -10, 16, 20);
+    cx.fillStyle = "#8a96a6"; for (let k = 0; k < 4; k++) cx.fillRect(-5, -6 + k * 4, k === 0 ? 7 : 10, 1.4); cx.fillStyle = "#d63b2f"; cx.fillRect(2, 5, 4, 3);
+    cx.restore();
   }
   // transpalettes en route
   for (const tp of S.transpas) {
