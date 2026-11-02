@@ -773,7 +773,7 @@ const LIEUX = {
   chargement: { nom: "Quai de chargement", img: "retardcamion", info: "Camions à quai · paie ×2,6", prix: 1450, desc: "Le grand quai : les camions reculent aux portes et vident des vagues de colis, de plus en plus nombreux. Gare aux niveleurs qui se rabattent et aux rouleaux de film qui t'emballent. Paie ×2,6.",
     sol: { fond: "#323438", joint: "rgba(0,0,0,.28)", allee: "rgba(240,240,232,.5)", texte: "TRI", tache: "rgba(8,8,10,.45)", miette: "rgba(185,138,82,.5)" },
     ombre: "8,9,12", gain: 2.6, pv: 4.1, pvBoss: 2.1, deg: 1.08, spawn: 1, portes: true, filmeurs: true, couloir: { haut: -480, bas: 1440, case: 480, style: "quai" },
-    tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1.2,
+    tpCoul: "#e8a317", tpNom: "chef pressé", tpRate: 1.2, chefPresse: true,
     boss1: "Un semi express force le passage !", boss2: "Deux semis express à quai", coul: {} },
   incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
     sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
@@ -947,7 +947,7 @@ const CHEFS = {
   stockage: { id: "cariste", sens: -1, nom: "Le Cariste fou", pv: .85, vit: 34, r: 56, haut: 170, att: ["charge"] },
   parking: { id: "routier", nom: "Le Routier", pv: 1.05, vit: 34, r: 54, haut: 200, att: ["klaxon", "radio"] },
   atelier: { id: "chariotfou", sens: -1, nom: "Le Chariot fou", pv: .95, vit: 36, r: 56, haut: 180, att: ["charge", "batteries"] },
-  chargement: { id: "routier", nom: "Le Chef de quai", pv: 1, vit: 38, r: 54, haut: 190, att: ["sifflet", "portes", "sifflet", "charge"] },   /* image provisoire */
+  chargement: { id: "chefquai", sens: -1, nom: "Le Chef de quai", pv: 1, vit: 38, r: 54, haut: 195, att: ["sifflet", "portes", "sifflet", "charge"] },
   incendie: { id: "transfo", sens: -1, nom: "Le Transfo en furie", pv: 1, vit: 34, r: 60, haut: 190, att: ["charge", "courtcircuit"] },
   promo: { id: "promo", sens: -1, nom: "Le Roi des Promos", pv: 1.15, vit: 38, r: 56, haut: 180, att: ["vente", "etiquettes"] },
 };
@@ -1865,7 +1865,7 @@ function lancerTranspa(vise) {
   if (M) { if (h) tp.y = Math.round(tp.y / M.ch) * M.ch; else tp.x = Math.round(tp.x / M.cw) * M.cw }   // calée au milieu d'une allée
   const C = LL().couloir; if (C) { if (C.vertical) tp.x = clamp(tp.x, C.haut + 60, C.bas - 60); else if (!vise) tp.y = clamp(tp.y, C.haut + 60, C.bas - 60) }   // dans le couloir
   S.transpas.push(tp); son("transpa");
-  if (!S.transpaVu) { S.transpaVu = true; annonce("Attention, " + LL().tpNom + " !") }
+  if (!S.transpaVu) { S.transpaVu = true; annonce(LL().chefPresse ? "Attention, chef pressé : pousse-toi !" : "Attention, " + LL().tpNom + " !") }
 }
 function transpalettes(dt) {
   const p = S.p;
@@ -2718,11 +2718,23 @@ const DESSINS = {
     } },
   },
   chargement: {
-    crabe: { r: 13, w: 44, h: 42, ox: 22, oy: 28, d: x => {   /* colis sous film, étiquette transporteur */
-      x.translate(-20, -26); dCarton(x);
-      x.fillStyle = "rgba(225,240,255,.28)"; x.fillRect(5, 13, 30, 24);
-      x.strokeStyle = "rgba(255,255,255,.7)"; x.lineWidth = 1.4; for (const o of [0, 8]) { x.beginPath(); x.moveTo(8 + o, 34); x.lineTo(16 + o, 16); x.stroke() }
-      x.fillStyle = "#fff"; x.fillRect(24, 28, 9, 6); x.fillStyle = ENCRE; for (let q = 0; q < 4; q++) x.fillRect(25 + q * 2, 29, 1, 4);
+    crabe: { r: 13, w: 42, h: 46, ox: 21, oy: 26, d: x => {   /* sac postal fermé, étiquette qui pend */
+      x.beginPath(); x.moveTo(-6, -12); x.quadraticCurveTo(-17, -6, -15, 8); x.quadraticCurveTo(-14, 17, 0, 17); x.quadraticCurveTo(14, 17, 15, 8); x.quadraticCurveTo(17, -6, 6, -12); x.closePath();
+      x.fillStyle = lin(x, 0, -12, 0, 17, [[0, "#8fa3b8"], [1, "#56687c"]]); x.fill(); trait(x, 2.6);
+      x.strokeStyle = "rgba(0,0,0,.2)"; x.lineWidth = 1.4; for (const a of [-7, 0, 7]) { x.beginPath(); x.moveTo(a * .6, -9); x.quadraticCurveTo(a, 4, a * .8, 15); x.stroke() }
+      x.beginPath(); x.moveTo(-6, -12); x.lineTo(-8, -19); x.lineTo(8, -19); x.lineTo(6, -12); x.closePath(); x.fillStyle = "#6e8296"; x.fill(); trait(x, 2);
+      x.fillStyle = "#ffd447"; x.fillRect(-7, -14, 14, 3); x.lineWidth = 1.2; x.strokeStyle = ENCRE; x.strokeRect(-7, -14, 14, 3);
+      x.strokeStyle = ENCRE; x.lineWidth = 1.2; x.beginPath(); x.moveTo(6, -13); x.lineTo(14, -6); x.stroke(); rrect(x, 11, -7, 9, 7, 1); x.fillStyle = "#fff"; x.fill(); x.stroke(); x.fillStyle = ENCRE; for (let q = 0; q < 3; q++) x.fillRect(12.5 + q * 2.2, -5.5, 1, 4);
+      yeux(x, 0, 2, 5.5, 3); bouche(x, 0, 10, 3.5);
+    } },
+    mini: { r: 30, w: 92, h: 92, ox: 46, oy: 48, d: x => {   /* colis hors gabarit : grosse caisse en bois cerclée */
+      rrect(x, -38, -36, 76, 74, 4); x.fillStyle = lin(x, 0, -36, 0, 38, [[0, "#d8a568"], [1, "#9a6a36"]]); x.fill(); trait(x, 3);
+      x.strokeStyle = "rgba(60,35,10,.45)"; x.lineWidth = 1.6; for (let v = -24; v <= 26; v += 12.5) { x.beginPath(); x.moveTo(-36, v); x.lineTo(36, v); x.stroke() }
+      x.strokeStyle = ENCRE; x.lineWidth = 6; x.beginPath(); x.moveTo(-34, -32); x.lineTo(34, 34); x.moveTo(34, -32); x.lineTo(-34, 34); x.stroke(); x.strokeStyle = "#b98a52"; x.lineWidth = 3.5; x.stroke();
+      x.fillStyle = "#3a3d44"; for (const [a, b] of [[-38, -36], [28, -36], [-38, 28], [28, 28]]) { rrect(x, a, b, 10, 10, 2); x.fill() }
+      x.strokeStyle = "#2a2d33"; x.lineWidth = 3; for (const u of [-20, 20]) { x.beginPath(); x.moveTo(u, -36); x.lineTo(u, 38); x.stroke() }
+      rrect(x, -26, -30, 52, 14, 2); x.fillStyle = "rgba(255,255,255,.88)"; x.fill(); trait(x, 1.6); x.fillStyle = "#d63b2f"; x.font = "bold 10px 'Luckiest Guy', Impact, sans-serif"; x.textAlign = "center"; x.fillText("↑ FRAGILE ↑", 0, -19.5);
+      yeux(x, 0, 6, 12, 6.5); x.lineWidth = 2.6; x.strokeStyle = ENCRE; x.beginPath(); x.moveTo(-9, 24); x.lineTo(-4, 21); x.lineTo(0, 24); x.lineTo(4, 21); x.lineTo(9, 24); x.stroke();
     } },
     feu: { r: 9, w: 40, h: 26, ox: 20, oy: 13, d: x => {   /* sangle d'arrimage qui fouette */
       x.lineCap = "round"; x.strokeStyle = ENCRE; x.lineWidth = 8; x.beginPath(); x.moveTo(-16, 0); x.bezierCurveTo(-8, -10, 0, 10, 8, 0); x.stroke();
@@ -3191,7 +3203,7 @@ function spriteJoueur(perso, avecCasque = true, yeuxX = false) {
 }
 /* --- ennemis : sur le quai, les nouveaux dessins ; ailleurs, l'ancien dessin cuit avec contour et ombrage --- */
 function spriteEnnemi(e) {
-  const L = S.lieu, r = Math.round(e.r), t = e.decor ? "d:" + e.kind : e.type, cle = `e|${L}|${t}|${r}`;
+  const L = S.lieu, r = Math.round(e.r), t = e.decor ? "d:" + e.kind : e.mini && DESSINS[L] && DESSINS[L].mini ? "mini" : e.type, cle = `e|${L}|${t}|${r}`;
   return sprite(cle, () => {
     const lieu = L === "stockage" ? "quai" : L, D = (DESSINS[lieu] && DESSINS[lieu][t]) || DESSINS.commun[t];
     if (D) { const k = r / D.r; return cuire(D.w * k, D.h * k, D.ox * k, D.oy * k, x => { x.scale(k, k); D.d(x, e) }) }
@@ -3215,7 +3227,7 @@ function poseEnnemi(e, p) {
   else if (t === "crabe" || t === "piege") { const hp = Math.abs(Math.sin(e.ph * 9)); dy = -hp * 3; sy = 1 + hp * .06; sx = 1 - hp * .04; if (p.x < e.x) sx = -sx }
   else if (t === "filmeur") rot = e.ph * 5 * (e.sens || 1);
   else if (t === "feu") rot = L === "chargement" ? Math.sin(e.ph * 9) * .6 : L === "incendie" ? Math.sin(e.ph * 8) * .25 : L === "atelier" ? e.ph * 7 : L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
-  else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if (L !== "parking" && p.x < e.x) sx = -1 }
+  else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if (L !== "parking" && !(e.mini && L === "chargement") && p.x < e.x) sx = -1 }
   else if (t === "murene" && L === "atelier") { rot = Math.sin(e.ph * 10) * .3; dy = -Math.abs(Math.sin(e.ph * 12)) * 3 }
   else rot = e.ch && (e.ch.etat === "vise" || e.ch.etat === "fonce") ? e.ch.a : Math.atan2(p.y - e.y, p.x - e.x);
   return [dy, rot, sx, sy];
@@ -3501,6 +3513,25 @@ function dessinerJeu() {
   // transpalettes en route
   for (const tp of S.transpas) {
     if (tp.alerte > 0) continue;
+    if (LL().chefPresse) {   // un chef qui court avec un colis dans les bras
+      const x = X(tp.x), y = Y(tp.y); if (x < -80 || y < -80 || x > W + 80 || y > H + 80) continue;
+      const dir = (tp.vx || tp.vy) > 0 ? 1 : -1, foul = Math.sin(tp.ph * 26), bond = Math.abs(foul) * 4;
+      ombreSol(x, y + 36, 34, 9);
+      cx.fillStyle = "rgba(255,255,255,.18)"; for (let k = 0; k < 4; k++) if (tp.ax === "h") cx.fillRect(x - dir * (34 + k * 16), y - 14 + k * 8, -dir * 12, 2); else cx.fillRect(x - 14 + k * 8, y - (tp.vy > 0 ? 1 : -1) * (40 + k * 16), 2, 12);
+      cx.save(); cx.translate(x, y - bond); cx.scale(dir < 0 && tp.ax === "h" ? -1.6 : 1.6, 1.6);
+      cx.lineCap = "round"; cx.lineWidth = 7; cx.strokeStyle = ENCRE;
+      for (const [s2, c] of [[1, "#2a3140"], [-1, "#323b4d"]]) { cx.beginPath(); cx.moveTo(-2, 8); cx.lineTo(-2 + s2 * foul * 11, 22); cx.stroke(); cx.strokeStyle = c; cx.lineWidth = 4; cx.stroke(); cx.strokeStyle = ENCRE; cx.lineWidth = 7 }
+      cx.fillStyle = "#1b1d22"; for (const s2 of [1, -1]) { cx.beginPath(); cx.ellipse(-2 + s2 * foul * 11 + 2, 23, 5, 3, 0, 0, 7); cx.fill() }
+      rrect(cx, -12, -14, 22, 26, 8); cx.fillStyle = "#ff7a1a"; cx.fill(); cx.lineWidth = 2.6; cx.stroke(); cx.fillStyle = "#e6e8ec"; cx.fillRect(-12, -4, 22, 3); cx.fillRect(-12, 3, 22, 3);
+      cx.beginPath(); cx.arc(0, -22, 9, 0, 7); cx.fillStyle = "#f2b98a"; cx.fill(); cx.lineWidth = 2.4; cx.stroke();
+      cx.beginPath(); cx.arc(0, -25, 10, Math.PI, 0); cx.closePath(); cx.fillStyle = "#f4f6f8"; cx.fill(); cx.stroke(); cx.fillRect(-12, -26, 24, 3);
+      cx.fillStyle = ENCRE; cx.beginPath(); cx.arc(4, -22, 1.6, 0, 7); cx.fill(); cx.lineWidth = 2; cx.beginPath(); cx.moveTo(1, -26); cx.lineTo(7, -24); cx.stroke();
+      cx.fillStyle = "#c9ced4"; rrect(cx, 7, -20, 7, 4, 1.5); cx.fill(); cx.lineWidth = 1.2; cx.stroke();
+      rrect(cx, 4, -12, 20, 18, 2); cx.fillStyle = lin(cx, 0, -12, 0, 6, [[0, "#d8a568"], [1, "#a8763f"]]); cx.fill(); cx.lineWidth = 2.2; cx.stroke(); cx.fillStyle = "rgba(244,231,196,.9)"; cx.fillRect(12, -12, 4, 18);
+      cx.fillStyle = "#f2b98a"; cx.beginPath(); cx.arc(6, -2, 3.5, 0, 7); cx.arc(20, -8, 3.5, 0, 7); cx.fill();
+      cx.restore();
+      continue;
+    }
     if (tp.pneu) {   // pneu qui roule et rebondit
       const h = tp.ax === "h", wob = Math.sin(tp.ph * 9) * 5, x = X(tp.x) + (h ? 0 : wob), y0 = Y(tp.y) + (h ? wob : 0), y = y0 - Math.abs(Math.sin(tp.ph * 7)) * 7;
       if (x < -60 || y < -60 || x > W + 60 || y > H + 60) continue;
