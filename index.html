@@ -589,6 +589,11 @@ const EQ = {
     feu: { des: 150, toutes: [14, 4], r: [42, 72], vie: 20, dps: 14, max: 26, propage: 6, trainee: 5 }, // feux qui se propagent ; dès 2:30 ; la transpalette en feu laisse des flammes qui durent 5 s
     eau: { des: 210, toutes: [16, 7], r: 115, pluie: 6, vie: 16, elec: 45 },              // gicleurs : flaque où l'on glisse ; électrisée par un arc ; éteint les feux ; dès 3:30
   },
+  portes: {   // quai de chargement : les camions se mettent à quai et vident des vagues de colis
+    des: 20, toutes: [16, 5], alerte: 2.2, colis: [7, 22], debit: .12, pas: 320, larg: 200,
+    niveleur: { h: 92, deg: 34, colis: 140 },   // la rampe devant la porte se rabat quand le camion arrive
+  },
+  filmeur: { des: 35, toutes: [11, 5], max: 4, point: .07, vie: 4.5, r: 15 },   // rouleau de film : tourne autour de toi et laisse un film collant qui ralentit
   detrempe: { des: 30, toutes: [9, 4.5], max: 6, petits: 3 },   // colis détrempé : se divise en 3 petits colis rapides quand on le tue
   huile: { case: 300, part: .14, rMin: 40, rMax: 66, vitesse: 1.25, traces: 4 },   // atelier : taches d'huile fixes au sol (une case de 300 px sur 7 environ) ; on y glisse tout droit à 125 % de sa vitesse jusqu'à en sortir, puis on laisse des traces de pas pendant 4 s
   batterie: { des: 25, toutes: 10, mini: 5, max: 5 },   // atelier : batterie qui fuit ; dès 0:25, une toutes les 10 s (puis jusqu'à toutes les 5 s), 5 à la fois au plus
@@ -717,6 +722,7 @@ const TYPES = {
   crabe: { r: 11, hp: 10, vit: 46, deg: 6, xp: 1, coul: "#b98a52" },      /* carton mal fermé */
   feu: { r: 9, hp: 6, vit: 80, deg: 5, xp: 1, coul: "#f2f0e6" },        /* bordereau qui s'envole */
   noye: { r: 16, hp: 46, vit: 36, deg: 12, xp: 4, coul: "#c8a46a" },     /* palette qui tangue */
+  filmeur: { r: 14, hp: 50, vit: 120, deg: 7, xp: 3, coul: "#e8eef4" },   /* rouleau de film étirable */
   detrempe: { r: 15, hp: 44, vit: 40, deg: 8, xp: 3, coul: "#7a5a3a" },   /* colis détrempé : se divise en 3 */
   batterie: { r: 15, hp: 60, vit: 34, deg: 10, xp: 4, coul: "#3d6fa8" },   /* batterie de chariot qui fuit : laisse de l'acide */
   chasseur: { r: 13, hp: 26, vit: 105, deg: 5, xp: 1, coul: "#ff46be" },    /* chasseur de promos : vole tes étiquettes */
@@ -764,6 +770,11 @@ const LIEUX = {
     ombre: "8,12,8", gain: 2.4, pv: 4, pvBoss: 2, deg: 1.05, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
     murs: { type: "atelier", cw: 480, ch: 480, w: 130, h: 70, trou: .15, vars: [{ img: "atelier-etabli", w: 168, h: 104, larg: 180 }, { img: "atelier-rackpieces", w: 122, h: 140, larg: 130 }, { img: "atelier-reparation", w: 140, h: 146, larg: 150 }, { img: "atelier-charge", w: 126, h: 120, larg: 135 }] },
     boss1: "Un semi arrive en réparation !", boss2: "Deux semis en panne à l'atelier", coul: {} },
+  chargement: { nom: "Quai de chargement", img: "retardcamion", info: "Camions à quai · paie ×2,6", prix: 1450, desc: "Le grand quai : les camions reculent aux portes et vident des vagues de colis, de plus en plus nombreux. Gare aux niveleurs qui se rabattent et aux rouleaux de film qui t'emballent. Paie ×2,6.",
+    sol: { fond: "#323438", joint: "rgba(0,0,0,.28)", allee: "rgba(240,240,232,.5)", texte: "TRI", tache: "rgba(8,8,10,.45)", miette: "rgba(185,138,82,.5)" },
+    ombre: "8,9,12", gain: 2.6, pv: 4.1, pvBoss: 2.1, deg: 1.08, spawn: 1, portes: true, filmeurs: true, couloir: { haut: -480, bas: 1440, case: 480, style: "quai" },
+    tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1.2,
+    boss1: "Un semi express force le passage !", boss2: "Deux semis express à quai", coul: {} },
   incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
     sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
     ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, couloir: { haut: -480, bas: 960, case: 480, vertical: true }, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
@@ -825,7 +836,7 @@ function nouvellePartie() {
     p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
     armes: { [P.arme]: 1 }, objets: {},
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8 }, sabres: [], troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
-    ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [],
+    ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [], quais: new Map(), films: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
   };
@@ -936,6 +947,7 @@ const CHEFS = {
   stockage: { id: "cariste", sens: -1, nom: "Le Cariste fou", pv: .85, vit: 34, r: 56, haut: 170, att: ["charge"] },
   parking: { id: "routier", nom: "Le Routier", pv: 1.05, vit: 34, r: 54, haut: 200, att: ["klaxon", "radio"] },
   atelier: { id: "chariotfou", sens: -1, nom: "Le Chariot fou", pv: .95, vit: 36, r: 56, haut: 180, att: ["charge", "batteries"] },
+  chargement: { id: "routier", nom: "Le Chef de quai", pv: 1, vit: 38, r: 54, haut: 190, att: ["sifflet", "portes", "sifflet", "charge"] },   /* image provisoire */
   incendie: { id: "transfo", sens: -1, nom: "Le Transfo en furie", pv: 1, vit: 34, r: 60, haut: 190, att: ["charge", "courtcircuit"] },
   promo: { id: "promo", sens: -1, nom: "Le Roi des Promos", pv: 1.15, vit: 38, r: 56, haut: 180, att: ["vente", "etiquettes"] },
 };
@@ -962,7 +974,8 @@ function iaChef(e, vx, vy, dt) {
   if (e.rage) { vx *= 1.3; vy *= 1.3 }
   if (a.etat === "marche") {
     if (a.t <= 0 && C.att.length && d < 700) { a.att = C.att[a.n++ % C.att.length]; a.etat = "prepare"; a.a = Math.atan2(dy, dx);
-      a.t = { souffle: .9, blocs: .5, charge: 1, klaxon: .9, radio: .6, vente: .7, etiquettes: .6, batteries: .8, courtcircuit: .9 }[a.att];
+      a.t = { souffle: .9, blocs: .5, charge: 1, klaxon: .9, radio: .6, vente: .7, etiquettes: .6, batteries: .8, courtcircuit: .9, sifflet: .8, portes: .6 }[a.att];
+      if (a.att === "sifflet") annonce("Coup de sifflet : plus vite que ça !"); if (a.att === "portes") annonce("Trois camions à quai d'un coup !");
       if (a.att === "courtcircuit") annonce("Court-circuit !");
       if (a.att === "batteries") annonce("Le Chariot fou lance ses batteries !");
       if (a.att === "radio") annonce("Le Routier appelle les copains !"); if (a.att === "vente") annonce("Vente flash !") }
@@ -978,6 +991,8 @@ function iaChef(e, vx, vy, dt) {
     else if (a.att === "klaxon") { a.t = .45; S.tirsChef.push({ k: "onde", x: e.x, y: e.y, t: .45, t0: .45, r: 320 }); vibrer(80) }
     else if (a.att === "radio") { a.t = .2; for (let i = 0; i < 3; i++) setTimeout(() => { if (enJeu && S.chefE === e) lancerTranspa(i === 0) }, i * 700) }
     else if (a.att === "vente") { a.t = .3; for (let i = 0; i < 9; i++) { spawn("crabe"); const m = S.ennemis[S.ennemis.length - 1], an = i / 9 * 6.28; m.x = e.x + Math.cos(an) * 90; m.y = e.y + Math.sin(an) * 90; m.vit *= 1.35 } }
+    else if (a.att === "sifflet") { a.t = .3; S.sifflet = e.rage ? 5 : 3.5; son("klaxon"); S.sifOndes = [0, .15, .3].map(d => ({ x: e.x, y: e.y, t: -d })) }
+    else if (a.att === "portes") { a.t = .3; const kp = Math.round((p.x - EQ.portes.pas / 2) / EQ.portes.pas); for (const dk of [-1, 0, 1]) { S.quais.delete(kp + dk); ouvrirPorte(kp + dk, 1.4) } }
     else if (a.att === "courtcircuit") { a.t = .4; const n = e.rage ? 9 : 6; for (let i = 0; i < n; i++) lancerFil(p.x + (i ? rnd(-210, 210) : 0), p.y + (i ? rnd(-210, 210) : 0), .9 + i * .14); S.flashT = .12 }
     else if (a.att === "batteries") { a.t = .4; const n = e.rage ? 7 : 5; for (let i = 0; i < n; i++) S.tirsChef.push({ k: "batt", x: p.x + (i ? rnd(-170, 170) : 0), y: p.y + (i ? rnd(-170, 170) : 0), t: 1 + i * .16, t0: 1 + i * .16, r: 36 }); S.secousse = Math.max(S.secousse || 0, .2) }
     else if (a.att === "etiquettes") { a.t = .3; for (let i = -2; i <= 2; i++) { const an = a.a + i * .22; S.tirsChef.push({ k: "etiq", x: e.x, y: e.y, vx: Math.cos(an) * 270, vy: Math.sin(an) * 270, t: 2.6, t0: 2.6, r: 13, a: an }) } }
@@ -1207,6 +1222,96 @@ function blesser(e, d, kx, ky) {
   if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
+}
+/* quai de chargement : portes, camions qui vident des colis, niveleurs, film collant */
+const porteX = k => k * EQ.portes.pas + EQ.portes.pas / 2;
+function ouvrirPorte(k, alerte) {
+  if (S.quais.has(k)) return false;
+  S.quais.set(k, { etat: "recule", t: 0, alerte: alerte || EQ.portes.alerte, n: 0, sortis: 0, deb: 0 });
+  if (!S.porteVu) { S.porteVu = true; annonce("Un camion se met à quai !") }
+  return true;
+}
+function quaiCharge(dt) {
+  if (!LL().portes) return;
+  const P = EQ.portes, C = LL().couloir, k = chaos(), p = S.p, t = S.t;
+  if (t > P.des && !S.ev && (S.porteT = (S.porteT ?? 3) - dt) <= 0) {
+    S.porteT = (P.toutes[0] + (P.toutes[1] - P.toutes[0]) * k) * rnd(.85, 1.15);
+    const nb = 1 + (k > .4) + (k > .75), kp = Math.round((p.x - P.pas / 2) / P.pas);
+    for (let i = 0, essais = 0; i < nb && essais < 12; essais++) if (ouvrirPorte(kp + Math.round(rnd(-2.4, 2.4)))) i++;
+    if (k > .4 && !S.cadenceVu) { S.cadenceVu = true; annonce("La cadence monte : plusieurs camions à la fois !") }
+  }
+  for (const [kk, q] of S.quais) {
+    q.t += dt; const x = porteX(kk);
+    if (q.etat === "recule" && q.t >= q.alerte) {   // le niveleur se rabat, puis le camion vide
+      q.etat = "decharge"; q.t = 0; q.n = Math.round(P.colis[0] + (P.colis[1] - P.colis[0]) * k);
+      const N = P.niveleur, y0 = C.haut, m = (1 + t / 400) * (LL().deg || 1); S.secousse = Math.max(S.secousse || 0, .25); son("casse");
+      if (Math.abs(p.x - x) < P.larg / 2 + p.r && p.y < y0 + N.h + p.r && !S.mort) { p.hp -= N.deg * m; p.inv = Math.max(p.inv, .5); p.pousse = { x: 0, y: 700 }; S.textes.push({ x: p.x, y: p.y - 30, v: "BLAM !", t: .8, c: "#ffd447" }) }
+      for (const e of S.ennemis) if (!e.decor && Math.abs(e.x - x) < P.larg / 2 + e.r && e.y < y0 + N.h + e.r) blesser(e, N.colis * (1 + t / EQ.pvTemps), 0, 4);
+      for (let i = 0; i < 12; i++) S.fx.push({ x: x + rnd(-P.larg / 2, P.larg / 2), y: y0 + N.h, vx: rnd(-160, 160), vy: rnd(-40, 160), t: .4, c: i % 2 ? "#ffd447" : "#9aa0a8" });
+    } else if (q.etat === "decharge") {
+      q.deb -= dt;
+      while (q.deb <= 0 && q.sortis < q.n) {
+        q.deb += P.debit; q.sortis++; const r0 = Math.random();
+        spawn(r0 < .2 ? "noye" : r0 < .35 ? "feu" : "crabe"); const e = S.ennemis[S.ennemis.length - 1];
+        e.x = x + rnd(-P.larg * .35, P.larg * .35); e.y = C.haut + 30; e.vit *= 1.25; e.kb.y = rnd(3, 7);
+      }
+      if (q.sortis >= q.n) { q.etat = "vide"; q.t = 0 }
+    } else if (q.etat === "vide" && q.t > 2.5) S.quais.delete(kk);
+  }
+  // rouleaux de film : apparition, film collant
+  const F = EQ.filmeur;
+  if (LL().filmeurs && t > F.des && !S.ev && (S.filmeurT = (S.filmeurT ?? 0) - dt) <= 0) {
+    S.filmeurT = F.toutes[0] + (F.toutes[1] - F.toutes[0]) * k;
+    if (S.ennemis.filter(e => e.type === "filmeur").length < F.max) { spawn("filmeur"); S.ennemis[S.ennemis.length - 1].sens = Math.random() < .5 ? 1 : -1; if (!S.filmeurVu) { S.filmeurVu = true; annonce("Rouleau de film ! Il veut t'emballer") } }
+  }
+  for (const f of S.films) f.t += dt; if (S.films.length && S.films[0].t > F.vie) S.films = S.films.filter(f => f.t < F.vie);
+  let colle = false; for (const f of S.films) if (Math.abs(f.x - p.x) < F.r + p.r && Math.abs(f.y - p.y) < F.r + p.r && Math.hypot(f.x - p.x, f.y - p.y) < F.r + p.r * .6) { colle = true; break }
+  if (colle) { p.lent = Math.max(p.lent || 0, .15); if ((p.colT = (p.colT || 0) - dt) <= 0) { p.colT = .5; S.textes.push({ x: p.x, y: p.y - 28, v: "ÇA COLLE", t: .5, c: "#e8eef4" }) } }
+  S.sifflet = Math.max(0, (S.sifflet || 0) - dt);
+  if (S.sifOndes) { for (const o of S.sifOndes) o.t += dt; S.sifOndes = S.sifOndes.filter(o => o.t < .9) }
+}
+/* murs du quai : en haut, les portes de quai ; en bas, la barrière de la zone de tri */
+function dessinerCouloirQuai(camx, X, Y) {
+  const C = LL().couloir, P = EQ.portes, yh = Y(C.haut), yb = Y(C.bas);
+  if (yh > -10) {
+    cx.fillStyle = "#121316"; cx.fillRect(0, 0, W, Math.max(0, yh - 112));
+    cx.fillStyle = lin(cx, 0, yh - 112, 0, yh, [[0, "#4a4e55"], [1, "#2f3237"]]); cx.fillRect(0, yh - 112, W, 112);
+    for (let kk = Math.floor((camx - P.pas) / P.pas); kk <= Math.floor((camx + W + P.pas) / P.pas); kk++) {
+      const x = porteX(kk) - camx, q = S.quais.get(kk), l = P.larg;
+      if (q && q.etat !== "recule" || q && q.t > q.alerte * .45) {   // porte ouverte : l'arrière du camion
+        cx.fillStyle = "#0b0c0e"; cx.fillRect(x - l / 2, yh - 108, l, 108);
+        const rec = q.etat === "recule" ? Math.min(1, (q.t - q.alerte * .45) / (q.alerte * .55)) : 1;
+        cx.save(); cx.beginPath(); cx.rect(x - l / 2, yh - 108, l, 108); cx.clip();
+        const ty = yh - 108 - (1 - rec) * 112; rrect(cx, x - l / 2 + 12, ty, l - 24, 110, 4); cx.fillStyle = "#e6e8ec"; cx.fill(); cx.lineWidth = 3; cx.strokeStyle = ENCRE; cx.stroke();
+        cx.fillStyle = "#2a2d33"; cx.fillRect(x - l / 2 + 22, ty + 8, l - 44, 92);
+        const reste = q.etat === "decharge" ? 1 - q.sortis / Math.max(1, q.n) : q.etat === "vide" ? 0 : 1;
+        for (let b = 0; b < Math.round(12 * reste); b++) { rrect(cx, x - l / 2 + 26 + (b % 4) * 37, ty + 12 + Math.floor(b / 4) * 22, 32, 18, 2); cx.fillStyle = b % 3 ? "#c8955a" : "#d8a568"; cx.fill(); cx.lineWidth = 1.5; cx.stroke() }
+        cx.restore();
+      } else {   // porte sectionnelle fermée
+        rrect(cx, x - l / 2, yh - 108, l, 108, 2); cx.fillStyle = lin(cx, 0, yh - 108, 0, yh, [[0, "#8a96a6"], [1, "#5e6876"]]); cx.fill(); cx.lineWidth = 3; cx.strokeStyle = ENCRE; cx.stroke();
+        cx.fillStyle = "rgba(0,0,0,.25)"; for (let s2 = 1; s2 < 8; s2++) cx.fillRect(x - l / 2, yh - 108 + s2 * 13.5, l, 2);
+      }
+      cx.fillStyle = "#ffc21a"; cx.fillRect(x - l / 2 - 10, yh - 112, 8, 112); cx.fillRect(x + l / 2 + 2, yh - 112, 8, 112); cx.fillStyle = ENCRE; for (let u = 0; u < 112; u += 16) { cx.fillRect(x - l / 2 - 10, yh - 112 + u, 8, 7); cx.fillRect(x + l / 2 + 2, yh - 112 + u + 8, 8, 7) }   // butoirs
+      const rouge = q && q.etat === "recule", vert = q && q.etat !== "recule", on = Math.floor(S.t * 6) % 2 === 0;
+      cx.fillStyle = rouge && on ? "#ff3b2f" : "#5a1a14"; cx.beginPath(); cx.arc(x - 14, yh - 126, 6, 0, 7); cx.fill();
+      cx.fillStyle = vert ? "#4cf07a" : "#174a26"; cx.beginPath(); cx.arc(x + 14, yh - 126, 6, 0, 7); cx.fill();
+      if (rouge && on) ajouter(lueur("255,50,30"), x - 14, yh - 126, 60, 60, .9); if (vert) ajouter(lueur("80,240,120"), x + 14, yh - 126, 50, 50, .7);
+      cx.font = "22px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "rgba(255,255,255,.75)"; cx.fillText(String(((kk % 40) + 40) % 40 + 1), x, yh - 142);
+      // niveleur devant la porte
+      const N = P.niveleur, ny = yh, alerte = q && q.etat === "recule" && q.t > q.alerte - 1.1, leve = q && q.etat === "recule" ? Math.max(0, Math.min(1, (q.t - (q.alerte - 1.1)) / .9)) : 0;
+      rrect(cx, x - l / 2, ny, l, N.h * (1 - .35 * leve), 3); cx.fillStyle = lin(cx, 0, ny, 0, ny + N.h, [[0, "#7d858f"], [1, "#4a5058"]]); cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = ENCRE; cx.stroke();
+      cx.strokeStyle = "rgba(255,255,255,.12)"; cx.lineWidth = 2; for (let u = 10; u < l; u += 14) { cx.beginPath(); cx.moveTo(x - l / 2 + u, ny + 6); cx.lineTo(x - l / 2 + u + 8, ny + N.h * (1 - .35 * leve) - 6); cx.stroke() }
+      cx.fillStyle = "#ffc21a"; cx.fillRect(x - l / 2, ny + N.h * (1 - .35 * leve) - 6, l, 6);
+      if (alerte && Math.floor(S.t * 10) % 2 === 0) { cx.strokeStyle = "rgba(255,60,40,.95)"; cx.lineWidth = 4; cx.setLineDash([10, 6]); cx.strokeRect(x - l / 2 - 4, ny - 2, l + 8, N.h + 6); cx.setLineDash([]) }
+    }
+    cx.fillStyle = ENCRE; cx.fillRect(0, yh - 2, W, 4);
+  }
+  if (yb < H + 10) {   // barrière jaune de la zone de tri
+    cx.fillStyle = "#121316"; cx.fillRect(0, yb + 24, W, Math.max(0, H - yb - 24));
+    cx.fillStyle = "#2a2c30"; cx.fillRect(0, yb, W, 24);
+    cx.fillStyle = "#ffc21a"; cx.fillRect(0, yb + 2, W, 7); cx.fillRect(0, yb + 14, W, 7);
+    cx.fillStyle = ENCRE; for (let u = -((camx % 120) + 120) % 120; u < W; u += 120) { cx.fillRect(u, yb - 4, 10, 30) }
+  }
 }
 /* entrepôt en perdition : la situation empire de 0:00 à 10:00 */
 const chaos = () => clamp(S.t / VICTOIRE, 0, 1);
@@ -1832,7 +1937,7 @@ function maj(dt) {
   if (LL().huile) glisserHuile(dt);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
 
-  vagues(dt); cycleNoir(dt); flaques(dt); sinistre(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
+  vagues(dt); cycleNoir(dt); flaques(dt); sinistre(dt); quaiCharge(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
 
   // déplacement des ennemis + séparation (grille)
   const murs = !!LL().murs;
@@ -1884,6 +1989,12 @@ function maj(dt) {
       else if (c.etat === "fonce") { vx = Math.cos(c.a) * e.vit * 7; vy = Math.sin(c.a) * e.vit * 7 }
     }
     if (e.chef) [vx, vy] = iaChef(e, vx, vy, dt);
+    if (e.type === "filmeur" && d < 520) {   // il tourne autour de toi en se rapprochant, et déroule son film
+      e.vie2 = (e.vie2 || 0) + dt; const R = Math.max(70, 200 - e.vie2 * 9), a = Math.atan2(e.y - p.y, e.x - p.x), rad = clamp((d - R) * 2.5, -e.vit, e.vit * 1.5), sg = e.sens || 1;
+      vx = -Math.sin(a) * e.vit * sg - Math.cos(a) * rad; vy = Math.cos(a) * e.vit * sg - Math.sin(a) * rad;
+      if ((e.deroule = (e.deroule || 0) - dt) <= 0) { e.deroule = EQ.filmeur.point; if (S.films.length < 400) S.films.push({ x: e.x, y: e.y, t: 0, id: e }) }
+    }
+    if (S.sifflet > 0 && !e.boss) { vx *= 1.8; vy *= 1.8 }
     if (e.type === "batterie" && (e.goutte = (e.goutte || 0) - dt) <= 0) { e.goutte = EQ.acide.trace; poserFlaque(e.x, e.y + e.r * .5, EQ.acide.traceR, EQ.acide.traceVie, 0) }
     if (e.type === "chasseur") {   // fonce sur les étiquettes au sol, les ramasse, puis s'enfuit loin de toi
       e.vol = e.vol || 0;
@@ -2606,6 +2717,34 @@ const DESSINS = {
       yeux(x, 1, 0, 5, 2.8);
     } },
   },
+  chargement: {
+    crabe: { r: 13, w: 44, h: 42, ox: 22, oy: 28, d: x => {   /* colis sous film, étiquette transporteur */
+      x.translate(-20, -26); dCarton(x);
+      x.fillStyle = "rgba(225,240,255,.28)"; x.fillRect(5, 13, 30, 24);
+      x.strokeStyle = "rgba(255,255,255,.7)"; x.lineWidth = 1.4; for (const o of [0, 8]) { x.beginPath(); x.moveTo(8 + o, 34); x.lineTo(16 + o, 16); x.stroke() }
+      x.fillStyle = "#fff"; x.fillRect(24, 28, 9, 6); x.fillStyle = ENCRE; for (let q = 0; q < 4; q++) x.fillRect(25 + q * 2, 29, 1, 4);
+    } },
+    feu: { r: 9, w: 40, h: 26, ox: 20, oy: 13, d: x => {   /* sangle d'arrimage qui fouette */
+      x.lineCap = "round"; x.strokeStyle = ENCRE; x.lineWidth = 8; x.beginPath(); x.moveTo(-16, 0); x.bezierCurveTo(-8, -10, 0, 10, 8, 0); x.stroke();
+      x.strokeStyle = "#ff7a1a"; x.lineWidth = 5; x.stroke();
+      rrect(x, 6, -7, 12, 14, 3); x.fillStyle = "#c9ced4"; x.fill(); trait(x, 2);
+      x.fillStyle = "#fff"; x.beginPath(); x.arc(10, -1, 2.2, 0, 7); x.arc(15, -1, 2.2, 0, 7); x.fill(); x.fillStyle = ENCRE; x.beginPath(); x.arc(10.5, -.5, 1.1, 0, 7); x.arc(15.5, -.5, 1.1, 0, 7); x.fill();
+    } },
+    noye: { r: 18, w: 56, h: 60, ox: 28, oy: 32, d: x => {   /* roll conteneur grillagé */
+      rrect(x, -20, -22, 40, 44, 3); x.fillStyle = "rgba(60,64,72,.35)"; x.fill(); trait(x, 2.8);
+      x.strokeStyle = "#9aa0a8"; x.lineWidth = 1.6; for (let u = -16; u <= 16; u += 6) { x.beginPath(); x.moveTo(u, -20); x.lineTo(u, 20); x.stroke() } for (let v = -18; v <= 18; v += 6) { x.beginPath(); x.moveTo(-18, v); x.lineTo(18, v); x.stroke() }
+      for (const [a, b, c] of [[-12, -14, "#c8955a"], [2, -12, "#d8a568"], [-10, 2, "#d8a568"], [4, 4, "#c8955a"]]) { rrect(x, a, b, 12, 10, 1.5); x.fillStyle = c; x.fill(); trait(x, 1.4) }
+      x.fillStyle = "#1b1d22"; for (const [a, b] of [[-20, 20], [16, 20], [-20, -24], [16, -24]]) { x.beginPath(); x.arc(a + 2, b + 2, 3, 0, 7); x.fill() }
+      yeux(x, 0, -4, 6, 3.4);
+    } },
+    murene: { r: 13, w: 48, h: 36, ox: 22, oy: 18, d: x => {   /* transpalette manuelle */
+      for (const y of [-9, 4]) { rrect(x, -4, y, 26, 5, 2); x.fillStyle = "#9aa0a8"; x.fill(); trait(x, 1.6) }
+      rrect(x, -14, -12, 12, 24, 3); x.fillStyle = lin(x, -14, 0, -2, 0, [[0, "#ff6a5a"], [1, "#c0392b"]]); x.fill(); trait(x, 2.2);
+      x.strokeStyle = ENCRE; x.lineWidth = 4; x.beginPath(); x.moveTo(-12, 0); x.lineTo(-22, 0); x.stroke(); rrect(x, -26, -6, 6, 12, 2); x.fillStyle = "#2a2d33"; x.fill(); trait(x, 1.4);
+      yeux(x, -8, -2, 3, 2.2);
+    } },
+    leviathan: Object.assign({ d: x => dCamion(x, { caisse: [[0, "#3d5a8a"], [.5, "#2a4470"], [1, "#182a48"]], nervures: "rgba(0,0,0,.18)", bande: "#ffd447", cabine: "#ffd447", texte: "EXPRESS 24H", couleurTexte: "#ffd447", contourTexte: "#17130f", taille: 16 }) }, D_SEMI),
+  },
   incendie: {
     crabe: { r: 13, w: 44, h: 46, ox: 22, oy: 28, d: x => {   /* carton roussi qui fume */
       x.translate(-20, -26); dCarton(x);
@@ -2766,6 +2905,13 @@ const DESSINS = {
 /* --- machines, éléments d'événements, murs, transpalettes : tout redessiné dans le même style --- */
 function vitre(x, a, b, w, h) { x.fillStyle = "rgba(255,255,255,.45)"; x.beginPath(); x.moveTo(a + 2, b + h - 2); x.lineTo(a + w * .45, b + 2); x.lineTo(a + w * .6, b + 2); x.lineTo(a + w * .15, b + h - 2); x.closePath(); x.fill() }
 DESSINS.commun = {
+  filmeur: { r: 14, w: 46, h: 46, ox: 23, oy: 23, d: x => {   /* rouleau de film étirable, vu de dessus */
+    x.beginPath(); x.arc(0, 0, 17, 0, 7); x.fillStyle = radg(x, -5, -6, 20, [[0, "rgba(250,253,255,.98)"], [1, "rgba(170,195,220,.95)"]]); x.fill(); trait(x, 2.6);
+    x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = 1.2; for (const rr of [12, 9]) { x.beginPath(); x.arc(0, 0, rr, 0, 7); x.stroke() }
+    x.beginPath(); x.arc(0, 0, 5.5, 0, 7); x.fillStyle = "#b98a52"; x.fill(); trait(x, 1.8); x.beginPath(); x.arc(0, 0, 2.5, 0, 7); x.fillStyle = "#3a2a1c"; x.fill();
+    x.fillStyle = "rgba(230,240,250,.7)"; x.beginPath(); x.moveTo(15, -6); x.lineTo(24, -10); x.lineTo(24, 6); x.lineTo(15, 6); x.closePath(); x.fill(); x.lineWidth = 1.2; x.strokeStyle = "rgba(120,140,160,.8)"; x.stroke();
+    yeux(x, 0, -9, 4.5, 2.6);
+  } },
   detrempe: { r: 15, w: 52, h: 54, ox: 26, oy: 30, d: x => {   /* colis détrempé, avachi, qui goutte */
     x.beginPath(); x.moveTo(-17, -10); x.quadraticCurveTo(0, -16, 17, -10); x.lineTo(19, 14); x.quadraticCurveTo(0, 19, -19, 14); x.closePath();
     x.fillStyle = lin(x, 0, -12, 0, 16, [[0, "#9a7448"], [1, "#5e4228"]]); x.fill(); trait(x, 2.6);
@@ -3067,7 +3213,8 @@ function poseEnnemi(e, p) {
   else if (t === "batterie") { rot = Math.sin(e.ph * 3) * .08; if (p.x < e.x) sx = -1 }
   else if (t === "chasseur") { const hp = Math.abs(Math.sin(e.ph * 14)); dy = -hp * 4; if (p.x < e.x !== (e.vol > 0 && !e.cible)) sx = -1 }
   else if (t === "crabe" || t === "piege") { const hp = Math.abs(Math.sin(e.ph * 9)); dy = -hp * 3; sy = 1 + hp * .06; sx = 1 - hp * .04; if (p.x < e.x) sx = -sx }
-  else if (t === "feu") rot = L === "incendie" ? Math.sin(e.ph * 8) * .25 : L === "atelier" ? e.ph * 7 : L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
+  else if (t === "filmeur") rot = e.ph * 5 * (e.sens || 1);
+  else if (t === "feu") rot = L === "chargement" ? Math.sin(e.ph * 9) * .6 : L === "incendie" ? Math.sin(e.ph * 8) * .25 : L === "atelier" ? e.ph * 7 : L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
   else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if (L !== "parking" && p.x < e.x) sx = -1 }
   else if (t === "murene" && L === "atelier") { rot = Math.sin(e.ph * 10) * .3; dy = -Math.abs(Math.sin(e.ph * 12)) * 3 }
   else rot = e.ch && (e.ch.etat === "vise" || e.ch.etat === "fonce") ? e.ch.a : Math.atan2(p.y - e.y, p.x - e.x);
@@ -3186,7 +3333,7 @@ function ligneUsee(coul, vert) {
     for (let i = 0; i < 8; i++) { x.fillStyle = `rgba(0,0,0,${.3 + al() * .5})`; x.beginPath(); x.ellipse(al() * (vert ? 8 : 80), al() * (vert ? 80 : 8), 1 + al() * 3, .6 + al() * 1.5, al() * 3, 0, 7); x.fill() }
   }));
 }
-const LUMIERE = { incendie: "255,140,70", atelier: "215,240,255", quai: "255,196,120", frigo: "140,205,255", stockage: "255,210,150", parking: "255,140,70", promo: "255,80,200" };
+const LUMIERE = { chargement: "255,232,190", incendie: "255,140,70", atelier: "215,240,255", quai: "255,196,120", frigo: "140,205,255", stockage: "255,210,150", parking: "255,140,70", promo: "255,80,200" };
 function lumieres(camx, camy) {
   const T = 80, B = 6, g = lueur(LUMIERE[S.lieu] || LUMIERE.quai), i0 = Math.floor((camx - 300) / (T * B)), i1 = Math.floor((camx + W + 300) / (T * B)), j0 = Math.floor((camy - 300) / (T * B)), j1 = Math.floor((camy + H + 300) / (T * B));
   for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { if (hash(i * 5 + 1, j * 3 + 2) < .35) continue; const x = (i + .5) * T * B - camx, y = (j + .5) * T * B - camy; ajouter(g, x, y, 520, 520, .16) }
@@ -3238,7 +3385,7 @@ function corpsEnnemi(e, c, blanc, p) {
       const cs = ["#ffe14d", "#50f0dc", "#b44cff"]; for (let k = 0; k < 3; k++) for (let q = 0; q < 3; q++) { cx.fillStyle = cs[(k + q) % 3]; cx.fillRect(-14 + q * 10, -28 + k * 15 + 2, 8, 8) }
       cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.strokeRect(-20, -26, 40, 50);
       cx.font = "16px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeText("-70%", 0, -32); cx.fillStyle = "#ffe14d"; cx.fillText("-70%", 0, -32);
-    } else if (S.lieu !== "quai" && S.lieu !== "stockage" && S.lieu !== "atelier" && S.lieu !== "incendie") dessinLieu(e, c, blanc, p);
+    } else if (S.lieu !== "quai" && S.lieu !== "stockage" && S.lieu !== "atelier" && S.lieu !== "incendie" && S.lieu !== "chargement") dessinLieu(e, c, blanc, p);
     else if (e.type === "crabe") {            /* carton mal fermé qui sautille, rabats ouverts */
       const s = Math.abs(Math.sin(e.ph * 9)) * 3; cx.translate(0, -s);
       carton(e.r * 2, e.r * 1.6, c, true);
@@ -3274,7 +3421,17 @@ function dessinerJeu() {
   sol(camx, camy);
   lumieres(camx, camy);
   if (LL().murs) dessinerMurs(camx, camy, X, Y);
-  if (LL().couloir) { if (LL().couloir.vertical) dessinerCouloirSinistre(camy, X, Y); else dessinerCouloir(camx, X, Y) }
+  if (LL().couloir) { if (LL().couloir.vertical) dessinerCouloirSinistre(camy, X, Y); else if (LL().couloir.style === "quai") dessinerCouloirQuai(camx, X, Y); else dessinerCouloir(camx, X, Y) }
+  for (const o of S.sifOndes || []) if (o.t > 0) { const d = 60 + o.t * 900; ajouter(anneau("255,240,170"), X(o.x), Y(o.y), d, d, 1 - o.t / .9) }   // coup de sifflet
+  if (S.films && S.films.length) {   // film étirable collant au sol
+    cx.save(); cx.lineCap = "round"; cx.lineJoin = "round";
+    for (const [lw, c] of [[22, "rgba(220,235,250,.28)"], [3, "rgba(255,255,255,.55)"]]) {
+      cx.lineWidth = lw; cx.strokeStyle = c; cx.beginPath(); let prev = null;
+      for (const f of S.films) { const x = X(f.x), y = Y(f.y); if (prev && prev.id === f.id && Math.hypot(prev.x - f.x, prev.y - f.y) < 60) cx.lineTo(x, y); else cx.moveTo(x, y); prev = f }
+      cx.stroke();
+    }
+    cx.restore();
+  }
   if (S.ev) dessinerEnclos(X, Y);
   // étiquettes scannées (expérience) et casse-croûte
   for (const g of S.gemmes) {
