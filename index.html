@@ -634,8 +634,9 @@ const SON = (() => {
   const peut = (k, ms) => { const n = performance.now(); if (n - (dernier[k] || 0) < ms) return false; dernier[k] = n; return true };
   let combo = 0, comboT = 0;
   const S = {
-    etiquette() { if (!peut("etq", 35)) return; const n = performance.now(); combo = n - comboT < 450 ? Math.min(combo + 1, 14) : 0; comboT = n;
-      const f = 880 * Math.pow(2, [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24, 26, 28, 31, 33][combo] / 12); ton(f, { type: "triangle", v: .16, r: .09 }); ton(f * 2, { v: .05, r: .06 }) },
+    etiquette() { if (!peut("etq", 35)) return; const n = performance.now(); combo = n - comboT < 450 ? combo + 1 : 0; comboT = n;
+      // petite gamme qui monte puis redescend en boucle, sans jamais dépasser une octave (avant : jusqu'à ~6 000 Hz, trop aigu)
+      const f = 587 * Math.pow(2, [0, 2, 4, 7, 9, 12, 9, 7, 4, 2][combo % 10] / 12); ton(f, { type: "triangle", v: .13, r: .09 }); ton(f / 2, { v: .04, r: .07 }) },
     piece() { if (!peut("piece", 45)) return; ton(1568, { type: "square", v: .07, r: .05 }); ton(2093, { type: "square", t: .055, v: .08, r: .18 }) },
     coup() { if (!peut("coup", 40)) return; bruit({ filtre: "lowpass", f: 900 + Math.random() * 400, v: .22, r: .06 }); ton(150 + Math.random() * 40, { v: .18, r: .06, f2: 70, glis: .06 }) },
     carton() { if (!peut("carton", 30)) return; bruit({ filtre: "bandpass", f: 700, q: .8, v: .32, r: .09 }); ton(220 + Math.random() * 60, { type: "triangle", v: .16, r: .08, f2: 90, glis: .08 }); bruit({ t: .02, filtre: "highpass", f: 3000, v: .07, r: .05 }) },
