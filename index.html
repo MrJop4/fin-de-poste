@@ -754,7 +754,7 @@ const LIEUX = {
     boss1: "Le semi des promos est là !", boss2: "Deux semis de promos !", coul: { crabe: "#b44cff", feu: "#e8f6ff", noye: "#d29a5a", murene: "#ff8a1f", leviathan: "#ff46be" } },
   atelier: { nom: "Atelier chariots", img: "bastos", info: "Le plus dur · paie ×2,4", prix: 1300, desc: "L'atelier de réparation : des chariots en panne démarrent tout seuls et foncent, des batteries fuient et laissent des flaques d'acide. Taches d'huile qui font glisser. Le lieu le plus dur : colis bien plus solides et plus violents. Paie ×2,4.",
     sol: { fond: "#3a4842", joint: "rgba(0,0,0,.28)", allee: "rgba(255,200,40,.62)", texte: "BAIE", tache: "rgba(12,14,10,.55)", miette: "rgba(255,210,60,.4)", resine: true },
-    ombre: "8,12,8", gain: 2.4, pv: 1.75, deg: 1.2, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
+    ombre: "8,12,8", gain: 2.4, pv: 4, pvBoss: 2, deg: 1.05, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
     murs: { type: "atelier", cw: 480, ch: 480, w: 130, h: 70, trou: .15, vars: [{ img: "atelier-etabli", w: 168, h: 104, larg: 180 }, { img: "atelier-rackpieces", w: 122, h: 140, larg: 130 }, { img: "atelier-reparation", w: 140, h: 146, larg: 150 }, { img: "atelier-charge", w: 126, h: 120, larg: 135 }] },
     boss1: "Un semi arrive en réparation !", boss2: "Deux semis en panne à l'atelier", coul: {} },
 };
@@ -831,7 +831,7 @@ function spawn(type, elite) {
 }
 function spawn_(type, elite) {
   const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + 60;
-  const L = LL(), mult = (1 + S.t / EQ.pvTemps) * L.pv, hp = T.hp * mult * (elite ? 6 : 1);
+  const L = LL(), mult = (1 + S.t / EQ.pvTemps) * (T.boss && L.pvBoss ? L.pvBoss : L.pv), hp = T.hp * mult * (elite ? 6 : 1);
   S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / EQ.vitTemps), deg: T.deg * EQ.degBase * (1 + S.t / EQ.degTemps) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5) * (L.deg || 1), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
 }
 function cibleVivants(t) {
