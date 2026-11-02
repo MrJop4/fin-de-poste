@@ -767,7 +767,7 @@ const LIEUX = {
   incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
     sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
     ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
-    murs: { type: "decombres", cw: 480, ch: 480, w: 140, h: 90, trou: .2, vars: [{ w: 150, h: 92 }, { w: 112, h: 112 }, { w: 132, h: 100 }, { w: 90, h: 140 }] },
+    murs: { type: "decombres", cw: 240, ch: 240, w: 140, h: 90, trou: 0, amas: [.3, .55], vars: [{ img: "ruine-rack-plat", w: 196, h: 62, larg: 220 }, { img: "ruine-rack-tas", w: 190, h: 80, larg: 220 }, { img: "ruine-gravats", w: 130, h: 124, larg: 170 }, { img: "ruine-palettes", w: 132, h: 122, larg: 170 }] },
     boss1: "Le camion des pompiers est en panne !", boss2: "Deux camions de pompiers bloqués", coul: {} },
 };
 const AMELIOS = {
@@ -1659,9 +1659,13 @@ function mursZone(x0, y0, x1, y1) {
   const M = LL().murs; if (!M) return [];
   const out = [];
   for (let i = Math.floor(x0 / M.cw) - 1; i <= Math.floor(x1 / M.cw) + 1; i++) for (let j = Math.floor(y0 / M.ch) - 1; j <= Math.floor(y1 / M.ch) + 1; j++) {
-    if (hash(i * 7 + 3, j * 13 + 5) < M.trou) continue;
+    if (M.amas) {   // décombres en amas : zones encombrées et zones dégagées qui alternent (par blocs de 4 × 4 cases)
+      const z = hash2(Math.floor(i / 4) * 17 + 3, Math.floor(j / 4) * 29 + 7), garde = z < M.amas[0] ? .8 : z < M.amas[1] ? .3 : .05;
+      if (hash2(i * 7 + 3, j * 13 + 5) > garde || (Math.abs(i) <= 1 && Math.abs(j) <= 1)) continue;
+    } else if (hash(i * 7 + 3, j * 13 + 5) < M.trou) continue;
     const v = M.vars ? M.vars[Math.floor(hash2(i, j) * M.vars.length)] : M, w = v.w, h = v.h;
-    const x = i * M.cw + (M.cw - w) / 2, y = j * M.ch + (M.ch - h) / 2;
+    let x = i * M.cw + (M.cw - w) / 2, y = j * M.ch + (M.ch - h) / 2;
+    if (M.amas) { x += (hash2(i * 3 + 1, j + 9) - .5) * (M.cw - w) * .7; y += (hash2(i + 4, j * 3 + 2) - .5) * (M.ch - h) * .7 }
     if (x > x1 || x + w < x0 || y > y1 || y + h < y0) continue;
     out.push({ x, y, w, h, i, j, v });   // jamais retournés : l'ombre dessinée doit rester en bas
   }
