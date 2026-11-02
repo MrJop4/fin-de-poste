@@ -584,6 +584,12 @@ const EQ = {
   noir: { premier: 25, allume: 16, gresille: 2, noir: 8, noirPlus: 5, poursuite: 150 },   // promos : coupures de courant ; 1re à 0:25, puis 16 s allumé, 2 s de néons qui grésillent, 8 s de noir (+1 s par 100 s de partie, +5 au plus) ; poursuite de 150 px sur le perso
   chasseur: { des: 30, toutes: 14, mini: 6, max: 4, prend: 6, fuite: 1.15 },   // promos : chasseur de promos ; dès 0:30, un toutes les 14 s (puis de plus en plus souvent, jusqu'à toutes les 6 s), 4 à la fois au plus ; il ramasse jusqu'à 6 d'expérience puis s'enfuit (vitesse ×1,15) ; tué, il rend tout
   acide: { dps: 12, trace: .45, traceR: 15, traceVie: 5, mortR: 42, mortVie: 7, toutes: 9, solR: 46, solVie: 9 },   // atelier : flaques d'acide ; 12 dégâts par seconde dedans (×1 + t/degTemps) ; traînée des batteries (une flaque toutes les 0,45 s, 5 s), grosse flaque à leur mort (7 s), et une fuite au sol près de toi toutes les 9 s (9 s)
+  sinistre: {   // entrepôt en perdition : tout empire de 0:00 à 10:00 (chaos de 0 à 1)
+    fil: { des: 40, toutes: [9, 2.2], alerte: 1.4, r: 72, deg: 30, colis: 70 },           // câble qui pend puis fait un arc ; dès 0:40, toutes les 9 s → 2,2 s à 10:00
+    feu: { des: 150, toutes: [14, 4], r: [42, 72], vie: 20, dps: 14, max: 26, propage: 6 }, // feux qui se propagent ; dès 2:30
+    eau: { des: 210, toutes: [16, 7], r: 115, pluie: 6, vie: 16, elec: 45 },              // gicleurs : flaque où l'on glisse ; électrisée par un arc ; éteint les feux ; dès 3:30
+  },
+  detrempe: { des: 30, toutes: [9, 4.5], max: 6, petits: 3 },   // colis détrempé : se divise en 3 petits colis rapides quand on le tue
   huile: { case: 300, part: .14, rMin: 40, rMax: 66, vitesse: 1.25, traces: 4 },   // atelier : taches d'huile fixes au sol (une case de 300 px sur 7 environ) ; on y glisse tout droit à 125 % de sa vitesse jusqu'à en sortir, puis on laisse des traces de pas pendant 4 s
   batterie: { des: 25, toutes: 10, mini: 5, max: 5 },   // atelier : batterie qui fuit ; dès 0:25, une toutes les 10 s (puis jusqu'à toutes les 5 s), 5 à la fois au plus
   cercle: { debut: 60, toutes: 60, n: 22, parSec: 10, max: 60, pv: 1.2, vit: 1.15 },   // encerclement : à 1:00 puis chaque minute, 22 colis + 1 toutes les 10 s, un peu plus solides et rapides
@@ -711,6 +717,7 @@ const TYPES = {
   crabe: { r: 11, hp: 10, vit: 46, deg: 6, xp: 1, coul: "#b98a52" },      /* carton mal fermé */
   feu: { r: 9, hp: 6, vit: 80, deg: 5, xp: 1, coul: "#f2f0e6" },        /* bordereau qui s'envole */
   noye: { r: 16, hp: 46, vit: 36, deg: 12, xp: 4, coul: "#c8a46a" },     /* palette qui tangue */
+  detrempe: { r: 15, hp: 44, vit: 40, deg: 8, xp: 3, coul: "#7a5a3a" },   /* colis détrempé : se divise en 3 */
   batterie: { r: 15, hp: 60, vit: 34, deg: 10, xp: 4, coul: "#3d6fa8" },   /* batterie de chariot qui fuit : laisse de l'acide */
   chasseur: { r: 13, hp: 26, vit: 105, deg: 5, xp: 1, coul: "#ff46be" },    /* chasseur de promos : vole tes étiquettes */
   piege: { r: 15, hp: 22, vit: 50, deg: 6, xp: 2, coul: "#d9a25a" },      /* colis piégé : clignote puis explose */
@@ -757,6 +764,11 @@ const LIEUX = {
     ombre: "8,12,8", gain: 2.4, pv: 4, pvBoss: 2, deg: 1.05, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
     murs: { type: "atelier", cw: 480, ch: 480, w: 130, h: 70, trou: .15, vars: [{ img: "atelier-etabli", w: 168, h: 104, larg: 180 }, { img: "atelier-rackpieces", w: 122, h: 140, larg: 130 }, { img: "atelier-reparation", w: 140, h: 146, larg: 150 }, { img: "atelier-charge", w: 126, h: 120, larg: 135 }] },
     boss1: "Un semi arrive en réparation !", boss2: "Deux semis en panne à l'atelier", coul: {} },
+  incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
+    sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
+    ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, tpCoul: "#e8a317", tpNom: "transpalette folle", tpRate: 1.1,
+    murs: { type: "decombres", cw: 480, ch: 480, w: 140, h: 90, trou: .2, vars: [{ w: 150, h: 92 }, { w: 112, h: 112 }, { w: 132, h: 100 }, { w: 90, h: 140 }] },
+    boss1: "Le camion des pompiers est en panne !", boss2: "Deux camions de pompiers bloqués", coul: {} },
 };
 const AMELIOS = {
   vie: { nom: "Gilet renforcé", img: "blinde", max: 5, base: 40, desc: n => `+10 vie max par niveau (actuellement +${10 * n}).` },
@@ -809,7 +821,7 @@ function nouvellePartie() {
     p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
     armes: { [P.arme]: 1 }, objets: {},
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8 }, sabres: [], troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
-    ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [],
+    ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
   };
@@ -865,6 +877,10 @@ function vagues(dt) {
     S.batterieT = Math.max(EQ.batterie.mini, EQ.batterie.toutes - (t - EQ.batterie.des) / 60);
     if (S.ennemis.filter(e => e.type === "batterie").length < EQ.batterie.max) { spawn("batterie"); if (!S.batterieVu) { S.batterieVu = true; annonce("Batterie qui fuit ! Évite l'acide") } }
   }
+  if (LL().sinistre && t > EQ.detrempe.des && !S.ev && (S.detrempeT = (S.detrempeT ?? 0) - dt) <= 0) {
+    const D = EQ.detrempe; S.detrempeT = D.toutes[0] + (D.toutes[1] - D.toutes[0]) * chaos();
+    if (S.ennemis.filter(e => e.type === "detrempe").length < D.max) { spawn("detrempe"); if (!S.detrempeVu) { S.detrempeVu = true; annonce("Colis détrempé : il se divise !") } }
+  }
   // planté sur place : le chef t'envoie du boulot, des colis surgissent et foncent sur toi (le temps de réagir)
   const bouge = Math.hypot(S.p.vx, S.p.vy) > 25;
   S.plante = bouge || S.ev || t < EQ.plante.grace ? 0 : (S.plante || 0) + dt;
@@ -916,6 +932,7 @@ const CHEFS = {
   stockage: { id: "cariste", sens: -1, nom: "Le Cariste fou", pv: .85, vit: 34, r: 56, haut: 170, att: ["charge"] },
   parking: { id: "routier", nom: "Le Routier", pv: 1.05, vit: 34, r: 54, haut: 200, att: ["klaxon", "radio"] },
   atelier: { id: "chariotfou", sens: -1, nom: "Le Chariot fou", pv: .95, vit: 36, r: 56, haut: 180, att: ["charge", "batteries"] },
+  incendie: { id: "megacolis", sens: -1, nom: "Le Transfo en furie", pv: 1, vit: 34, r: 58, haut: 180, att: ["charge", "courtcircuit"] },   /* image provisoire */
   promo: { id: "promo", sens: -1, nom: "Le Roi des Promos", pv: 1.15, vit: 38, r: 56, haut: 180, att: ["vente", "etiquettes"] },
 };
 const IMG_BOSS = {};
@@ -941,7 +958,8 @@ function iaChef(e, vx, vy, dt) {
   if (e.rage) { vx *= 1.3; vy *= 1.3 }
   if (a.etat === "marche") {
     if (a.t <= 0 && C.att.length && d < 700) { a.att = C.att[a.n++ % C.att.length]; a.etat = "prepare"; a.a = Math.atan2(dy, dx);
-      a.t = { souffle: .9, blocs: .5, charge: 1, klaxon: .9, radio: .6, vente: .7, etiquettes: .6, batteries: .8 }[a.att];
+      a.t = { souffle: .9, blocs: .5, charge: 1, klaxon: .9, radio: .6, vente: .7, etiquettes: .6, batteries: .8, courtcircuit: .9 }[a.att];
+      if (a.att === "courtcircuit") annonce("Court-circuit !");
       if (a.att === "batteries") annonce("Le Chariot fou lance ses batteries !");
       if (a.att === "radio") annonce("Le Routier appelle les copains !"); if (a.att === "vente") annonce("Vente flash !") }
     return [vx, vy];
@@ -956,6 +974,7 @@ function iaChef(e, vx, vy, dt) {
     else if (a.att === "klaxon") { a.t = .45; S.tirsChef.push({ k: "onde", x: e.x, y: e.y, t: .45, t0: .45, r: 320 }); vibrer(80) }
     else if (a.att === "radio") { a.t = .2; for (let i = 0; i < 3; i++) setTimeout(() => { if (enJeu && S.chefE === e) lancerTranspa(i === 0) }, i * 700) }
     else if (a.att === "vente") { a.t = .3; for (let i = 0; i < 9; i++) { spawn("crabe"); const m = S.ennemis[S.ennemis.length - 1], an = i / 9 * 6.28; m.x = e.x + Math.cos(an) * 90; m.y = e.y + Math.sin(an) * 90; m.vit *= 1.35 } }
+    else if (a.att === "courtcircuit") { a.t = .4; const n = e.rage ? 9 : 6; for (let i = 0; i < n; i++) lancerFil(p.x + (i ? rnd(-210, 210) : 0), p.y + (i ? rnd(-210, 210) : 0), .9 + i * .14); S.flashT = .12 }
     else if (a.att === "batteries") { a.t = .4; const n = e.rage ? 7 : 5; for (let i = 0; i < n; i++) S.tirsChef.push({ k: "batt", x: p.x + (i ? rnd(-170, 170) : 0), y: p.y + (i ? rnd(-170, 170) : 0), t: 1 + i * .16, t0: 1 + i * .16, r: 36 }); S.secousse = Math.max(S.secousse || 0, .2) }
     else if (a.att === "etiquettes") { a.t = .3; for (let i = -2; i <= 2; i++) { const an = a.a + i * .22; S.tirsChef.push({ k: "etiq", x: e.x, y: e.y, vx: Math.cos(an) * 270, vy: Math.sin(an) * 270, t: 2.6, t0: 2.6, r: 13, a: an }) } }
   }
@@ -1185,6 +1204,146 @@ function blesser(e, d, kx, ky) {
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
 }
+/* entrepôt en perdition : la situation empire de 0:00 à 10:00 */
+const chaos = () => clamp(S.t / VICTOIRE, 0, 1);
+function lancerFil(x, y, alerte) { S.dangers.push({ k: "fil", x, y, t: 0, alerte, r: EQ.sinistre.fil.r, ph: rnd(0, 6) }); }
+function pointLibre(cx2, cy2, dmin, dmax) { for (let k = 0; k < 8; k++) { const a = rnd(0, 6.28), d = rnd(dmin, dmax), x = cx2 + Math.cos(a) * d, y = cy2 + Math.sin(a) * d; if (!LL().murs || !dansMur(x, y, 40)) return { x, y } } return null }
+function allumerFeu(x, y) { const F = EQ.sinistre.feu; if (S.dangers.filter(d => d.k === "feu").length >= F.max) return; if (S.dangers.some(d => d.k === "eau" && Math.hypot(d.x - x, d.y - y) < d.r)) return; S.dangers.push({ k: "feu", x, y, t: 0, r: rnd(F.r[0], F.r[1]), vie: F.vie * rnd(.8, 1.3), prop: F.propage * rnd(.8, 1.3), ph: rnd(0, 6) }) }
+function arcElectrique(o) {
+  const F = EQ.sinistre.fil, p = S.p, mult = (1 + S.t / 400) * (LL().deg || 1);
+  S.flashT = .18; S.secousse = Math.max(S.secousse || 0, .25); son("casse");
+  if (Math.hypot(p.x - o.x, p.y - o.y) < o.r + p.r && !S.mort) { p.hp -= F.deg * mult; p.inv = Math.max(p.inv, .4); S.textes.push({ x: p.x, y: p.y - 30, v: "BZZT !", t: .8, c: "#9fe7ff" }) }
+  for (const e of S.ennemis) if (!e.decor && Math.hypot(e.x - o.x, e.y - o.y) < o.r + e.r) blesser(e, F.colis * (1 + S.t / EQ.pvTemps), 0, 0);
+  for (const d of S.dangers) if (d.k === "eau" && Math.hypot(d.x - o.x, d.y - o.y) < d.r + 30) d.elec = 2;   // l'eau conduit le courant
+  for (let i = 0; i < 14; i++) S.fx.push({ x: o.x, y: o.y, vx: rnd(-260, 260), vy: rnd(-260, 120), t: .4, c: i % 2 ? "#e8fbff" : "#6fd8ff" });
+  if (S.t > EQ.sinistre.feu.des && Math.random() < .35) allumerFeu(o.x, o.y);
+}
+function sinistre(dt) {
+  if (!LL().sinistre) return;
+  const G = EQ.sinistre, k = chaos(), p = S.p, t = S.t, entre = (a) => a[0] + (a[1] - a[0]) * k;
+  S.flashT = Math.max(0, (S.flashT || 0) - dt);
+  if (!S.ev) {
+    if (t > G.fil.des && (S.filT = (S.filT ?? 0) - dt) <= 0) {
+      S.filT = entre(G.fil.toutes) * rnd(.8, 1.2); const vise = Math.random() < .45, q = vise ? { x: p.x + p.vx * .5, y: p.y + p.vy * .5 } : pointLibre(p.x, p.y, 80, 330);
+      if (q) lancerFil(q.x, q.y, G.fil.alerte); if (!S.filVu) { S.filVu = true; annonce("Des câbles pendent du plafond !") }
+    }
+    if (t > G.feu.des && (S.feuT = (S.feuT ?? 0) - dt) <= 0) {
+      S.feuT = entre(G.feu.toutes) * rnd(.8, 1.2); const q = pointLibre(p.x, p.y, 160, 380); if (q) allumerFeu(q.x, q.y); if (!S.feuVu) { S.feuVu = true; annonce("Ça prend feu !") }
+    }
+    if (t > G.eau.des && (S.eauT = (S.eauT ?? 0) - dt) <= 0) {
+      S.eauT = entre(G.eau.toutes) * rnd(.8, 1.2);
+      const feux = S.dangers.filter(d => d.k === "feu"), cible = feux.length && Math.random() < .5 ? feux[Math.floor(Math.random() * feux.length)] : pointLibre(p.x, p.y, 60, 300);
+      if (cible) S.dangers.push({ k: "eau", x: cible.x, y: cible.y, t: 0, r: G.eau.r * rnd(.85, 1.15), vie: G.eau.vie, elec: 0, ph: rnd(0, 6) });
+      if (!S.eauVu) { S.eauVu = true; annonce("Les gicleurs se déclenchent !") }
+    }
+    if (t > 360 && !S.apoVu) { S.apoVu = true; annonce("Tout part en cacahuète !") }
+  }
+  let mouille = false, brule = false, choc = false;
+  for (const d of S.dangers) {
+    d.t += dt; d.ph += dt;
+    if (d.k === "fil") { if (!d.fait && d.t >= d.alerte) { d.fait = true; arcElectrique(d) } continue }
+    const dp = Math.hypot(p.x - d.x, (p.y - d.y) / .62);
+    if (d.k === "feu") {
+      d.rr = d.r * Math.min(1, d.t / 2) * Math.min(1, (d.vie - d.t) / 1.5);
+      if (dp < d.rr * .9) brule = true;
+      for (const e of S.ennemis) if (!e.boss && !e.decor && Math.hypot(e.x - d.x, (e.y - d.y) / .62) < d.rr) e.hp -= G.feu.dps * .6 * (1 + t / EQ.pvTemps) * dt;
+      if (d.t > d.prop && k > .35) { d.prop = 1e9; const a = rnd(0, 6.28), dd = d.r * rnd(1.1, 1.6), x = d.x + Math.cos(a) * dd, y = d.y + Math.sin(a) * dd; if (!LL().murs || !dansMur(x, y, 30)) allumerFeu(x, y) }
+    } else if (d.k === "eau") {
+      d.rr = d.r * Math.min(1, d.t / 1.5) * Math.min(1, (d.vie - d.t) / 2); d.elec = Math.max(0, d.elec - dt);
+      if (dp < d.rr) { mouille = true; if (d.elec > 0) choc = true }
+      if (d.elec > 0) for (const e of S.ennemis) if (!e.decor && Math.hypot(e.x - d.x, (e.y - d.y) / .62) < d.rr) e.hp -= G.eau.elec * (1 + t / EQ.pvTemps) * dt;
+      if (d.t < G.eau.pluie) for (const f of S.dangers) if (f.k === "feu" && Math.hypot(f.x - d.x, f.y - d.y) < d.r) f.vie = Math.min(f.vie, f.t + 1.2);   // les gicleurs éteignent
+    }
+  }
+  S.dangers = S.dangers.filter(d => d.k === "fil" ? d.t < d.alerte + .5 : d.t < d.vie);
+  p.mouille = mouille;
+  if (!S.mort) {
+    const m = (1 + t / EQ.degTemps) * (LL().deg || 1);
+    if (brule) { p.hp -= G.feu.dps * m * dt; if ((p.brT = (p.brT || 0) - dt) <= 0) { p.brT = .3; S.textes.push({ x: p.x + rnd(-8, 8), y: p.y - 28, v: "AÏE ÇA BRÛLE", t: .5, c: "#ff8a3a" }) } }
+    if (choc) { p.hp -= G.eau.elec * m * dt; if ((p.chT = (p.chT || 0) - dt) <= 0) { p.chT = .3; S.textes.push({ x: p.x + rnd(-8, 8), y: p.y - 28, v: "BZZT", t: .4, c: "#9fe7ff" }) } }
+  }
+}
+/* dessous : flaques d'eau, foyers, cercles d'alerte des câbles */
+function dessinerSinistreSol(X, Y) {
+  for (const d of S.dangers) {
+    const x = X(d.x), y = Y(d.y); if (x < -200 || y < -200 || x > W + 200 || y > H + 200) continue;
+    if (d.k === "eau") {
+      const rr = d.rr || 0; if (rr < 3) continue;
+      cx.save(); cx.fillStyle = d.elec > 0 ? "rgba(120,230,255,.42)" : "rgba(80,150,220,.32)"; cx.beginPath(); cx.ellipse(x, y, rr, rr * .62, 0, 0, 7); cx.fill();
+      cx.strokeStyle = "rgba(200,235,255,.35)"; cx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { const q = (d.ph * .7 + i / 3) % 1; cx.globalAlpha = 1 - q; cx.beginPath(); cx.ellipse(x + Math.cos(i * 2.1) * rr * .4, y + Math.sin(i * 1.7) * rr * .25, 4 + q * 22, (4 + q * 22) * .6, 0, 0, 7); cx.stroke() }
+      cx.globalAlpha = 1;
+      if (d.elec > 0) { cx.strokeStyle = "rgba(220,250,255,.9)"; cx.lineWidth = 2; for (let i = 0; i < 4; i++) { cx.beginPath(); let a = rnd(0, 6.28), px2 = x + Math.cos(a) * rr * .2, py2 = y + Math.sin(a) * rr * .12; cx.moveTo(px2, py2); for (let s2 = 0; s2 < 4; s2++) { px2 += rnd(-rr * .3, rr * .3); py2 += rnd(-rr * .18, rr * .18); cx.lineTo(px2, py2) } cx.stroke() } ajouter(lueur("120,230,255"), x, y, rr * 2.4, rr * 1.6, .5) }
+      cx.restore();
+    } else if (d.k === "feu") {
+      const rr = d.rr || 0; if (rr < 3) continue;
+      cx.fillStyle = "rgba(20,10,6,.75)"; cx.beginPath(); cx.ellipse(x, y, rr * 1.1, rr * .68, 0, 0, 7); cx.fill();
+      cx.fillStyle = "rgba(255,110,30,.55)"; cx.beginPath(); cx.ellipse(x, y, rr * .85, rr * .5, 0, 0, 7); cx.fill();
+      cx.fillStyle = "rgba(255,220,90,.6)"; cx.beginPath(); cx.ellipse(x, y, rr * .45, rr * .26, 0, 0, 7); cx.fill();
+    } else if (d.k === "fil" && !d.fait) {
+      const kk = d.t / d.alerte, on = Math.floor(d.t * (kk > .6 ? 16 : 8)) % 2 === 0;
+      cx.save(); cx.fillStyle = `rgba(110,210,255,${.06 + .14 * kk})`; cx.beginPath(); cx.ellipse(x, y, d.r, d.r * .62, 0, 0, 7); cx.fill();
+      cx.strokeStyle = `rgba(150,230,255,${on ? .95 : .45})`; cx.lineWidth = 2.5; cx.setLineDash([9, 6]); cx.lineDashOffset = -S.t * 40; cx.stroke(); cx.setLineDash([]); cx.restore();
+    }
+  }
+}
+/* dessus : flammes, pluie des gicleurs, câbles qui pendent, arcs */
+function dessinerSinistreHaut(X, Y) {
+  for (const d of S.dangers) {
+    const x = X(d.x), y = Y(d.y); if (x < -200 || y < -260 || x > W + 200 || y > H + 200) continue;
+    if (d.k === "feu") {
+      const rr = d.rr || 0; if (rr < 3) continue;
+      ajouter(lueur("255,120,30"), x, y - rr * .3, rr * 4, rr * 3.2, .55 + .15 * Math.sin(d.ph * 9));
+      const n = 5;
+      for (let i = 0; i < n; i++) {
+        const fx = x + (i / (n - 1) - .5) * rr * 1.3, h = rr * (.9 + .5 * Math.sin(d.ph * 7 + i * 1.7)) * (i % 2 ? .8 : 1.1), w = rr * .28;
+        cx.beginPath(); cx.moveTo(fx - w, y); cx.quadraticCurveTo(fx - w * .9, y - h * .6, fx + Math.sin(d.ph * 9 + i) * w * .6, y - h); cx.quadraticCurveTo(fx + w * .9, y - h * .6, fx + w, y); cx.closePath();
+        cx.fillStyle = "rgba(255,90,20,.85)"; cx.fill();
+        cx.beginPath(); cx.moveTo(fx - w * .5, y); cx.quadraticCurveTo(fx - w * .4, y - h * .4, fx + Math.sin(d.ph * 9 + i) * w * .3, y - h * .62); cx.quadraticCurveTo(fx + w * .4, y - h * .4, fx + w * .5, y); cx.closePath();
+        cx.fillStyle = "rgba(255,220,90,.9)"; cx.fill();
+      }
+    } else if (d.k === "eau" && d.t < EQ.sinistre.eau.pluie) {
+      const rr = d.rr || 0; cx.strokeStyle = "rgba(190,225,255,.55)"; cx.lineWidth = 1.5;
+      for (let i = 0; i < 26; i++) { const a = hash2(i, 3) * 6.28, dd = hash2(i, 5) * rr, q = (d.ph * 2.2 + hash2(i, 9)) % 1, px2 = x + Math.cos(a) * dd, py2 = y + Math.sin(a) * dd * .62 - (1 - q) * 120; cx.beginPath(); cx.moveTo(px2, py2); cx.lineTo(px2 - 2, py2 + 10); cx.stroke() }
+      cx.fillStyle = "#c9ced4"; cx.beginPath(); cx.arc(x, y - 150, 6, 0, 7); cx.fill(); cx.lineWidth = 2; cx.strokeStyle = ENCRE; cx.stroke();
+    } else if (d.k === "fil") {
+      const top = -40, sw = Math.sin(d.ph * 3) * 14, kk = Math.min(1, d.t / d.alerte);
+      if (!d.fait) {   // le câble descend en se balançant, étincelles au bout
+        const by = top + (y - 30 - top) * (.6 + .4 * kk), bx = x + sw;
+        cx.strokeStyle = ENCRE; cx.lineWidth = 5; cx.beginPath(); cx.moveTo(x - 30, top); cx.quadraticCurveTo(x - 10, (top + by) / 2, bx, by); cx.stroke();
+        cx.strokeStyle = "#3a3d44"; cx.lineWidth = 3; cx.stroke();
+        ajouter(lueur("140,220,255"), bx, by, 40 + 30 * kk, 40 + 30 * kk, .7 + .3 * Math.sin(S.t * 40));
+        if (S.fx.length < 240 && Math.random() < .5) S.fx.push({ x: d.x + sw, y: d.y - (y - by), vx: rnd(-90, 90), vy: rnd(-40, 120), t: .3, c: "#e8fbff" });
+      } else {   // l'arc frappe le sol
+        const al = 1 - (d.t - d.alerte) / .5; if (al <= 0) continue;
+        cx.save(); cx.globalCompositeOperation = "lighter"; cx.lineCap = "round";
+        for (const [lw, c] of [[10, `rgba(90,200,255,${.45 * al})`], [3, `rgba(235,252,255,${al})`]]) { cx.strokeStyle = c; cx.lineWidth = lw; cx.beginPath(); cx.moveTo(x + sw, top); for (let q = 1; q <= 6; q++) cx.lineTo(x + rnd(-18, 18) * (q < 6 ? 1 : 0), top + (y - top) * q / 6); cx.stroke() }
+        cx.restore(); ajouter(anneau("140,220,255"), x, y, d.r * 2.3 * (1.2 - al * .4), d.r * 1.5 * (1.2 - al * .4), al);
+      }
+    }
+  }
+}
+/* ambiance : la lumière se dégrade, gyrophares, fumée, braises, éclairs */
+function dessinerAmbianceSinistre(camx, camy) {
+  const k = chaos();
+  cx.fillStyle = `rgba(12,4,2,${.08 + .4 * k})`; cx.fillRect(0, 0, W, H);   // ça s'assombrit
+  if (k > .15) {   // gyrophares rouges de l'alarme incendie
+    const pu = .5 + .5 * Math.sin(S.t * 5);
+    for (let i = Math.floor((camx - 300) / 700); i <= Math.floor((camx + W + 300) / 700); i++) for (let j = Math.floor((camy - 300) / 700); j <= Math.floor((camy + H + 300) / 700); j++) {
+      const x = i * 700 + 350 - camx, y = j * 700 + 200 - camy, a = S.t * 3 + i + j;
+      ajouter(lueur("255,40,20"), x, y, 500, 500, Math.min(.45, (k - .15) * .8) * pu);
+      cx.save(); cx.translate(x, y); cx.rotate(a); cx.globalAlpha = Math.min(.35, (k - .15) * .6); cx.drawImage(faisceau("255,60,30").c, 0, -40, 420, 80); cx.restore();
+      cx.fillStyle = pu > .5 ? "#ff3b2f" : "#7a1510"; cx.beginPath(); cx.arc(x, y, 6, 0, 7); cx.fill();
+    }
+  }
+  if (k > .1) {   // fumée qui dérive
+    for (let i = 0; i < 9; i++) { const x = ((hash2(i, 1) * W * 1.4 + S.t * (12 + hash2(i, 2) * 18) - camx * .5) % (W * 1.4) + W * 1.4) % (W * 1.4) - W * .2, y = ((hash2(i, 3) * H - camy * .5) % H + H) % H, r = 140 + hash2(i, 4) * 160; cx.fillStyle = radg(cx, x, y, r, [[0, `rgba(30,24,22,${.32 * k})`], [1, "rgba(30,24,22,0)"]]); cx.fillRect(x - r, y - r, r * 2, r * 2) }
+  }
+  if (S.dangers.some(d => d.k === "feu")) {   // braises qui montent
+    for (let i = 0; i < 30 + 50 * k; i++) { const x = ((hash2(i, 7) * W - camx * .2 + Math.sin(S.t + i) * 20) % W + W) % W, y = ((hash2(i, 8) * H - S.t * (40 + hash2(i, 9) * 50) - camy * .2) % H + H) % H; cx.fillStyle = i % 3 ? "rgba(255,140,40,.8)" : "rgba(255,220,120,.9)"; cx.fillRect(x, y, 2, 2) }
+  }
+  if (k > .05 && Math.sin(S.t * 31) + Math.sin(S.t * 17.3) > 1.75) { cx.fillStyle = `rgba(0,0,0,${.25 + .3 * k})`; cx.fillRect(0, 0, W, H) }   // les néons sautent
+  if (S.flashT > 0) { cx.fillStyle = `rgba(200,240,255,${S.flashT * 1.6})`; cx.fillRect(0, 0, W, H) }
+}
 /* atelier : taches d'huile fixes, placées par case comme les murs (jamais dans un obstacle) */
 function huilesZone(x0, y0, x1, y1) {
   const H = EQ.huile, out = [];
@@ -1266,6 +1425,11 @@ function exploser(e) {
 function mourir(e) {
   if (e.decor) { son("casse"); return casser(e) }
   if (e.type === "piege") exploser(e);
+  if (e.type === "detrempe") for (let i = 0; i < EQ.detrempe.petits; i++) {   // il se divise en petits colis rapides
+    spawn("crabe"); const m = S.ennemis[S.ennemis.length - 1], a = i / EQ.detrempe.petits * 6.28 + rnd(-.4, .4);
+    m.x = e.x + Math.cos(a) * 16; m.y = e.y + Math.sin(a) * 16; m.r = 8; m.hp = m.max = e.max * .22; m.vit *= 1.6; m.xp = 1; m.kb.x = Math.cos(a) * 5; m.kb.y = Math.sin(a) * 5;
+    for (let k = 0; k < 3; k++) S.fx.push({ x: e.x, y: e.y, vx: rnd(-120, 120), vy: rnd(-120, 120), t: .4, c: "#7fc8ff" });
+  }
   if (e.type === "batterie") poserFlaque(e.x, e.y, EQ.acide.mortR, EQ.acide.mortVie, .4);
   if (e.type === "chasseur" && e.vol > 0) {
     const n = Math.min(6, e.vol), v = Math.ceil(e.vol / n);
@@ -1633,7 +1797,7 @@ function maj(dt) {
   let tx = 0, ty = 0, force = 1;
   if (JOY.actif) { const jx = JOY.x - JOY.ox, jy = JOY.y - JOY.oy, jd = Math.hypot(jx, jy); if (jd > 6) { mx = jx; my = jy; force = Math.min(1, jd / JOY_R) } }
   if (mx || my) { const n = Math.hypot(mx, my); tx = mx / n * vit * force; ty = my / n * vit * force; p.dir = Math.atan2(my, mx); p.pas += dt * 10 * force }
-  const lis = Math.min(1, (LL().glisse ? 2.4 : 40) * dt); p.vx += (tx - p.vx) * lis; p.vy += (ty - p.vy) * lis;
+  const lis = Math.min(1, (LL().glisse || p.mouille ? 2.4 : 40) * dt); p.vx += (tx - p.vx) * lis; p.vy += (ty - p.vy) * lis;
   if (p.glisse) { p.vx = p.glisse.x; p.vy = p.glisse.y }   // sur l'huile : on file tout droit
   p.x += p.vx * dt; p.y += p.vy * dt;
   if (p.pousse) { p.x += p.pousse.x * dt; p.y += p.pousse.y * dt; const k = Math.pow(.004, dt); p.pousse.x *= k; p.pousse.y *= k; if (Math.abs(p.pousse.x) + Math.abs(p.pousse.y) < 20) p.pousse = null }
@@ -1642,7 +1806,7 @@ function maj(dt) {
   if (LL().huile) glisserHuile(dt);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
 
-  vagues(dt); cycleNoir(dt); flaques(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
+  vagues(dt); cycleNoir(dt); flaques(dt); sinistre(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
 
   // déplacement des ennemis + séparation (grille)
   const murs = !!LL().murs;
@@ -2384,6 +2548,36 @@ const DESSINS = {
       yeux(x, 1, 0, 5, 2.8);
     } },
   },
+  incendie: {
+    crabe: { r: 13, w: 44, h: 46, ox: 22, oy: 28, d: x => {   /* carton roussi qui fume */
+      x.translate(-20, -26); dCarton(x);
+      x.fillStyle = "rgba(20,10,4,.55)"; for (const [a, b, rr] of [[8, 18, 5], [31, 30, 6], [12, 34, 4], [28, 15, 4]]) { x.beginPath(); x.arc(a, b, rr, 0, 7); x.fill() }
+      x.fillStyle = "rgba(255,120,30,.9)"; for (const [a, b] of [[8, 18], [31, 30]]) { x.beginPath(); x.arc(a, b, 1.6, 0, 7); x.fill() }
+      x.fillStyle = "rgba(90,85,80,.55)"; for (const [a, b, rr] of [[14, -2, 5], [20, -8, 6], [26, -14, 7]]) { x.beginPath(); x.arc(a, b, rr, 0, 7); x.fill() }
+    } },
+    feu: { r: 9, w: 32, h: 36, ox: 16, oy: 20, d: x => {   /* braise volante */
+      x.beginPath(); x.moveTo(0, -16); x.quadraticCurveTo(11, -4, 9, 6); x.arc(0, 6, 9, 0, Math.PI); x.quadraticCurveTo(-11, -4, 0, -16); x.closePath();
+      x.fillStyle = radg(x, 0, 4, 14, [[0, "#fff1a8"], [.4, "#ffb020"], [1, "#e8411c"]]); x.fill(); trait(x, 2.2);
+      x.fillStyle = ENCRE; x.beginPath(); x.arc(-3.5, 4, 1.6, 0, 7); x.arc(3.5, 4, 1.6, 0, 7); x.fill();
+      x.lineWidth = 1.6; x.beginPath(); x.moveTo(-6, 0); x.lineTo(-1.5, 2); x.moveTo(6, 0); x.lineTo(1.5, 2); x.stroke();
+    } },
+    noye: { r: 19, w: 60, h: 66, ox: 30, oy: 40, d: x => {   /* palette en flammes */
+      x.translate(-28, -32); dPalette(x);
+      for (const [a, h] of [[14, 22], [28, 30], [42, 20]]) {
+        x.beginPath(); x.moveTo(a - 8, 14); x.quadraticCurveTo(a - 7, 14 - h * .6, a, 14 - h); x.quadraticCurveTo(a + 7, 14 - h * .6, a + 8, 14); x.closePath(); x.fillStyle = "#ff5a1a"; x.fill(); trait(x, 1.8);
+        x.beginPath(); x.moveTo(a - 4, 14); x.quadraticCurveTo(a - 3, 14 - h * .4, a, 14 - h * .6); x.quadraticCurveTo(a + 3, 14 - h * .4, a + 4, 14); x.closePath(); x.fillStyle = "#ffd447"; x.fill();
+      }
+    } },
+    murene: { r: 13, w: 40, h: 46, ox: 20, oy: 26, d: x => {   /* extincteur affolé */
+      rrect(x, -9, -14, 18, 30, 7); x.fillStyle = lin(x, -9, 0, 9, 0, [[0, "#ff6a5a"], [.5, "#e8412c"], [1, "#a8231a"]]); x.fill(); trait(x, 2.6);
+      rrect(x, -5, -21, 10, 8, 2); x.fillStyle = "#2a2d33"; x.fill(); trait(x, 1.8);
+      x.strokeStyle = ENCRE; x.lineWidth = 3.5; x.beginPath(); x.moveTo(4, -18); x.quadraticCurveTo(16, -18, 14, -4); x.stroke(); x.strokeStyle = "#2a2d33"; x.lineWidth = 2; x.stroke();
+      rrect(x, -7, 2, 14, 7, 1.5); x.fillStyle = "#fff4dc"; x.fill(); trait(x, 1.2);
+      x.fillStyle = "rgba(255,255,255,.75)"; for (const [a, b, rr] of [[16, -2, 3], [19, 2, 2.4], [15, 5, 2]]) { x.beginPath(); x.arc(a, b, rr, 0, 7); x.fill() }
+      yeux(x, 0, -6, 3.8, 2.5);
+    } },
+    leviathan: Object.assign({ d: x => dCamion(x, { caisse: [[0, "#ff6a5a"], [.5, "#d63b2f"], [1, "#8f1d14"]], nervures: "rgba(0,0,0,.15)", bande: "#fff4dc", cabine: "#b8281d", texte: "POMPIERS", couleurTexte: "#fff4dc", contourTexte: "#17130f", taille: 18 }) }, D_SEMI),
+  },
   atelier: {
     crabe: { r: 13, w: 44, h: 40, ox: 22, oy: 22, d: x => {   /* bac à vis orange */
       x.beginPath(); x.moveTo(-16, -8); x.lineTo(16, -8); x.lineTo(13, 13); x.lineTo(-13, 13); x.closePath(); x.fillStyle = lin(x, 0, -8, 0, 13, [[0, "#ff9a3a"], [1, "#d4520f"]]); x.fill(); trait(x, 2.6);
@@ -2514,6 +2708,14 @@ const DESSINS = {
 /* --- machines, éléments d'événements, murs, transpalettes : tout redessiné dans le même style --- */
 function vitre(x, a, b, w, h) { x.fillStyle = "rgba(255,255,255,.45)"; x.beginPath(); x.moveTo(a + 2, b + h - 2); x.lineTo(a + w * .45, b + 2); x.lineTo(a + w * .6, b + 2); x.lineTo(a + w * .15, b + h - 2); x.closePath(); x.fill() }
 DESSINS.commun = {
+  detrempe: { r: 15, w: 52, h: 54, ox: 26, oy: 30, d: x => {   /* colis détrempé, avachi, qui goutte */
+    x.beginPath(); x.moveTo(-17, -10); x.quadraticCurveTo(0, -16, 17, -10); x.lineTo(19, 14); x.quadraticCurveTo(0, 19, -19, 14); x.closePath();
+    x.fillStyle = lin(x, 0, -12, 0, 16, [[0, "#9a7448"], [1, "#5e4228"]]); x.fill(); trait(x, 2.6);
+    x.fillStyle = "rgba(40,60,90,.35)"; x.beginPath(); x.ellipse(-6, 8, 9, 5, .2, 0, 7); x.ellipse(9, 2, 6, 7, -.3, 0, 7); x.fill();
+    x.fillStyle = "rgba(230,215,180,.75)"; x.beginPath(); x.moveTo(-2, -13); x.lineTo(3, -13); x.lineTo(4, 16); x.lineTo(-3, 16); x.closePath(); x.fill();
+    x.fillStyle = "#7fc8ff"; for (const [a, l] of [[-13, 7], [6, 9], [15, 5]]) { x.beginPath(); x.moveTo(a - 2, 16); x.lineTo(a + 2, 16); x.lineTo(a, 16 + l); x.closePath(); x.fill(); x.beginPath(); x.arc(a, 16 + l, 2.2, 0, 7); x.fill() }
+    yeux(x, 0, 0, 6, 3.2, false); x.lineWidth = 1.8; x.strokeStyle = ENCRE; x.beginPath(); x.arc(0, 10, 4, Math.PI * 1.15, Math.PI * 1.85); x.stroke();
+  } },
   batterie: { r: 15, w: 50, h: 52, ox: 25, oy: 28, d: x => {   /* batterie de chariot : bac d'éléments, câbles, acide qui coule */
     rrect(x, -18, -14, 36, 30, 3); x.fillStyle = lin(x, 0, -14, 0, 16, [[0, "#5a8fd0"], [1, "#2a5590"]]); x.fill(); trait(x, 2.6);
     rrect(x, -18, -18, 36, 8, 2); x.fillStyle = "#2a2d33"; x.fill(); trait(x, 2);
@@ -2665,6 +2867,24 @@ function spriteMur(M, m, hs) {
       rrect(x, 0, 0, m.w, m.h, 3); trait(x, 3);
     }));
   }
+  if (M.type === "decombres") {
+    const v = Math.floor(hash2(m.i * 13 + 7, m.j * 5 + 1) * 3);
+    return sprite("dec" + v + m.w + "x" + m.h, () => cuire(m.w + 16, m.h + 16, 8, 8, x => {
+      if (v === 0) {   // rack effondré, cartons renversés
+        x.save(); x.translate(m.w / 2, m.h / 2); x.rotate(-.12);
+        rrect(x, -m.w / 2, -m.h / 2 + 8, m.w, m.h - 16, 3); x.fillStyle = "#1d3f66"; x.fill(); trait(x, 2.6);
+        x.fillStyle = "#ff7a1a"; x.fillRect(-m.w / 2, -m.h / 2 + 8, m.w, 5); x.fillRect(-m.w / 2, m.h / 2 - 13, m.w, 5);
+        for (let k = 0; k < 5; k++) { x.save(); x.translate(-m.w / 2 + 16 + k * (m.w - 30) / 4, (k % 2 ? 6 : -8)); x.rotate((k - 2) * .35); rrect(x, -11, -9, 22, 18, 2); x.fillStyle = k === 2 ? "#3a2a1c" : "#c8955a"; x.fill(); trait(x, 1.8); x.restore() }
+        x.restore();
+      } else if (v === 1) {   // palettes calcinées qui rougeoient
+        for (let k = 0; k < 3; k++) { rrect(x, 6 + k * 5, 6 + k * 14, m.w - 12 - k * 10, m.h * .3, 3); x.fillStyle = lin(x, 0, 0, m.w, 0, [[0, "#2a1c12"], [.5, "#4a3020"], [1, "#1c120c"]]); x.fill(); trait(x, 2) }
+        x.fillStyle = "#ff6a1a"; for (let k = 0; k < 9; k++) { x.beginPath(); x.arc(14 + hash2(k, 3) * (m.w - 28), 12 + hash2(k, 5) * (m.h - 24), 2 + hash2(k, 7) * 2.5, 0, 7); x.fill() }
+      } else {   // gravats et poutre tordue
+        for (let k = 0; k < 7; k++) { const a = 10 + hash2(k, 11) * (m.w - 30), b = 10 + hash2(k, 13) * (m.h - 30), s2 = 14 + hash2(k, 17) * 16; x.beginPath(); x.moveTo(a, b + s2 * .3); x.lineTo(a + s2 * .5, b); x.lineTo(a + s2, b + s2 * .4); x.lineTo(a + s2 * .8, b + s2); x.lineTo(a + s2 * .1, b + s2 * .9); x.closePath(); x.fillStyle = k % 2 ? "#8a8580" : "#6e6a66"; x.fill(); trait(x, 1.8) }
+        x.strokeStyle = ENCRE; x.lineWidth = 9; x.beginPath(); x.moveTo(4, m.h * .7); x.quadraticCurveTo(m.w * .5, m.h * .2, m.w - 4, m.h * .45); x.stroke(); x.strokeStyle = "#ff7a1a"; x.lineWidth = 6; x.stroke();
+      }
+    }));
+  }
   if (M.type === "atelier") {
     const v = Math.floor(hash2(m.i * 11 + 5, m.j * 7 + 3) * 3);
     return sprite("atel" + v + m.w + "x" + m.h, () => cuire(m.w + 10, m.h + 12, 5, 5, x => {
@@ -2785,10 +3005,11 @@ function poseEnnemi(e, p) {
   if (e.decor) return [dy, rot, sx, sy];
   if (t === "glace") rot = e.ph * .3;
   else if (t === "presentoir") sx = sy = 1 + Math.sin(e.ph * 6) * .04;
+  else if (t === "detrempe") { const hp = Math.abs(Math.sin(e.ph * 5)); sy = 1 - hp * .08; sx = 1 + hp * .06; if (p.x < e.x) sx = -sx }
   else if (t === "batterie") { rot = Math.sin(e.ph * 3) * .08; if (p.x < e.x) sx = -1 }
   else if (t === "chasseur") { const hp = Math.abs(Math.sin(e.ph * 14)); dy = -hp * 4; if (p.x < e.x !== (e.vol > 0 && !e.cible)) sx = -1 }
   else if (t === "crabe" || t === "piege") { const hp = Math.abs(Math.sin(e.ph * 9)); dy = -hp * 3; sy = 1 + hp * .06; sx = 1 - hp * .04; if (p.x < e.x) sx = -sx }
-  else if (t === "feu") rot = L === "atelier" ? e.ph * 7 : L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
+  else if (t === "feu") rot = L === "incendie" ? Math.sin(e.ph * 8) * .25 : L === "atelier" ? e.ph * 7 : L === "frigo" ? e.ph * 2 : L === "parking" ? Math.sin(e.ph * 6) * .6 : L === "promo" ? Math.sin(e.ph * 5) * .5 : Math.sin(e.ph * 6) * .35;
   else if (t === "noye") { rot = L === "parking" ? e.ph * 3 : Math.sin(e.ph * 2) * .12; if (L !== "parking" && p.x < e.x) sx = -1 }
   else if (t === "murene" && L === "atelier") { rot = Math.sin(e.ph * 10) * .3; dy = -Math.abs(Math.sin(e.ph * 12)) * 3 }
   else rot = e.ch && (e.ch.etat === "vise" || e.ch.etat === "fonce") ? e.ch.a : Math.atan2(p.y - e.y, p.x - e.x);
@@ -2890,6 +3111,10 @@ function tuileSol(L) {
     x.fillStyle = "rgba(0,0,0,.32)"; x.fillRect(0, 0, 256, 1.6); x.fillRect(0, 0, 1.6, 256);
     x.fillStyle = "rgba(255,255,255,.06)"; x.fillRect(0, 2, 256, .8); x.fillRect(2, 0, .8, 256);
     x.strokeStyle = "rgba(0,0,0,.25)"; x.lineWidth = .7; x.beginPath(); x.moveTo(160, 30); x.lineTo(169, 46); x.lineTo(165, 60); x.lineTo(176, 75); x.stroke();
+    if (L.sol.brule) {   // entrepôt en perdition : traces de brûlé, suie, flaques sales
+      for (let i = 0; i < 3; i++) { const a = al() * 220 + 18, b = al() * 220 + 18, rr = 18 + al() * 30; x.fillStyle = radg(x, a, b, rr, [[0, "rgba(6,4,2,.55)"], [.6, "rgba(20,10,4,.25)"], [1, "rgba(0,0,0,0)"]]); x.fillRect(a - rr, b - rr, rr * 2, rr * 2) }
+      x.strokeStyle = "rgba(0,0,0,.35)"; x.lineWidth = 1; for (let i = 0; i < 4; i++) { let a = al() * 256, b = al() * 256; x.beginPath(); x.moveTo(a, b); for (let q = 0; q < 4; q++) { a += al() * 30 - 15; b += al() * 30 - 15; x.lineTo(a, b) } x.stroke() }
+    }
     if (L.sol.resine) {   // atelier : sol en résine, brillant, taché d'huile et marqué par les roues
       for (let i = 0; i < 3; i++) { const a = al() * 256; x.fillStyle = lin(x, a, 0, a + 60, 256, [[0, "rgba(255,255,255,0)"], [.5, "rgba(220,255,235,.05)"], [1, "rgba(255,255,255,0)"]]); x.fillRect(0, 0, 256, 256) }
       for (let i = 0; i < 2; i++) { const a = al() * 200 + 28, b = al() * 200 + 28, rr = 6 + al() * 12; x.fillStyle = "rgba(10,12,10,.38)"; x.beginPath(); x.ellipse(a, b, rr, rr * (.5 + al() * .4), al() * 3, 0, 7); x.fill(); x.fillStyle = "rgba(10,12,10,.25)"; x.beginPath(); x.ellipse(a + rr * .7, b + rr * .2, rr * .4, rr * .3, 0, 0, 7); x.fill(); x.strokeStyle = "rgba(160,120,255,.12)"; x.lineWidth = 1.2; x.beginPath(); x.ellipse(a - 2, b - 1, rr * .6, rr * .3, al(), 0, 7); x.stroke() }
@@ -2903,7 +3128,7 @@ function ligneUsee(coul, vert) {
     for (let i = 0; i < 8; i++) { x.fillStyle = `rgba(0,0,0,${.3 + al() * .5})`; x.beginPath(); x.ellipse(al() * (vert ? 8 : 80), al() * (vert ? 80 : 8), 1 + al() * 3, .6 + al() * 1.5, al() * 3, 0, 7); x.fill() }
   }));
 }
-const LUMIERE = { atelier: "215,240,255", quai: "255,196,120", frigo: "140,205,255", stockage: "255,210,150", parking: "255,140,70", promo: "255,80,200" };
+const LUMIERE = { incendie: "255,140,70", atelier: "215,240,255", quai: "255,196,120", frigo: "140,205,255", stockage: "255,210,150", parking: "255,140,70", promo: "255,80,200" };
 function lumieres(camx, camy) {
   const T = 80, B = 6, g = lueur(LUMIERE[S.lieu] || LUMIERE.quai), i0 = Math.floor((camx - 300) / (T * B)), i1 = Math.floor((camx + W + 300) / (T * B)), j0 = Math.floor((camy - 300) / (T * B)), j1 = Math.floor((camy + H + 300) / (T * B));
   for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { if (hash(i * 5 + 1, j * 3 + 2) < .35) continue; const x = (i + .5) * T * B - camx, y = (j + .5) * T * B - camy; ajouter(g, x, y, 520, 520, .16) }
@@ -2955,7 +3180,7 @@ function corpsEnnemi(e, c, blanc, p) {
       const cs = ["#ffe14d", "#50f0dc", "#b44cff"]; for (let k = 0; k < 3; k++) for (let q = 0; q < 3; q++) { cx.fillStyle = cs[(k + q) % 3]; cx.fillRect(-14 + q * 10, -28 + k * 15 + 2, 8, 8) }
       cx.strokeStyle = "#17130f"; cx.lineWidth = 3; cx.strokeRect(-20, -26, 40, 50);
       cx.font = "16px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeText("-70%", 0, -32); cx.fillStyle = "#ffe14d"; cx.fillText("-70%", 0, -32);
-    } else if (S.lieu !== "quai" && S.lieu !== "stockage" && S.lieu !== "atelier") dessinLieu(e, c, blanc, p);
+    } else if (S.lieu !== "quai" && S.lieu !== "stockage" && S.lieu !== "atelier" && S.lieu !== "incendie") dessinLieu(e, c, blanc, p);
     else if (e.type === "crabe") {            /* carton mal fermé qui sautille, rabats ouverts */
       const s = Math.abs(Math.sin(e.ph * 9)) * 3; cx.translate(0, -s);
       carton(e.r * 2, e.r * 1.6, c, true);
@@ -3002,6 +3227,7 @@ function dessinerJeu() {
     if (g.coffre) { const k = .5 + .5 * Math.sin(S.t * 6); ajouter(lueur(g.gros ? "255,214,70" : "255,236,190"), x, y - 4, g.gros ? 90 : 50, g.gros ? 90 : 50, (g.gros ? .5 : .3) + .2 * k); ombreSol(x, y + 9, 14, 4); poser(spriteCoffre(!!g.gros), x, y - 4 + b, 0, 1, 1); continue }
     const or = g.v >= 4; if (lum) ajouter(lueur(or ? "255,200,60" : "63,224,255"), x, y, 26, 26, .4 + .15 * Math.sin(S.t * 5 + g.y)); poser(spriteEtiquette(or), x, y - 3 + b, 0, 1, 1);
   }
+  if (LL().sinistre) dessinerSinistreSol(X, Y);
   // taches d'huile et traces de pas (atelier)
   if (LL().huile) {
     for (const h of huilesZone(camx - 80, camy - 80, camx + W + 80, camy + H + 80)) {
@@ -3050,6 +3276,7 @@ function dessinerJeu() {
   }
   // explosions des colis piégés
   for (const b of S.explos) { const k = b.t / .5, x = X(b.x), y = Y(b.y), g = b.r * 2.6 * (.6 + k * .6), a = b.r * 2.3 * (.3 + k * .7); ajouter(lueur("255,150,40"), x, y, g, g, (1 - k) * .95); ajouter(anneau("255,90,30"), x, y, a, a, 1 - k) }
+  if (LL().sinistre) dessinerSinistreHaut(X, Y);
   // le semi qui vise : couloir rouge ; sonné : étoiles
   for (const e of S.ennemis) {
     if (!e.ch) continue; const x = X(e.x), y = Y(e.y);
@@ -3187,6 +3414,7 @@ function dessinerJeu() {
   cx.fillStyle = g; cx.fillRect(0, 0, W, H);
   if (LL().neige) { cx.fillStyle = "rgba(235,246,255,.55)"; for (let i = 0; i < 70; i++) { const x = ((hash(i, 1) * W + S.t * (10 + hash(i, 4) * 25) - camx * .2) % W + W) % W, y = ((hash(i, 2) * H + S.t * (30 + hash(i, 3) * 40) - camy * .2) % H + H) % H; cx.beginPath(); cx.arc(x, y, 1 + hash(i, 5) * 1.8, 0, 7); cx.fill() } }
   if (S.noirAff > .02) dessinerNoir(px, py, X, Y);
+  if (LL().sinistre) dessinerAmbianceSinistre(camx, camy);
   if (LL().confettis) { const cs = ["#ff46be", "#50f0dc", "#ffe14d", "#b44cff"]; for (let i = 0; i < 40; i++) { const x = ((hash(i, 7) * W - camx * .3) % W + W) % W, y = ((hash(i, 8) * H + S.t * (40 + hash(i, 9) * 30) - camy * .3) % H + H) % H; cx.save(); cx.translate(x, y); cx.rotate(S.t * 3 + i); cx.fillStyle = cs[i % 4]; cx.globalAlpha = .5; cx.fillRect(-3, -1.5, 6, 3); cx.restore() } cx.globalAlpha = 1 }
   // alerte transpalette : couloir rouge qui clignote, de plus en plus vite
   const rangeesVues = new Set();
