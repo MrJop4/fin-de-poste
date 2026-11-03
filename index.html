@@ -773,6 +773,8 @@ const SON = (() => {
     // intro Chambre froide : « zwip » puis le chuintement du givre sous les semelles
     glissade(d = 1.4) { bruit({ filtre: "bandpass", f: 700, f2: 4200, glis: .13, q: 3, v: .3, a: .01, r: .16 }); ton(380, { type: "sine", v: .12, r: .12, f2: 1500, glis: .12 });
       for (let t = .06; t < d; t += .18) { const k = 1 - t / d * .6; bruit({ t, filtre: "bandpass", f: 5000 - t * 1500, q: .9, v: .13 * k, a: .09, r: .28 }); bruit({ t, filtre: "lowpass", f: 450, v: .07 * k, a: .09, r: .28 }) } },
+    // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
+    roule() { bruit({ filtre: "lowpass", f: 180, f2: 420, glis: .5, v: .5, a: .12, r: .9 }); ton(55, { type: "sawtooth", v: .08, a: .1, r: .8, f2: 75, glis: .6 }); for (let i = 0; i < 6; i++) bruit({ t: .1 + i * .13, filtre: "bandpass", f: 260, q: 3, v: .18, r: .06 }) },
     // le choc dans la pile : boule de bowling dans les quilles
     quilles() { ton(85, { type: "sine", v: .45, r: .22, f2: 45, glis: .2 }); bruit({ filtre: "lowpass", f: 900, f2: 200, glis: .3, v: .4, r: .3 });
       for (let i = 0; i < 14; i++) { const t = .015 + Math.pow(Math.random(), 1.6) * .55, k = 1 - t; bruit({ t, filtre: "bandpass", f: 1400 + Math.random() * 1800, q: 7, v: .28 * k + .06, r: .035 }); ton(500 + Math.random() * 700, { type: "triangle", t, v: .12 * k + .03, r: .05, f2: 300, glis: .05 }) } },
@@ -4284,6 +4286,48 @@ const INTROS = {
       for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x0 + (I.bx - c.x0) * .35; c.e.y = c.y0 * .4 }
     },
   },
+  /* Parking poids lourds : course-poursuite façon dessin animé. Le perso traverse l'écran en courant,
+     une rangée de pneus le suit ; il repasse dans l'autre sens, les pneus aussi… mais ils s'arrêtent au milieu.
+     Le perso revient à pas de loup « ? », les pneus repartent dans l'autre sens « ! », et les colis arrivent. */
+  parking: {
+    dezoom: 5.8, fin: 6.8,
+    init(I) {
+      I.z0 = clamp(W / 240, 1.4, 2.2); I.camx = 0; I.camy = 0; I.hw = W / 2 / I.z0;
+      I.x0 = -I.hw - 30; I.x = I.x0; I.pneus = [];
+      const cote = [[1, -60], [1, 30], [1, 85], [-1, -80], [-1, 60], [1, -10]];
+      I.colis = cote.map(([c, y], i) => { const x0 = c * (I.hw + 40 + i * 6), e = introColis("crabe", x0, y); e.introCache = true; return { e, x0, y0: y, x1: c * (I.hw * .55), del: .15 * i, vu: false } });
+    },
+    rangee(I, sens, stop) {                 // une rangée de 5 pneus qui entre par un bord
+      I.pneus = []; for (let i = 0; i < 5; i++) { const r = rnd(17, 22); I.pneus.push({ x: -sens * (I.hw + 40 + i * 46), y: rnd(-8, 8), r, sens, v: 560, ph: rnd(0, 6), parcours: 0, stop: stop == null ? null : stop + i * 44 * -sens }) }
+      son("roule");
+    },
+    passer(I) { I.pneus = []; I.x = -40; I.face = 1; I.q = I.repart = I.r1 = I.r2 = true },
+    maj(I, dt) {
+      const t = I.t, hw = I.hw;
+      if (t < .9) { const u = t / .9; I.x = -hw - 30 + (2 * hw + 60) * u; I.face = 1; I.cours = I.vite = true }      // 1. il traverse vers la droite
+      else if (t < 1.9) { I.x = hw + 60; if (!I.r1) { I.r1 = true; this.rangee(I, 1) } }                              // 2. les pneus le suivent
+      else if (t < 2.8) { const u = (t - 1.9) / .9; I.x = hw + 30 - (2 * hw + 60) * u; I.face = -1; I.cours = I.vite = true }   // 3. il repasse vers la gauche
+      else if (t < 3.9) { I.x = -hw - 60; if (!I.r2) { I.r2 = true; this.rangee(I, -1, 40) } }                         // 4. les pneus aussi… et s'arrêtent au milieu
+      else if (t < 4.9) { const u = (t - 3.9) / 1; I.x = -hw - 30 + (hw - 10) * (u * (2 - u)); I.face = 1; I.cours = u < .92 }   // 5. il revient à pas de loup
+      else {
+        I.x = -40; I.face = 1;
+        if (!I.q) { I.q = true; I.fx.push({ k: "bulle", txt: "?", t: 0, vie: .45 }) }
+        if (t > 5.35 && !I.repart) { I.repart = true; for (const p of I.pneus) { p.stop = null; p.sens = 1; p.v = 0 } son("roule"); I.fx.push({ k: "bulle", txt: "!", t: 0, vie: .7 }) }   // 6. ils repartent dans l'autre sens
+      }
+      for (const p of I.pneus) {
+        if (p.stop != null) { const d = p.stop - p.x; if (Math.abs(d) < 2) { p.x = p.stop; p.arret = true } else p.v = Math.min(560, Math.abs(d) * 6) }
+        if (I.repart) p.v = Math.min(620, p.v + dt * 900);
+        if (!p.arret || I.repart) { p.x += p.sens * p.v * dt; p.parcours += p.v * dt; p.ph += dt * p.v / 560 }
+      }
+      I.pneus = I.pneus.filter(p => Math.abs(p.x) < hw + 300);
+      if (t > 5.55) for (const c of I.colis) {    // 7. les colis arrivent
+        const k = t - 5.55 - c.del; if (k < 0) continue; c.e.introCache = false; c.e.ph += dt;
+        if (!c.vu) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }) }
+        const u = Math.min(1, k / 1.1); c.e.x = c.x0 + (c.x1 - c.x0) * u;
+      }
+    },
+    fini(I) { I.pneus = []; for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1 } },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
@@ -4333,6 +4377,10 @@ function dessinerIntro() {
   cx.save(); cx.translate(W / 2 + rnd(-1, 1) * sk, H / 2 + rnd(-1, 1) * sk); cx.scale(c.z, c.z); cx.translate(-W / 2, -H / 2);
   dessinerJeu();
   const X = x => x - c.x + W / 2, Y = y => y - c.y + H / 2;
+  for (const pn of I.pneus || []) {   // pneus de la scène (mêmes que dans le jeu)
+    const x = X(pn.x), y0 = Y(pn.y), y = y0 - (pn.arret && !I.repart ? 0 : Math.abs(Math.sin(pn.ph * 7)) * 7);
+    ombreSol(x, y0 + pn.r * .9, pn.r * 1.05, pn.r * .35); poser(spritePneu(), x, y, pn.parcours / pn.r * pn.sens, pn.r / 20, pn.r / 20);
+  }
   // le perso
   const px = X(rx), py = Y(ry), dand = I.cours ? Math.sin(p.pas) * (I.vite ? .2 : .12) : 0;
   ombreSol(px, py + 13, 12 * I.sx, 4.5);
