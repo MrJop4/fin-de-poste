@@ -737,7 +737,7 @@ const SON = (() => {
     env(g, s, a, v, r); o.connect(g); g.connect(dest); o.start(s); o.stop(s + a + r + .05);
   }
   function bruit({ t = 0, a = .002, v = .3, r = .1, filtre = "bandpass", f = 1200, f2 = null, q = 1, glis = .1 } = {}) {
-    const n = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain(), s = t0() + t; n.buffer = bruitBuf;
+    const n = ac.createBufferSource(), fl = ac.createBiquadFilter(), g = ac.createGain(), s = t0() + t; n.buffer = bruitBuf; n.loop = true;
     fl.type = filtre; fl.frequency.setValueAtTime(f, s); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, s + glis); fl.Q.value = q;
     env(g, s, a, v, r); n.connect(fl); fl.connect(g); g.connect(maitre); n.start(s, Math.random() * .5); n.stop(s + a + r + .05);
   }
@@ -770,6 +770,12 @@ const SON = (() => {
     victoire() { [[523, 0], [659, .12], [784, .24], [1047, .36], [784, .52], [1047, .64]].forEach(([f, t]) => { ton(f, { type: "square", t, v: .08, r: .2 }); ton(f / 2, { type: "triangle", t, v: .1, r: .25 }) }); ton(1047, { type: "triangle", t: .8, v: .18, r: .9 }) },
     defaite() { [392, 370, 349, 262].forEach((f, i) => ton(f, { type: "triangle", t: i * .22, v: .16, r: i === 3 ? .7 : .2 })) },
     evolution() { for (let i = 0; i < 8; i++) ton(523 * Math.pow(2, i / 4), { type: "triangle", t: i * .05, v: .12, r: .2 }); ton(2093, { type: "sine", t: .45, v: .15, a: .05, r: 1 }); bruit({ t: .4, filtre: "highpass", f: 5000, v: .1, a: .1, r: .6 }) },
+    // intro Chambre froide : « zwip » puis le chuintement du givre sous les semelles
+    glissade(d = 1.4) { bruit({ filtre: "bandpass", f: 700, f2: 4200, glis: .13, q: 3, v: .3, a: .01, r: .16 }); ton(380, { type: "sine", v: .12, r: .12, f2: 1500, glis: .12 });
+      for (let t = .06; t < d; t += .18) { const k = 1 - t / d * .6; bruit({ t, filtre: "bandpass", f: 5000 - t * 1500, q: .9, v: .13 * k, a: .09, r: .28 }); bruit({ t, filtre: "lowpass", f: 450, v: .07 * k, a: .09, r: .28 }) } },
+    // le choc dans la pile : boule de bowling dans les quilles
+    quilles() { ton(85, { type: "sine", v: .45, r: .22, f2: 45, glis: .2 }); bruit({ filtre: "lowpass", f: 900, f2: 200, glis: .3, v: .4, r: .3 });
+      for (let i = 0; i < 14; i++) { const t = .015 + Math.pow(Math.random(), 1.6) * .55, k = 1 - t; bruit({ t, filtre: "bandpass", f: 1400 + Math.random() * 1800, q: 7, v: .28 * k + .06, r: .035 }); ton(500 + Math.random() * 700, { type: "triangle", t, v: .12 * k + .03, r: .05, f2: 300, glis: .05 }) } },
     debloquer() { ton(392, { type: "square", v: .08, r: .1 }); ton(784, { type: "square", t: .1, v: .09, r: .1 }); S.piece(); ton(1568, { type: "triangle", t: .2, v: .15, r: .4 }) },
   };
   return { init, joue(nom, ...a) { if (coupe || !init() || !S[nom]) return; try { S[nom](...a) } catch (e) { } }, couper(v) { coupe = v }, get coupe() { return coupe }, liste: Object.keys(S) };
@@ -4222,6 +4228,7 @@ function majIntro(dt) {
     const u = t / F.course; I.x = I.x0 + (-145 - I.x0) * u; p.pas += dt * 15; p.vx = 120;
     if ((I.souffle -= dt) <= 0) { I.souffle = .3; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) }
   } else if (t < F.impact) {                // il glisse sur le givre, bras qui moulinent
+    if (!I.sonGlisse) { I.sonGlisse = true; son("glissade", F.impact - F.course) }
     const u = (t - F.course) / (F.impact - F.course), k = .75 * u + .25 * u * (2 - u);
     I.x = -145 + 145 * k; I.rot = -.2 + Math.sin(t * 4) * .05; I.sx = 1.06; I.sy = .94;   // figé, penché en arrière : il glisse, il ne marche plus
     if (Math.random() < dt * 25) I.fx.push({ k: "trait", x: I.x - 16, y: rnd(-14, 10), vx: -20, vy: 0, t: 0, vie: .25 });
@@ -4230,7 +4237,7 @@ function majIntro(dt) {
   } else {
     I.x = 0;
     if (!I.boom) {                          // BOUM dans la pile
-      I.boom = true; I.shake = 1; I.flash = .8; son("carton"); son("coup");
+      I.boom = true; I.shake = 1; I.flash = .8; son("quilles");
       for (let i = 0; i < 16; i++) { const a = rnd(-1.6, 1.6); I.fx.push({ k: "eclat", x: F.pile - 8, y: rnd(-10, 10), vx: Math.cos(a) * rnd(60, 180), vy: Math.sin(a) * rnd(60, 180) - 40, t: 0, vie: rnd(.4, .8) }) }
       I.fx.push({ k: "boum", x: F.pile, y: -30, t: 0, vie: 1 });
     }
