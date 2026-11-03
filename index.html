@@ -244,7 +244,14 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 /* ---- vestiaire ---- */
 #vestiaire { place-items: start center; background: rgba(15,11,6,.94); }
 .panneau.large { max-width: 1060px; }
-/* trophées */
+/* trophées : vitrine sombre avec rayons dorés, opaque (on ne voit plus la partie derrière) */
+#trophees { place-items: start center; padding-block: 24px; background:
+    radial-gradient(circle, rgba(255,194,26,.07) 1.5px, transparent 2px) 0 0 / 14px 14px,
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,194,26,.32), rgba(255,194,26,0) 70%),
+    repeating-conic-gradient(from 0deg at 50% -10%, #262932 0 6deg, #1c1e25 6deg 12deg); }
+#trophees h2 { font-size: clamp(40px, 7vw, 64px); }
+#trophees .troph { background: rgba(14,15,19,.72); }
+#trophees .troph.ok { background: linear-gradient(135deg, rgba(255,194,26,.26), rgba(255,138,31,.14)); }
 .troph-resume { font-family: var(--display); font-size: 20px; color: var(--papier); text-shadow: 2px 2px 0 var(--encre); letter-spacing: .03em; }
 .troph-resume b { color: var(--jaune); font-weight: 400; }
 .troph-grille { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; text-align: left; }
