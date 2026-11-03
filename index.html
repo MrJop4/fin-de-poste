@@ -780,6 +780,7 @@ const SON = (() => {
     moteur() { ton(70, { type: "sawtooth", v: .16, a: .05, r: .6, f2: 210, glis: .5 }); ton(105, { type: "square", v: .06, a: .05, r: .5, f2: 300, glis: .5 }); bruit({ filtre: "lowpass", f: 300, f2: 900, glis: .5, v: .25, a: .05, r: .5 }) },
     acide() { bruit({ filtre: "highpass", f: 4000, v: .14, a: .08, r: .9 }); for (let i = 0; i < 5; i++) bruit({ t: .1 + i * .15, filtre: "bandpass", f: 2200 + Math.random() * 1500, q: 6, v: .1, r: .04 }) },
     // entrepôt en perdition : le feu qui prend d'un coup (souffle et crépitements)
+    demon() { ton(220, { type: "sawtooth", v: .18, r: .45, f2: 55, glis: .4 }); ton(233, { type: "square", v: .06, r: .4, f2: 60, glis: .4 }); bruit({ filtre: "bandpass", f: 900, f2: 300, glis: .3, q: 1, v: .3, r: .35 }); ton(880, { type: "triangle", t: .02, v: .08, r: .12, f2: 1760, glis: .1 }) },
     souffle() { bruit({ filtre: "lowpass", f: 120, f2: 2500, glis: .25, v: .55, a: .02, r: 1.1 }); ton(60, { type: "sawtooth", v: .22, a: .02, r: .9, f2: 30, glis: .8 }); ton(45, { v: .3, r: 1, f2: 28, glis: .9 }) },
     feu() { bruit({ filtre: "lowpass", f: 300, f2: 1400, glis: .35, v: .4, a: .05, r: .9 }); for (let i = 0; i < 8; i++) bruit({ t: .1 + Math.random() * .8, filtre: "bandpass", f: 1800 + Math.random() * 2500, q: 5, v: .12, r: .03 }) },
     // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
@@ -4569,10 +4570,48 @@ const INTROS = {
       cx.restore();
     },
   },
+  /* Quai de nuit : début tout simple. Le perso arrive, un colis ordinaire est posé là… il se met à trembler,
+     rougeoie, et « POUF » : il se transforme en colis démoniaque. La partie commence. */
+  quai: {
+    dezoom: 4.1, fin: 5.1,
+    init(I) {
+      I.z0 = clamp(W / 220, 1.5, 2.3); I.hw = W / 2 / I.z0; I.camx = 45; I.camy = 0;
+      I.x0 = I.camx - I.hw - 30; I.x = I.x0; I.boite = { x: 115, y: 0 };
+    },
+    passer(I) { if (!I.pouf) introPoufQuai(I, I.t) },
+    maj(I, dt) {
+      const t = I.t, B = I.boite, arret = 1.5, tremble = 2, pouf = 3.1;
+      if (t < arret) { const u = t / arret; I.x = I.x0 + (0 - I.x0) * (u * (2 - u)); I.cours = u < .93 } else I.x = 0;
+      I.face = 1;
+      if (t >= 1.7 && !I.q) { I.q = true; I.fx.push({ k: "bulle", txt: "?", t: 0, vie: .7 }) }
+      if (t >= tremble && !I.pouf) {          // le colis tremble de plus en plus et rougeoie
+        const k = (t - tremble) / (pouf - tremble); B.tremble = k; if ((I.toc = (I.toc || 0) - dt) <= 0) { I.toc = .32 - k * .22; son("carton") }
+      }
+      if (t >= pouf && !I.pouf) introPoufQuai(I, t);
+      if (I.demon) I.demon.ph += dt;
+    },
+    fini(I) { if (!I.pouf) introPoufQuai(I, I.t) },
+    // le colis ordinaire, avant sa transformation
+    monde(I, X, Y) {
+      const B = I.boite; if (I.pouf) return;
+      const k = B.tremble || 0, x = X(B.x) + rnd(-1, 1) * k * 3.5, y = Y(B.y) - Math.abs(Math.sin(I.t * 30)) * k * 2;
+      if (k > 0) ajouter(lueur("255,40,20"), x, y - 8, 70 + 40 * k, 50 + 30 * k, .25 + .6 * k * (.6 + .4 * Math.sin(I.t * 20)));
+      ombreSol(x, y + 12, 16, 5);
+      rrect(cx, x - 15, y - 14, 30, 26, 3); cx.fillStyle = "#c8955a"; cx.fill(); cx.lineWidth = 2.2; cx.strokeStyle = ENCRE; cx.stroke();
+      cx.fillStyle = "#d9b27a"; cx.fillRect(x - 3, y - 14, 6, 26); cx.fillStyle = "#fff6e3"; cx.fillRect(x + 5, y - 2, 8, 6);
+    },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
 function introFeu(x, y, r, t0) { S.dangers.push({ k: "feu", intro: true, t0, x, y, t: 0, r, rr: 0, vie: 14 + rnd(0, 6), prop: 1e9, ph: rnd(0, 6) }) }
+function introPoufQuai(I, t) {
+  const B = I.boite; I.pouf = true; I.shake = .6; I.flash = .5; son("demon");
+  I.demon = introColis("crabe", B.x, B.y);
+  for (let i = 0; i < 14; i++) { const a = rnd(0, 6.28); I.fx.push({ k: "fumee", x: B.x + Math.cos(a) * 6, y: B.y - 6 + Math.sin(a) * 4, vx: Math.cos(a) * rnd(30, 70), vy: Math.sin(a) * rnd(20, 50) - 15, t: 0, vie: rnd(.6, 1) }) }
+  I.fx.push({ k: "mot", txt: "POUF !", x: B.x, y: B.y - 38, t: 0, vie: 1 });
+  I.fx.push({ k: "bulle", txt: "!", t: 0, vie: .8 });
+}
 function introBoomAtelier(I, t) {
   I.boom = true; I.tBoom = t; I.shake = 1; I.flash = .7; son("quilles"); son("casse");
   const P = I.pile; for (let i = 0; i < 18; i++) { const a = rnd(.1, 3.04); I.fx.push({ k: "eclat", x: P.x, y: P.y - 10, vx: Math.cos(a) * rnd(60, 190), vy: Math.sin(a) * rnd(40, 140) - 90, t: 0, vie: rnd(.5, .9), c: ["#b98a52", "#6fe02c", "#ffc21a", "#2a2d33"][i % 4] }) }
@@ -4640,6 +4679,7 @@ function dessinerIntro() {
     const k = f.t / f.vie, x = X(f.x), y = Y(f.y);
     if (f.k === "buee") { cx.globalAlpha = .5 * (1 - k); cx.fillStyle = "#e8f6ff"; cx.beginPath(); cx.arc(x, y, 3 + k * 7, 0, 7); cx.fill() }
     else if (f.k === "trait") { cx.globalAlpha = .55 * (1 - k); cx.fillStyle = "#e8f6ff"; cx.fillRect(f.sens < 0 ? x : x - 14, y, 14, 1.5) }
+    else if (f.k === "fumee" && I.lieu === "quai") { cx.globalAlpha = .7 * (1 - k); cx.fillStyle = "#d8d2c6"; cx.beginPath(); cx.arc(x, y, 6 + k * 14, 0, 7); cx.fill() }
     else if (f.k === "givre") { cx.globalAlpha = 1 - k; cx.fillStyle = "#cfefff"; cx.fillRect(x - 1.5, y - 1.5, 3, 3) }
     else if (f.k === "eclat") { cx.globalAlpha = 1 - k; cx.fillStyle = f.c || (Math.random() < .5 ? "#b98a52" : "#e8f6ff"); cx.fillRect(x - 2, y - 2, 4, 4) }
     else if (f.k === "bulle") {           // « ?! » au-dessus du perso, « ! » au-dessus d'un colis réveillé
