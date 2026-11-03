@@ -4335,37 +4335,39 @@ const INTROS = {
      il ne reste que quelques étiquettes qui brillent. Un chasseur de promos les ramasse une à une,
      mais le perso arrive avec sa poursuite : surpris, le chasseur s'enfuit avec le butin. La lumière revient. */
   promo: {
-    dezoom: 5.4, fin: 6.4,
+    dezoom: 7.4, fin: 8.5,
     init(I) {
-      I.z0 = clamp(W / 240, 1.4, 2.2); I.camx = 30; I.camy = 0; I.hw = W / 2 / I.z0;
-      I.x0 = I.camx - I.hw - 40; I.x = I.x0; I.cx0 = 70; I.noir = 0;
-      I.colis = Array.from({ length: 7 }, (_, i) => { const a = i / 7 * 6.283, e = introColis("crabe", I.cx0 + Math.cos(a) * 44, Math.sin(a) * 30); return { e, a, x1: 15 + Math.cos(a + .3) * rnd(85, 115), y1: Math.sin(a + .3) * rnd(70, 95), vu: false } });
-      I.etiq = [[118, 6], [92, -14], [66, 10], [42, -6]].map(([x, y]) => ({ x, y }));
+      I.z0 = clamp(W / 240, 1.4, 2.2); I.cx0 = 190; I.camx = I.cx0 - 10; I.camy = 0; I.hw = W / 2 / I.z0;
+      I.x0 = 40 - I.hw - 40; I.x = I.x0; I.noir = 0;
+      I.colis = Array.from({ length: 7 }, (_, i) => { const a = i / 7 * 6.283, e = introColis("crabe", I.cx0 + Math.cos(a) * 44, Math.sin(a) * 30); return { e, a, x1: I.cx0 + 10 + Math.cos(a + .3) * rnd(50, 75), y1: Math.sin(a + .3) * rnd(45, 65), vu: false } });
+      I.etiq = [[160, 6], [128, -14], [98, 10], [70, -6]].map(([x, y]) => ({ x, y }));
       I.chas = introColis("chasseur", I.camx + I.hw + 40, -4); I.chas.introCache = true; I.chas.vol = 0;
     },
     passer(I) { I.noir = 0; I.etiq = []; I.lumiere = true; if (I.chas) { S.ennemis = S.ennemis.filter(e => e !== I.chas); I.chas = null } },
     maj(I, dt) {
-      const t = I.t, coupe = 2.2, arrive = 3.1, retour = 4.5;
+      const t = I.t, coupe = 3, arrive = 4.4, retour = 6.4;
       if (t < coupe) {                        // la ronde des colis, sous les néons
         if (!I.musique) { I.musique = true; son("danse") }
-        for (const c of I.colis) { c.e.ph += dt * 1.4; const a = c.a + t * 2.4; c.e.x = I.cx0 + Math.cos(a) * 44; c.e.y = Math.sin(a) * 30 - Math.abs(Math.sin(t * 9 + c.a * 2)) * 6 }
+        for (const c of I.colis) { c.e.ph += dt * 1.4; const a = c.a + t * 1.8; c.e.x = I.cx0 + Math.cos(a) * 44; c.e.y = Math.sin(a) * 30 - Math.abs(Math.sin(t * 9 + c.a * 2)) * 6 }
       } else if (!I.coupee) { I.coupee = true; I.noir = 1; son("levier"); for (const c of I.colis) { c.e.introCache = true; c.e.x = c.x1; c.e.y = c.y1 } if (I.chas) I.chas.introCache = false }
       if (t >= coupe && t < retour && I.chas) {   // le chasseur ramasse les étiquettes, de droite à gauche
         const C = I.chas; C.ph += dt * 2;
         if (!I.fuite) {
           const cible = I.etiq[0];
-          if (cible) { const dx = cible.x - C.x, dy = cible.y - C.y, d = Math.hypot(dx, dy), v = 150 * dt; if (d <= v) { C.x = cible.x; C.y = cible.y; I.etiq.shift(); C.vol++; son("etiquette") } else { C.x += dx / d * v; C.y += dy / d * v } }
-          if (!I.etiq.length && I.x > -40) { I.fuite = true; son("prendre"); I.fx.push({ k: "bulle", txt: "!", cible: C, t: 0, vie: .6 }) }
-        } else if (t - (I.tFuite ??= t) > .3) { C.x += 330 * dt; C.ph += dt * 3 }   // il détale avec le butin
+          if (cible) { const dx = cible.x - C.x, dy = cible.y - C.y, d = Math.hypot(dx, dy), v = 105 * dt; if (d <= v) { C.x = cible.x; C.y = cible.y; I.etiq.shift(); C.vol++; son("etiquette") } else { C.x += dx / d * v; C.y += dy / d * v } }
+          if (!I.etiq.length && I.x > -40) { I.fuite = true; son("prendre"); I.fx.push({ k: "bulle", txt: "!", cible: C, t: 0, vie: .9 }) }
+        } else if (t - (I.tFuite ??= t) > .5) { C.x += 300 * dt; C.ph += dt * 3 }   // il détale avec le butin
       }
-      if (t >= arrive) { const u = Math.min(1, (t - arrive) / 1.3); I.x = I.x0 + (0 - I.x0) * (u * (2 - u)); I.cours = u < .95; I.face = 1 }   // le perso arrive avec sa poursuite
+      if (t >= arrive) { const u = Math.min(1, (t - arrive) / 1.8); I.x = I.x0 + (0 - I.x0) * (u * (2 - u)); I.cours = u < .95; I.face = 1 }   // le perso arrive avec sa poursuite
       if (t >= retour && !I.lumiere) { I.lumiere = true; son("levier"); son("ding") }
       if (I.lumiere) {                        // la lumière revient (en grésillant) : les colis sont là
-        const k = t - retour; I.noir = k < .35 ? (Math.floor(k * 14) % 2 ? .9 : .2) : 0;
+        const k = t - retour; I.noir = k < .5 ? (Math.floor(k * 12) % 2 ? .9 : .2) : 0;
         if (I.chas) { S.ennemis = S.ennemis.filter(e => e !== I.chas); I.chas = null }
-        for (const c of I.colis) { c.e.introCache = false; if (!c.vu && k > .35) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }) } }
+        for (const c of I.colis) { c.e.introCache = false; if (!c.vu && k > .5 + c.a * .05) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }) } }
       }
-      I.camx = 30 + (I.chas && I.fuite ? Math.min(60, I.chas.x - 120) * .4 : 0);
+      // la caméra part de la ronde et glisse vers l'allée où le perso arrive, puis recule pour montrer les colis
+      const g = mEase(clamp((t - coupe) / 1.6, 0, 1)), r = mEase(clamp((t - retour) / .8, 0, 1));
+      I.camx = I.cx0 - 10 + (40 - I.cx0 + 10) * g + 60 * r;
     },
     fini(I) { this.passer(I); for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1; c.e.y = c.y1 } },
     // la coupure : tout est noir sauf la poursuite sur le perso, les étiquettes et les yeux du chasseur
@@ -4375,9 +4377,9 @@ const INTROS = {
       if (NOIR.width !== w || NOIR.height !== h) { NOIR.width = w; NOIR.height = h }
       NX.globalCompositeOperation = "source-over"; NX.clearRect(0, 0, w, h); NX.fillStyle = `rgba(4,2,10,${.95 * I.noir})`; NX.fillRect(0, 0, w, h);
       const sx = E(px), sy = F(py) - 3 * z;
-      if (I.t > 3.1) { NX.globalCompositeOperation = "destination-out"; const g = NX.createRadialGradient(sx / 2, sy / 2, R * .1, sx / 2, sy / 2, R / 2); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(.7, "rgba(0,0,0,.92)"); g.addColorStop(1, "rgba(0,0,0,0)"); NX.fillStyle = g; NX.beginPath(); NX.arc(sx / 2, sy / 2, R / 2, 0, 7); NX.fill() }
+      if (I.t > 4.4) { NX.globalCompositeOperation = "destination-out"; const g = NX.createRadialGradient(sx / 2, sy / 2, R * .1, sx / 2, sy / 2, R / 2); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(.7, "rgba(0,0,0,.92)"); g.addColorStop(1, "rgba(0,0,0,0)"); NX.fillStyle = g; NX.beginPath(); NX.arc(sx / 2, sy / 2, R / 2, 0, 7); NX.fill() }
       cx.drawImage(NOIR, 0, 0, W, H);
-      if (I.t > 3.1) ajouter(lueur("255,235,215"), sx, sy, R * 2.1, R * 2.1, .2 * I.noir);
+      if (I.t > 4.4) ajouter(lueur("255,235,215"), sx, sy, R * 2.1, R * 2.1, .2 * I.noir);
       for (const g of I.etiq) { const x = E(X(g.x)), y = F(Y(g.y)) + Math.sin(I.t * 4 + g.x) * 1.5 * z; ajouter(lueur("63,224,255"), x, y, 34 * z, 34 * z, .6 + .15 * Math.sin(I.t * 5 + g.x)); poser(spriteEtiquette(false), x, y - 3 * z, 0, z, z) }
       const C = I.chas; if (C && !C.introCache) {
         const x = E(X(C.x)), y = F(Y(C.y) - C.r * .3), f = I.fuite ? 1 : -1;
