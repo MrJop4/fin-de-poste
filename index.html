@@ -3468,7 +3468,7 @@ function dessinerEnnemi(e, x, y, p) {
     cx.save(); cx.fillStyle = `rgba(255,42,31,${.08 + .16 * k})`; cx.beginPath(); cx.arc(x, y, EQ.piege.rayon, 0, 7); cx.fill();
     cx.strokeStyle = `rgba(255,70,50,${on ? .95 : .45})`; cx.lineWidth = 2.5; cx.setLineDash([10, 7]); cx.lineDashOffset = -S.t * 40; cx.stroke(); cx.setLineDash([]); cx.restore();
   }
-  poser(s, x, y + dy, rot, sx * (blanc ? 1.1 : 1), sy * (blanc ? .9 : 1), false);
+  poser(s, x, y + dy, rot + (e.introRot || 0), sx * (blanc ? 1.1 : 1), sy * (blanc ? .9 : 1), false);
   if (e.type === "piege") {   // le voyant : clignote doucement, puis très vite quand la mèche est allumée
     const vite = e.meche != null, on = Math.sin(e.ph * (vite ? 88 : 12)) > 0, ly = y + dy - 35 * e.r / 13;
     if (on) ajouter(lueur("255,40,30"), x, ly, vite ? 80 : 56, vite ? 80 : 56, 1);
@@ -4440,6 +4440,61 @@ const INTROS = {
       cx.globalAlpha = 1;
     },
   },
+  /* Quai de chargement : un camion recule à la porte (« bip bip »), le niveleur se rabat, et un rouleau de film
+     sort en premier en déroulant une traînée brillante. L'avalanche de colis suit et patine sur le film,
+     en tournant sur elle-même, avant de s'arrêter loin du perso. */
+  chargement: {
+    dezoom: 6, fin: 7.1,
+    init(I) {
+      const P = EQ.portes, C = LL().couloir; I.kp = 0; I.px = porteX(0); I.py0 = C.haut + P.niveleur.h + 8;
+      I.z0 = clamp(W / 340, 1.1, 2); I.hw = W / 2 / I.z0; I.camx = I.px + 60; I.camy = C.haut + 190;
+      I.yp = C.haut + 150; I.xp = I.camx - I.hw + 40; I.x0 = I.camx - I.hw - 30; I.x = I.x0; I.y = I.yp;
+      I.dir = { x: .62, y: .78 };   // direction de la glissade : vers le bas à droite, loin du perso
+      I.colis = Array.from({ length: 9 }, (_, i) => {
+        const e = introColis("crabe", I.px + rnd(-20, 60), I.py0); e.introCache = true;
+        const d = rnd(130, 240), lat = rnd(-40, 40);
+        return { e, x0: e.x, y0: I.py0, x1: e.x + I.dir.x * d - I.dir.y * lat, y1: I.py0 + I.dir.y * d + I.dir.x * lat, del: i * .14, dur: rnd(1.1, 1.6), spin: rnd(4, 12) * (Math.random() < .5 ? -1 : 1), parti: false };
+      });
+    },
+    passer(I) { this.fini(I) },
+    maj(I, dt) {
+      const t = I.t, P = EQ.portes, arret = 1.4, camion = .9, sortie = camion + P.alerte + .2;
+      if (t < arret) { const u = t / arret; I.x = I.x0 + (I.xp - I.x0) * (u * (2 - u)); I.cours = u < .93 } else I.x = I.xp;
+      I.face = 1;
+      let q = S.quais.get(I.kp);
+      if (t >= camion && !q && !I.porte) { I.porte = true; S.quais.set(I.kp, q = { etat: "recule", t: 0, alerte: P.alerte, n: I.colis.length, sortis: 0, deb: 0 }); son("transpa") }
+      if (q) {
+        q.t += dt;
+        if (q.etat === "recule" && q.t > 1.1 && !I.bip2) { I.bip2 = true; son("transpa") }
+        if (q.etat === "recule" && q.t >= q.alerte) { q.etat = "decharge"; q.t = 0; I.shake = .6; son("casse"); I.fx.push({ k: "bulle", txt: "!", t: 0, vie: .7 }) }
+      }
+      if (t >= sortie && !I.rouleau) {        // le rouleau de film sort en premier
+        I.rouleau = introColis("filmeur", I.px, I.py0); I.rouleau.ph = 0; son("carte");
+      }
+      const R = I.rouleau;
+      if (R && !I.rouleauParti) {
+        R.x += I.dir.x * 330 * dt; R.y += I.dir.y * 330 * dt; R.ph += dt * 3;
+        if ((I.depot = (I.depot || 0) - dt) <= 0) { I.depot = .025; S.films.push({ x: R.x, y: R.y, t: 0, id: R }) }
+        if (R.x > I.camx + I.hw + 80 || R.y > I.camy + H / 2 / I.z0 + 80) { I.rouleauParti = true; S.ennemis = S.ennemis.filter(e => e !== R) }
+      }
+      if (t >= sortie + .35) for (const c of I.colis) {   // l'avalanche : ça patine sur le film
+        const k = t - sortie - .35 - c.del; if (k < 0) continue;
+        if (!c.parti) { c.parti = true; c.e.introCache = false; if (q) q.sortis++; if (Math.random() < .5) son("carton") }
+        const u = Math.min(1, k / c.dur), g = 1 - (1 - u) * (1 - u), w = Math.sin(k * 9 + c.spin) * 10 * (1 - u);
+        c.e.x = c.x0 + (c.x1 - c.x0) * g - I.dir.y * w; c.e.y = c.y0 + (c.y1 - c.y0) * g + I.dir.x * w;
+        c.e.introRot = c.spin * g; if (u >= 1 && !c.stop) { c.stop = true; c.e.introRot = 0 }
+      }
+      if (q && q.etat === "decharge" && q.sortis >= q.n) { q.etat = "vide"; q.t = 0 }
+      if (t > sortie + 1.2 && !I.q) { I.q = true; I.fx.push({ k: "bulle", txt: "?", t: 0, vie: .8 }) }
+    },
+    fini(I) {
+      for (const c of I.colis) { c.e.introCache = false; c.e.introRot = 0; c.e.x = c.x1; c.e.y = c.y1 }
+      if (I.rouleau) S.ennemis = S.ennemis.filter(e => e !== I.rouleau);
+      S.films = S.films.filter(f => f.id !== I.rouleau); I.rouleau = I.rouleau || true; I.rouleauParti = true;
+      const q = S.quais.get(I.kp); if (q) { q.etat = "vide"; q.t = 0; q.sortis = q.n } else S.quais.set(I.kp, { etat: "vide", t: 0, alerte: EQ.portes.alerte, n: 0, sortis: 0, deb: 0 });
+      I.porte = I.bip2 = I.q = true; I.x = I.xp;
+    },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
@@ -4458,7 +4513,7 @@ function introBoomStockage(I, t) {
 function lancerIntro(lieu) {
   S.intro = { lieu, sc: INTROS[lieu], t: 0, fx: [], souffle: 0, boom: false, shake: 0, flash: 0, rot: 0, sx: 1, sy: 1, dy: 0, face: 1 };
   S.intro.sc.init(S.intro);
-  S.p.x = S.intro.x; S.p.y = 0; S.p.vx = S.p.vy = 0; S.p.dir = 0;
+  S.p.x = S.intro.x; S.p.y = S.intro.y || 0; S.p.vx = S.p.vy = 0; S.p.dir = 0;
   $("hud").hidden = true;
 }
 function passerIntro() {
@@ -4474,18 +4529,18 @@ function majIntro(dt) {
   for (const b of S.explos) b.t += dt; S.explos = S.explos.filter(b => b.t < .5);
   for (const f of I.fx) { f.t += dt; f.x += (f.vx || 0) * dt; f.y += (f.vy || 0) * dt; if (f.k === "eclat") f.vy += 260 * dt }
   I.fx = I.fx.filter(f => f.t < f.vie);
-  p.x = I.x; p.y = 0;
+  p.x = I.x; p.y = I.y || 0;
   if (I.t >= I.sc.fin) finIntro();
 }
 function finIntro() {
   const I = S.intro, p = S.p;
   I.sc.fini(I); S.explos = [];
-  p.x = I.x; p.y = 0; p.vx = p.vy = 0; S.intro = null;
+  p.x = I.x; p.y = I.y || 0; p.vx = p.vy = 0; S.intro = null;
   $("hud").hidden = false; last = performance.now(); majHud();
 }
 function introCam(I) {
   const u = mEase(clamp((I.t - I.sc.dezoom) / (I.sc.fin - I.sc.dezoom), 0, 1));
-  return { z: I.z0 + (1 - I.z0) * u, x: I.camx + (I.x - I.camx) * u, y: I.camy * (1 - u) };
+  return { z: I.z0 + (1 - I.z0) * u, x: I.camx + (I.x - I.camx) * u, y: I.camy + ((I.y || 0) - I.camy) * u };
 }
 function dessinerIntro() {
   const I = S.intro, p = S.p, c = introCam(I), rx = p.x, ry = p.y, tS = S.t, sk = I.shake * 12;
