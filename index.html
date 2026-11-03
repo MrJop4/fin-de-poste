@@ -773,6 +773,9 @@ const SON = (() => {
     // intro Chambre froide : « zwip » puis le chuintement du givre sous les semelles
     glissade(d = 1.4) { bruit({ filtre: "bandpass", f: 700, f2: 4200, glis: .13, q: 3, v: .3, a: .01, r: .16 }); ton(380, { type: "sine", v: .12, r: .12, f2: 1500, glis: .12 });
       for (let t = .06; t < d; t += .18) { const k = 1 - t / d * .6; bruit({ t, filtre: "bandpass", f: 5000 - t * 1500, q: .9, v: .13 * k, a: .09, r: .28 }); bruit({ t, filtre: "lowpass", f: 450, v: .07 * k, a: .09, r: .28 }) } },
+    // la ronde des colis : petite boucle disco (basse, charleston, accords)
+    danse() { const b = .23; [98, 98, 147, 98, 110, 110, 165, 131].forEach((f, i) => { ton(f, { type: "square", t: i * b, v: .1, r: .16 }); bruit({ t: i * b + b / 2, filtre: "highpass", f: 7000, v: .07, r: .03 }) });
+      [[392, 494, 587], [440, 554, 659]].forEach((ac, j) => ac.forEach(f => ton(f, { type: "triangle", t: .23 + j * .92, v: .05, r: .3 }))) },
     // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
     roule() { bruit({ filtre: "lowpass", f: 180, f2: 420, glis: .5, v: .5, a: .12, r: .9 }); ton(55, { type: "sawtooth", v: .08, a: .1, r: .8, f2: 75, glis: .6 }); for (let i = 0; i < 6; i++) bruit({ t: .1 + i * .13, filtre: "bandpass", f: 260, q: 3, v: .18, r: .06 }) },
     // le choc dans la pile : boule de bowling dans les quilles
@@ -4328,6 +4331,61 @@ const INTROS = {
     },
     fini(I) { I.pneus = []; for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1 } },
   },
+  /* Entrepôt des promos : les colis dansent la ronde sous les néons ; « clac », la lumière se coupe,
+     il ne reste que quelques étiquettes qui brillent. Un chasseur de promos les ramasse une à une,
+     mais le perso arrive avec sa poursuite : surpris, le chasseur s'enfuit avec le butin. La lumière revient. */
+  promo: {
+    dezoom: 5.4, fin: 6.4,
+    init(I) {
+      I.z0 = clamp(W / 240, 1.4, 2.2); I.camx = 30; I.camy = 0; I.hw = W / 2 / I.z0;
+      I.x0 = I.camx - I.hw - 40; I.x = I.x0; I.cx0 = 70; I.noir = 0;
+      I.colis = Array.from({ length: 7 }, (_, i) => { const a = i / 7 * 6.283, e = introColis("crabe", I.cx0 + Math.cos(a) * 44, Math.sin(a) * 30); return { e, a, x1: 15 + Math.cos(a + .3) * rnd(85, 115), y1: Math.sin(a + .3) * rnd(70, 95), vu: false } });
+      I.etiq = [[118, 6], [92, -14], [66, 10], [42, -6]].map(([x, y]) => ({ x, y }));
+      I.chas = introColis("chasseur", I.camx + I.hw + 40, -4); I.chas.introCache = true; I.chas.vol = 0;
+    },
+    passer(I) { I.noir = 0; I.etiq = []; I.lumiere = true; if (I.chas) { S.ennemis = S.ennemis.filter(e => e !== I.chas); I.chas = null } },
+    maj(I, dt) {
+      const t = I.t, coupe = 2.2, arrive = 3.1, retour = 4.5;
+      if (t < coupe) {                        // la ronde des colis, sous les néons
+        if (!I.musique) { I.musique = true; son("danse") }
+        for (const c of I.colis) { c.e.ph += dt * 1.4; const a = c.a + t * 2.4; c.e.x = I.cx0 + Math.cos(a) * 44; c.e.y = Math.sin(a) * 30 - Math.abs(Math.sin(t * 9 + c.a * 2)) * 6 }
+      } else if (!I.coupee) { I.coupee = true; I.noir = 1; son("levier"); for (const c of I.colis) { c.e.introCache = true; c.e.x = c.x1; c.e.y = c.y1 } if (I.chas) I.chas.introCache = false }
+      if (t >= coupe && t < retour && I.chas) {   // le chasseur ramasse les étiquettes, de droite à gauche
+        const C = I.chas; C.ph += dt * 2;
+        if (!I.fuite) {
+          const cible = I.etiq[0];
+          if (cible) { const dx = cible.x - C.x, dy = cible.y - C.y, d = Math.hypot(dx, dy), v = 150 * dt; if (d <= v) { C.x = cible.x; C.y = cible.y; I.etiq.shift(); C.vol++; son("etiquette") } else { C.x += dx / d * v; C.y += dy / d * v } }
+          if (!I.etiq.length && I.x > -40) { I.fuite = true; son("prendre"); I.fx.push({ k: "bulle", txt: "!", cible: C, t: 0, vie: .6 }) }
+        } else if (t - (I.tFuite ??= t) > .3) { C.x += 330 * dt; C.ph += dt * 3 }   // il détale avec le butin
+      }
+      if (t >= arrive) { const u = Math.min(1, (t - arrive) / 1.3); I.x = I.x0 + (0 - I.x0) * (u * (2 - u)); I.cours = u < .95; I.face = 1 }   // le perso arrive avec sa poursuite
+      if (t >= retour && !I.lumiere) { I.lumiere = true; son("levier"); son("ding") }
+      if (I.lumiere) {                        // la lumière revient (en grésillant) : les colis sont là
+        const k = t - retour; I.noir = k < .35 ? (Math.floor(k * 14) % 2 ? .9 : .2) : 0;
+        if (I.chas) { S.ennemis = S.ennemis.filter(e => e !== I.chas); I.chas = null }
+        for (const c of I.colis) { c.e.introCache = false; if (!c.vu && k > .35) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }) } }
+      }
+      I.camx = 30 + (I.chas && I.fuite ? Math.min(60, I.chas.x - 120) * .4 : 0);
+    },
+    fini(I) { this.passer(I); for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1; c.e.y = c.y1 } },
+    // la coupure : tout est noir sauf la poursuite sur le perso, les étiquettes et les yeux du chasseur
+    noir(I, z, X, Y, px, py) {
+      if (I.noir <= .01) return;
+      const R = EQ.noir.poursuite * z, w = Math.ceil(W / 2), h = Math.ceil(H / 2), E = x => W / 2 + (x - W / 2) * z, F = y => H / 2 + (y - H / 2) * z;
+      if (NOIR.width !== w || NOIR.height !== h) { NOIR.width = w; NOIR.height = h }
+      NX.globalCompositeOperation = "source-over"; NX.clearRect(0, 0, w, h); NX.fillStyle = `rgba(4,2,10,${.95 * I.noir})`; NX.fillRect(0, 0, w, h);
+      const sx = E(px), sy = F(py) - 3 * z;
+      if (I.t > 3.1) { NX.globalCompositeOperation = "destination-out"; const g = NX.createRadialGradient(sx / 2, sy / 2, R * .1, sx / 2, sy / 2, R / 2); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(.7, "rgba(0,0,0,.92)"); g.addColorStop(1, "rgba(0,0,0,0)"); NX.fillStyle = g; NX.beginPath(); NX.arc(sx / 2, sy / 2, R / 2, 0, 7); NX.fill() }
+      cx.drawImage(NOIR, 0, 0, W, H);
+      if (I.t > 3.1) ajouter(lueur("255,235,215"), sx, sy, R * 2.1, R * 2.1, .2 * I.noir);
+      for (const g of I.etiq) { const x = E(X(g.x)), y = F(Y(g.y)) + Math.sin(I.t * 4 + g.x) * 1.5 * z; ajouter(lueur("63,224,255"), x, y, 34 * z, 34 * z, .6 + .15 * Math.sin(I.t * 5 + g.x)); poser(spriteEtiquette(false), x, y - 3 * z, 0, z, z) }
+      const C = I.chas; if (C && !C.introCache) {
+        const x = E(X(C.x)), y = F(Y(C.y) - C.r * .3), f = I.fuite ? 1 : -1;
+        for (const dd of [-1, 1]) { const q = x + dd * Math.max(4, C.r * .32) * z + f * 2 * z; ajouter(lueur("80,240,255"), q, y, 16 * z, 16 * z, .95); cx.fillStyle = "#fff6eb"; cx.beginPath(); cx.arc(q, y, 1.7 * z, 0, 7); cx.fill() }
+        for (let k = 0; k < Math.min(6, C.vol); k++) { const ly = y - (C.r * 2 + k * 5) * z; ajouter(lueur("63,224,255"), x, ly, 26 * z, 26 * z, .5); poser(spriteEtiquette(false), x + Math.sin(k * 2.1) * 4 * z, ly, Math.sin(I.t * 6 + k) * .3, .9 * z, .9 * z) }
+      }
+    },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
@@ -4408,6 +4466,7 @@ function dessinerIntro() {
     }
   }
   cx.globalAlpha = 1; cx.restore();
+  if (I.sc.noir) I.sc.noir(I, c.z, X, Y, px, py);
   p.x = rx; p.y = ry; S.t = tS;
   if (caches.length) S.ennemis.push(...caches);
   // bandes noires façon cinéma, qui s'effacent au dézoom
