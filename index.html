@@ -776,6 +776,9 @@ const SON = (() => {
     // la ronde des colis : petite boucle disco (basse, charleston, accords)
     danse() { const b = .23; [98, 98, 147, 98, 110, 110, 165, 131].forEach((f, i) => { ton(f, { type: "square", t: i * b, v: .1, r: .16 }); bruit({ t: i * b + b / 2, filtre: "highpass", f: 7000, v: .07, r: .03 }) });
       [[392, 494, 587], [440, 554, 659]].forEach((ac, j) => ac.forEach(f => ton(f, { type: "triangle", t: .23 + j * .92, v: .05, r: .3 }))) },
+    // atelier : le chariot fou qui démarre (moteur qui monte) et l'acide qui grésille
+    moteur() { ton(70, { type: "sawtooth", v: .16, a: .05, r: .6, f2: 210, glis: .5 }); ton(105, { type: "square", v: .06, a: .05, r: .5, f2: 300, glis: .5 }); bruit({ filtre: "lowpass", f: 300, f2: 900, glis: .5, v: .25, a: .05, r: .5 }) },
+    acide() { bruit({ filtre: "highpass", f: 4000, v: .14, a: .08, r: .9 }); for (let i = 0; i < 5; i++) bruit({ t: .1 + i * .15, filtre: "bandpass", f: 2200 + Math.random() * 1500, q: 6, v: .1, r: .04 }) },
     // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
     roule() { bruit({ filtre: "lowpass", f: 180, f2: 420, glis: .5, v: .5, a: .12, r: .9 }); ton(55, { type: "sawtooth", v: .08, a: .1, r: .8, f2: 75, glis: .6 }); for (let i = 0; i < 6; i++) bruit({ t: .1 + i * .13, filtre: "bandpass", f: 260, q: 3, v: .18, r: .06 }) },
     // le choc dans la pile : boule de bowling dans les quilles
@@ -4388,9 +4391,63 @@ const INTROS = {
       }
     },
   },
+  /* Atelier chariots : le perso s'arrête devant un chariot en panne ; gyrophare, « bip bip », « ?! »,
+     le chariot démarre tout seul. Le perso fait un bond en arrière, le chariot fonce et s'encastre dans
+     une pile de colis et de batteries : les colis volent, les batteries se renversent et l'acide se répand. */
+  atelier: {
+    dezoom: 5, fin: 6.1,
+    init(I) {
+      I.z0 = clamp(W / 240, 1.4, 2.2); I.camx = 10; I.camy = 30; I.hw = W / 2 / I.z0;
+      I.x0 = I.camx - I.hw - 30; I.x = I.x0; I.ch = { x: 40, y: -100, v: 0, rot: Math.PI / 2 }; I.pile = { x: 40, y: 160 };   // pile loin du perso : il a le temps de voir venir
+      const P = I.pile, decal = [[-14, -4], [12, -8], [0, 8], [-10, 12], [14, 10]];
+      I.colis = decal.map(([dx, dy], i) => { const e = introColis("crabe", P.x + dx, P.y + dy), a = .25 + i / (decal.length - 1) * (Math.PI - .5) + rnd(-.1, .1), d = rnd(80, 125);
+        return { e, x0: e.x, y0: e.y, x1: P.x + Math.cos(a) * d * 1.2, y1: P.y + Math.sin(a) * d * .7, h: rnd(35, 70), dur: rnd(.7, 1), del: rnd(0, .08) } });
+      I.batt = [[-26, -12, -1], [26, -14, 1]].map(([dx, dy, c]) => { const e = introColis("batterie", P.x + dx, P.y + dy); return { e, x0: e.x, y0: e.y, x1: e.x + c * 34, y1: e.y + 26, flaque: false } });
+    },
+    passer(I) { if (!I.boom) { I.ch.y = I.pile.y - 30; introBoomAtelier(I, 3.1); for (const c of I.colis) c.del = -9; for (const b of I.batt) b.del = -9 } },
+    maj(I, dt) {
+      const t = I.t, arret = 1.6, gyro = 1.8, demarre = 2.6, C = I.ch;
+      if (t < arret) { const u = t / arret; I.x = I.x0 + (20 - I.x0) * (u * (2 - u)); I.cours = u < .93; I.face = 1 }    // il arrive devant le chariot
+      else if (t < demarre) { I.x = 20; I.face = 1 }
+      else { const u = Math.min(1, (t - demarre) / .35); I.x = 20 - 75 * u; I.dy = -Math.sin(u * Math.PI) * 18; I.face = 1; if (u < 1) { I.sx = .95; I.sy = 1.08 } }   // bond en arrière
+      if (t >= gyro && !I.bip) { I.bip = true; son("transpa"); I.fx.push({ k: "bulle", txt: "?!", t: 0, vie: .8 }) }
+      I.gyro = t >= gyro && !I.boom;
+      if (t >= demarre && !I.boom) {          // le chariot démarre tout seul et fonce
+        if (!I.vroum) { I.vroum = true; son("moteur") }
+        C.v = Math.min(520, C.v + dt * 1400); C.y += C.v * dt;
+        if (C.y >= I.pile.y - 30) { C.y = I.pile.y - 30; introBoomAtelier(I, t) }
+      }
+      if (I.boom) {
+        const k = t - I.tBoom;
+        if (k < .25) C.y = I.pile.y - 30 - Math.sin(k / .25 * Math.PI) * 6;   // il rebondit un peu dans la pile
+        if (Math.random() < dt * 8) I.fx.push({ k: "fumee", x: C.x + rnd(-10, 10), y: C.y - 20, vx: rnd(-8, 8), vy: -22, t: 0, vie: 1.2 });
+        for (const c of I.colis) { const u = clamp((k - c.del) / c.dur, 0, 1); c.e.x = c.x0 + (c.x1 - c.x0) * u; c.e.y = c.y0 + (c.y1 - c.y0) * u - c.h * 4 * u * (1 - u) }
+        for (const b of I.batt) {             // les batteries se renversent, l'acide se répand
+          const u = clamp((k - (b.del || 0)) / .4, 0, 1); b.e.x = b.x0 + (b.x1 - b.x0) * u; b.e.y = b.y0 + (b.y1 - b.y0) * u;
+          if (u >= 1 && !b.flaque) { b.flaque = true; son("acide"); poserFlaque(b.e.x, b.e.y + 8, 40, 9, 1.4); poserFlaque(b.e.x + (b.x1 > b.x0 ? 22 : -22), b.e.y + 22, 26, 8, 1.8) }
+        }
+      }
+      for (const f of S.flaques) { f.t += dt; const g = f.pousse ? Math.min(1, f.t / f.pousse) : 1; f.rr = f.r * g }   // les flaques grossissent
+    },
+    fini(I) { if (!I.boom) this.passer(I); for (const c of I.colis) { c.e.x = c.x1; c.e.y = c.y1 } for (const b of I.batt) { b.e.x = b.x1; b.e.y = b.y1; if (!b.flaque) { b.flaque = true; poserFlaque(b.x1, b.y1 + 8, 40, 9, 1.4) } } },
+    // le chariot fou, son gyrophare et sa fumée (dessinés sous le perso)
+    monde(I, X, Y) {
+      const C = I.ch, x = X(C.x), y = Y(C.y), vib = I.gyro && I.t > 2.6 ? 0 : (I.gyro ? rnd(-1, 1) : 0);
+      ombreSol(x, y + 6, 26, 12); poser(spriteTranspaNeuf(), x + vib, y, C.rot, 1, 1);
+      if (I.gyro && Math.floor(I.t * 8) % 2 === 0) ajouter(lueur("255,170,40"), x, y - 6, 120, 120, .85);
+      if (I.t > 2.6 && !I.boom) { cx.fillStyle = "rgba(255,255,255,.35)"; for (let k = 0; k < 4; k++) cx.fillRect(x - 14 + k * 9, y - 52 - k * 6, 2, 16) }   // traits de vitesse
+      for (const f of I.fx) if (f.k === "fumee") { const k = f.t / f.vie; cx.globalAlpha = .45 * (1 - k); cx.fillStyle = "#3a3d44"; cx.beginPath(); cx.arc(X(f.x), Y(f.y), 5 + k * 12, 0, 7); cx.fill() }
+      cx.globalAlpha = 1;
+    },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
+function introBoomAtelier(I, t) {
+  I.boom = true; I.tBoom = t; I.shake = 1; I.flash = .7; son("quilles"); son("casse");
+  const P = I.pile; for (let i = 0; i < 18; i++) { const a = rnd(.1, 3.04); I.fx.push({ k: "eclat", x: P.x, y: P.y - 10, vx: Math.cos(a) * rnd(60, 190), vy: Math.sin(a) * rnd(40, 140) - 90, t: 0, vie: rnd(.5, .9), c: ["#b98a52", "#6fe02c", "#ffc21a", "#2a2d33"][i % 4] }) }
+  I.fx.push({ k: "mot", txt: "CRAC !", x: P.x, y: P.y - 50, t: 0, vie: 1.1 });
+}
 function introBoomStockage(I, t) {
   I.boom = true; I.tBoom = t; I.shake = 1; I.flash = .9;
   const B = I.bombe; if (B) { S.ennemis = S.ennemis.filter(e => e !== B); I.bombe = null }
@@ -4437,6 +4494,7 @@ function dessinerIntro() {
   cx.save(); cx.translate(W / 2 + rnd(-1, 1) * sk, H / 2 + rnd(-1, 1) * sk); cx.scale(c.z, c.z); cx.translate(-W / 2, -H / 2);
   dessinerJeu();
   const X = x => x - c.x + W / 2, Y = y => y - c.y + H / 2;
+  if (I.sc.monde) I.sc.monde(I, X, Y);
   for (const pn of I.pneus || []) {   // pneus de la scène (mêmes que dans le jeu)
     const x = X(pn.x), y0 = Y(pn.y), y = y0 - (pn.arret && !I.repart ? 0 : Math.abs(Math.sin(pn.ph * 7)) * 7);
     ombreSol(x, y0 + pn.r * .9, pn.r * 1.05, pn.r * .35); poser(spritePneu(), x, y, pn.parcours / pn.r * pn.sens, pn.r / 20, pn.r / 20);
