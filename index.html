@@ -780,6 +780,7 @@ const SON = (() => {
     moteur() { ton(70, { type: "sawtooth", v: .16, a: .05, r: .6, f2: 210, glis: .5 }); ton(105, { type: "square", v: .06, a: .05, r: .5, f2: 300, glis: .5 }); bruit({ filtre: "lowpass", f: 300, f2: 900, glis: .5, v: .25, a: .05, r: .5 }) },
     acide() { bruit({ filtre: "highpass", f: 4000, v: .14, a: .08, r: .9 }); for (let i = 0; i < 5; i++) bruit({ t: .1 + i * .15, filtre: "bandpass", f: 2200 + Math.random() * 1500, q: 6, v: .1, r: .04 }) },
     // entrepôt en perdition : le feu qui prend d'un coup (souffle et crépitements)
+    souffle() { bruit({ filtre: "lowpass", f: 120, f2: 2500, glis: .25, v: .55, a: .02, r: 1.1 }); ton(60, { type: "sawtooth", v: .22, a: .02, r: .9, f2: 30, glis: .8 }); ton(45, { v: .3, r: 1, f2: 28, glis: .9 }) },
     feu() { bruit({ filtre: "lowpass", f: 300, f2: 1400, glis: .35, v: .4, a: .05, r: .9 }); for (let i = 0; i < 8; i++) bruit({ t: .1 + Math.random() * .8, filtre: "bandpass", f: 1800 + Math.random() * 2500, q: 5, v: .12, r: .03 }) },
     // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
     roule() { bruit({ filtre: "lowpass", f: 180, f2: 420, glis: .5, v: .5, a: .12, r: .9 }); ton(55, { type: "sawtooth", v: .08, a: .1, r: .8, f2: 75, glis: .6 }); for (let i = 0; i < 6; i++) bruit({ t: .1 + i * .13, filtre: "bandpass", f: 260, q: 3, v: .18, r: .06 }) },
@@ -4515,16 +4516,24 @@ const INTROS = {
       else if (t < demi) { I.y = -95; I.cours = false; I.face = 1 }
       else { const u = Math.min(1, (t - demi) / .8); I.y = -95 + 145 * (u * (2 - u)); I.cours = I.vite = u < .95; I.face = -1 }   // demi-tour !
       if (t >= vu && !I.vuSortie) { I.vuSortie = true; I.fx.push({ k: "bulle", txt: "!", t: 0, vie: .6 }) }
-      if (t >= chute && !P.tombe) { P.tombe = true; P.t0 = t; son("casse") }
+      P.clign = t > 1.35 && t < chute && Math.random() < .35;   // le néon grésille avant de lâcher
+      if (t > 1.35 && t < chute && Math.random() < dt * 10) for (const s2 of [-1, 1]) I.fx.push({ k: "eclat", x: P.x + s2 * 22, y: P.y - 60, vx: rnd(-60, 60), vy: rnd(-40, 20), t: 0, vie: .35, c: Math.random() < .5 ? "#fff6c0" : "#ffd447" });
+      if (t >= chute && !P.tombe) { P.tombe = true; P.t0 = t; son("casse"); I.fx.push({ k: "mot", txt: "CRAC !", x: P.x + 50, y: P.y - 40, t: 0, vie: .8 });
+        for (let i = 0; i < 18; i++) I.fx.push({ k: "eclat", x: P.x + rnd(-24, 24), y: P.y - 60, vx: rnd(-120, 120), vy: rnd(-80, 40), t: 0, vie: rnd(.4, .7), c: i % 2 ? "#fff6c0" : "#7dff9c" }) }
       if (P.tombe) { const k = Math.min(1, (t - P.t0) / .35); P.rot = k * 1.25; P.h = k * 34; if (k >= 1 && !P.pose) { P.pose = true; I.shake = .4; son("carton") } }
       if (t >= chute + .4 && !I.feuPanneau) { I.feuPanneau = true; introFeu(P.x, P.y + 34, 30, t); son("feu") }
       if (t >= mur && !I.mur) {               // le mur de flammes se lève derrière le panneau
-        I.mur = true; I.shake = .7; I.flash = .4; son("feu");
-        for (let i = 0; i < 7; i++) introFeu(-240 + i * 80 + rnd(-10, 10), -285 + rnd(-12, 12), rnd(48, 62), t + i * .05);
+        I.mur = true; I.shake = 1.3; I.flash = 1; I.punch = 1; son("souffle"); son("feu");
+        for (let i = 0; i < 8; i++) introFeu(-280 + i * 80 + rnd(-10, 10), -280 + rnd(-10, 10), rnd(62, 80), t + Math.abs(i - 3.5) * .06);   // ça part du centre
+        for (let i = 0; i < 7; i++) introFeu(-240 + i * 80 + rnd(-10, 10), -350 + rnd(-10, 10), rnd(70, 90), t + .15 + Math.abs(i - 3) * .06);
+        I.fx.push({ k: "mot", txt: "VLAM !", x: 0, y: -330, t: 0, vie: 1.2 });
+        for (let i = 0; i < 40; i++) { const a = rnd(3.4, 6.0); I.fx.push({ k: "braise", x: rnd(-260, 260), y: -280, vx: Math.cos(a) * rnd(40, 220), vy: Math.sin(a) * rnd(80, 260), t: 0, vie: rnd(.8, 1.6) }) }
       }
       if (t >= stop && !I.surpris) { I.surpris = true; I.fx.push({ k: "bulle", txt: "?!", t: 0, vie: .8 }) }
       for (const d of S.dangers) if (d.intro) { d.t = Math.max(0, t - d.t0); d.ph += dt; d.rr = d.r * Math.min(1, d.t / .6) }
-      if (I.mur && Math.random() < dt * 14) I.fx.push({ k: "fumee", x: rnd(-260, 260), y: -300 + rnd(-20, 20), vx: rnd(-10, 10), vy: -26, t: 0, vie: 1.6 });
+      if (I.mur && Math.random() < dt * 22) I.fx.push({ k: "fumee", x: rnd(-280, 280), y: -310 + rnd(-30, 20), vx: rnd(-14, 14), vy: -30, t: 0, vie: 2 });
+      if (I.mur && Math.random() < dt * 35) I.fx.push({ k: "braise", x: rnd(-280, 280), y: -280 + rnd(-30, 10), vx: rnd(-30, 30), vy: rnd(-120, -50), t: 0, vie: rnd(1, 1.8) });   // braises qui montent
+      I.punch = Math.max(0, (I.punch || 0) - dt * 2.2);
       if (t >= demi) for (const c of I.colis) {   // les colis surgissent de la fumée
         const k = t - demi - c.del; if (k < 0) continue; c.e.introCache = false; c.e.ph += dt;
         if (!c.vu) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }); for (let j = 0; j < 4; j++) I.fx.push({ k: "fumee", x: c.x0 + rnd(-12, 12), y: c.y0 + rnd(-8, 8), vx: rnd(-20, 20), vy: -20, t: 0, vie: 1 }) }
@@ -4539,16 +4548,22 @@ const INTROS = {
       for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1; c.e.y = c.y1 }
       I.vuSortie = I.surpris = true; I.y = 50; I.face = -1;
     },
+    ecran(I) {
+      if (!I.mur) return; const k = Math.min(1, (I.t - 2.45) / .3) * (.75 + .25 * Math.sin(I.t * 11));
+      const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, `rgba(255,90,20,${.42 * k})`); g.addColorStop(.55, `rgba(255,60,10,${.12 * k})`); g.addColorStop(1, "rgba(255,60,10,0)");
+      cx.save(); cx.globalCompositeOperation = "lighter"; cx.fillStyle = g; cx.fillRect(0, 0, W, H); cx.restore();
+    },
     // le panneau « SORTIE » (accroché au plafond, puis par terre) et la fumée
     monde(I, X, Y) {
       const P = I.pan, x = X(P.x), y = Y(P.y) + P.h;
-      for (const f of I.fx) if (f.k === "fumee") { const k = f.t / f.vie; cx.globalAlpha = .4 * (1 - k); cx.fillStyle = "#2a2522"; cx.beginPath(); cx.arc(X(f.x), Y(f.y), 8 + k * 18, 0, 7); cx.fill() }
+      for (const f of I.fx) if (f.k === "fumee") { const k = f.t / f.vie; cx.globalAlpha = .5 * (1 - k); cx.fillStyle = "#231e1b"; cx.beginPath(); cx.arc(X(f.x), Y(f.y), 12 + k * 26, 0, 7); cx.fill() }
       cx.globalAlpha = 1;
+      for (const f of I.fx) if (f.k === "braise") { const k = f.t / f.vie, x2 = X(f.x), y2 = Y(f.y); ajouter(lueur("255,140,40"), x2, y2, 14, 14, .9 * (1 - k)); cx.fillStyle = `rgba(255,${200 - k * 120 | 0},80,${1 - k})`; cx.fillRect(x2 - 1.5, y2 - 1.5, 3, 3) }
       if (!P.tombe) { cx.strokeStyle = "#8a8f96"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x - 22, y - 13); cx.lineTo(x - 22, y - 60); cx.moveTo(x + 22, y - 13); cx.lineTo(x + 22, y - 60); cx.stroke() }
       else ombreSol(x, y + 12, 34, 7);
-      if (!P.tombe || I.t < (P.t0 || 0) + 1.2) ajouter(lueur("80,240,120"), x, y, 120, 70, P.tombe ? .4 : .8);
+      if ((!P.tombe && !P.clign) || (P.tombe && I.t < (P.t0 || 0) + 1.2)) ajouter(lueur("80,240,120"), x, y, 120, 70, P.tombe ? .4 : .8);
       cx.save(); cx.translate(x, y); cx.rotate(P.rot);
-      rrect(cx, -34, -13, 68, 26, 4); cx.fillStyle = "#1f9e4a"; cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = ENCRE; cx.stroke();
+      rrect(cx, -34, -13, 68, 26, 4); cx.fillStyle = P.clign ? "#145c2c" : "#1f9e4a"; cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = ENCRE; cx.stroke();
       cx.strokeStyle = "#e9fff0"; cx.lineWidth = 1.5; cx.strokeRect(-30, -9, 60, 18);
       cx.font = "13px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#fff"; cx.fillText("SORTIE", 0, 5);
       cx.restore();
@@ -4600,7 +4615,7 @@ function finIntro() {
 }
 function introCam(I) {
   const u = mEase(clamp((I.t - I.sc.dezoom) / (I.sc.fin - I.sc.dezoom), 0, 1));
-  return { z: I.z0 + (1 - I.z0) * u, x: I.camx + (I.x - I.camx) * u, y: I.camy + ((I.y || 0) - I.camy) * u };
+  return { z: (I.z0 + (1 - I.z0) * u) * (1 + (I.punch || 0) * .1), x: I.camx + (I.x - I.camx) * u, y: I.camy + ((I.y || 0) - I.camy) * u };
 }
 function dessinerIntro() {
   const I = S.intro, p = S.p, c = introCam(I), rx = p.x, ry = p.y, tS = S.t, sk = I.shake * 12;
@@ -4642,12 +4657,13 @@ function dessinerIntro() {
   }
   cx.globalAlpha = 1; cx.restore();
   if (I.sc.noir) I.sc.noir(I, c.z, X, Y, px, py);
+  if (I.sc.ecran) I.sc.ecran(I);
   p.x = rx; p.y = ry; S.t = tS;
   if (caches.length) S.ennemis.push(...caches);
   // bandes noires façon cinéma, qui s'effacent au dézoom
   const bande = H * .09 * (1 - mEase(clamp((I.t - I.sc.dezoom) / .8, 0, 1)));
   if (bande > .5) { cx.fillStyle = "#000"; cx.fillRect(0, 0, W, bande); cx.fillRect(0, H - bande, W, bande) }
-  if (I.flash > 0) { cx.fillStyle = I.lieu === "frigo" ? `rgba(235,248,255,${I.flash * .6})` : `rgba(255,214,150,${I.flash * .6})`; cx.fillRect(0, 0, W, H) }
+  if (I.flash > 0) { cx.fillStyle = I.lieu === "frigo" ? `rgba(235,248,255,${I.flash * .6})` : I.lieu === "incendie" ? `rgba(255,170,70,${I.flash * .7})` : `rgba(255,214,150,${I.flash * .6})`; cx.fillRect(0, 0, W, H) }
   if (I.t > .3 && I.t < I.sc.dezoom) { cx.font = "800 14px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "rgba(255,246,227,.75)"; cx.fillText(TACTILE ? "Touche l'écran pour passer" : "Espace pour passer", W / 2, H - Math.max(18, bande * .4 + 6)) }
 }
 
