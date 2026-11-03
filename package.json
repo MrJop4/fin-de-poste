@@ -1,0 +1,9 @@
+{
+  "name": "fin-de-poste",
+  "private": true,
+  "type": "module",
+  "description": "Fin de Poste : le jeu est dans index.html ; ce fichier sert seulement au compteur de joueurs (fonction Netlify).",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

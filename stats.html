@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Fin de Poste · Joueurs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap">
+<style>
+/* Page des joueurs de Fin de Poste (03/11/2026) : lit /api/compteur. ?demo = chiffres d'exemple pour l'aperçu. */
+:root { --encre: #17130f; --papier: #fff6e3; --jaune: #ffc21a; --gris: #6d6457; --fond: #2a2c30; --vert: #2f9e5a;
+  --display: "Luckiest Guy", "Arial Black", Impact, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fond); color: var(--encre); font-family: Nunito, system-ui, sans-serif; font-weight: 800; }
+main { max-width: 760px; margin: 0 auto; padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--display); font-weight: 400; color: var(--jaune); font-size: 34px; margin: 0 0 4px; letter-spacing: .02em; text-shadow: 3px 3px 0 #000; }
+.sous { color: #cfc6b6; margin: 0 0 18px; font-size: 15px; }
+.bandeau { background: var(--jaune); border: 3px solid var(--encre); border-radius: 12px; padding: 8px 12px; margin-bottom: 14px; box-shadow: 3px 3px 0 #000; }
+.tuiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+@media (min-width: 620px) { .tuiles { grid-template-columns: repeat(4, 1fr); } }
+.tuile { background: var(--papier); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 #000; padding: 12px; }
+.tuile b { display: block; font-family: var(--display); font-weight: 400; font-size: 38px; line-height: 1; }
+.tuile span { color: var(--gris); font-size: 14px; }
+.tuile.vedette { background: var(--jaune); }
+.tuile.vedette span { color: var(--encre); }
+section { background: var(--papier); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 #000; padding: 14px; margin-bottom: 18px; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0 0 10px; letter-spacing: .02em; }
+.ligne { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "nom chiffre" "barre barre"; align-items: center; gap: 4px 10px; padding: 7px 0; border-top: 2px dashed #e4d7bd; font-size: 15px; }
+.ligne:first-of-type { border-top: 0; }
+.ligne > span:first-child { grid-area: nom; }
+.ligne .barre { grid-area: barre; }
+.ligne .chiffre { grid-area: chiffre; }
+.barre { height: 14px; background: #eadfc6; border-radius: 7px; overflow: hidden; border: 2px solid var(--encre); }
+.barre i { display: block; height: 100%; background: var(--jaune); }
+.barre i.v { background: var(--vert); }
+.chiffre { white-space: nowrap; font-size: 14px; color: var(--gris); text-align: right; }
+.chiffre strong { color: var(--encre); }
+.jours { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-top: 6px; }
+.jour { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.jour i { display: block; width: 100%; background: var(--jaune); border: 2px solid var(--encre); border-bottom: 0; border-radius: 5px 5px 0 0; min-height: 2px; }
+.jour small { font-size: 10px; color: var(--gris); margin-top: 3px; }
+.jour em { font-style: normal; font-size: 11px; }
+.axe { border-top: 3px solid var(--encre); }
+.note { color: #cfc6b6; font-size: 13px; line-height: 1.45; }
+.vide { color: var(--gris); font-size: 15px; }
+@media (min-width: 620px) { .ligne { grid-template-columns: 11em 1fr auto; grid-template-areas: "nom barre chiffre"; gap: 10px; padding: 5px 0; } }
+@media (max-width: 420px) { .tuile b { font-size: 32px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Les joueurs</h1>
+  <p class="sous" id="sous">Chargement…</p>
+  <div class="bandeau" id="demo" hidden>Aperçu avec des chiffres d'exemple : ce ne sont pas de vrais joueurs.</div>
+  <div class="tuiles">
+    <div class="tuile vedette"><b id="tJoueurs">–</b><span>joueurs différents</span></div>
+    <div class="tuile"><b id="t7">–</b><span>ont joué ces 7 jours</span></div>
+    <div class="tuile"><b id="tParties">–</b><span>parties lancées</span></div>
+    <div class="tuile"><b id="tVict">–</b><span>fins de poste gagnées</span></div>
+  </div>
+  <section><h2>Par jour (14 derniers jours)</h2><div class="jours" id="jours"></div><div class="axe"></div></section>
+  <section><h2>Par lieu</h2><div id="lieux"></div></section>
+  <p class="note">Chaque téléphone ou ordinateur compte pour un joueur, avec un numéro anonyme tiré au hasard : on ne sait pas qui joue, seulement combien. Changer de navigateur ou effacer ses données compte comme un nouveau joueur. Les parties de ton propre téléphone sont comptées aussi.</p>
+</main>
+<script>
+const LIEUX = [["quai", "Quai de nuit"], ["frigo", "Chambre froide"], ["stockage", "Zone de stockage"], ["parking", "Parking poids lourds"], ["promo", "Entrepôt des promos"], ["atelier", "Atelier chariots"], ["chargement", "Quai de chargement"], ["incendie", "Entrepôt en perdition"]];
+const $ = id => document.getElementById(id);
+const jourParis = d => new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" }).format(d);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const nb = n => (n || 0).toLocaleString("fr-FR");
+
+function demo() {
+  const T = { joueurs: 23, actifsAuj: 6, actifs7j: 14, parties: 412, victoires: 61, finies: 398, lieux: {}, jours: {}, maj: new Date().toISOString() };
+  const p = { quai: [188, 41, 23], frigo: [72, 9, 12], stockage: [55, 6, 9], parking: [38, 3, 7], promo: [27, 1, 5], atelier: [18, 1, 4], chargement: [9, 0, 2], incendie: [5, 0, 1] };
+  for (const [k, [a, v, j]] of Object.entries(p)) T.lieux[k] = { parties: a, victoires: v, joueurs: j };
+  const base = [4, 9, 31, 44, 28, 19, 22, 35, 27, 15, 18, 40, 52, 33];
+  for (let i = 0; i < 14; i++) { const j = jourParis(new Date(Date.now() - (13 - i) * 864e5)); T.jours[j] = { parties: base[i], joueurs: Math.max(1, Math.round(base[i] / 4)) } }
+  return T;
+}
+
+function afficher(T, estDemo) {
+  $("demo").hidden = !estDemo;
+  $("sous").textContent = estDemo ? "Fin de Poste · exemple" : "Fin de Poste · mis à jour à " + new Date(T.maj).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + " (recharge la page pour actualiser)";
+  $("tJoueurs").textContent = nb(T.joueurs); $("t7").textContent = nb(T.actifs7j);
+  $("tParties").textContent = nb(T.parties); $("tVict").textContent = nb(T.victoires);
+  // 14 derniers jours
+  const jours = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5), k = jourParis(d); jours.push({ k, d, ...(T.jours[k] || { parties: 0, joueurs: 0 }) }) }
+  const maxJ = Math.max(1, ...jours.map(j => j.parties));
+  $("jours").innerHTML = jours.map(j => `<div class="jour" title="${j.parties} parties, ${j.joueurs} joueur${j.joueurs > 1 ? "s" : ""}"><em>${j.parties || ""}</em><i style="height:${(j.parties / maxJ * 82).toFixed(1)}%"></i><small>${j.d.toLocaleDateString("fr-FR", { day: "numeric", timeZone: "Europe/Paris" })}</small></div>`).join("");
+  // lieux
+  const lignes = LIEUX.map(([k, nom]) => ({ nom, ...(T.lieux[k] || { parties: 0, victoires: 0, joueurs: 0 }) }));
+  const maxL = Math.max(1, ...lignes.map(l => l.parties));
+  $("lieux").innerHTML = T.parties ? lignes.map(l => `<div class="ligne"><span>${esc(l.nom)}</span><div class="barre"><i style="width:${(l.parties / maxL * 100).toFixed(1)}%"></i></div><span class="chiffre"><strong>${nb(l.parties)}</strong> parties · ${nb(l.victoires)} gagnée${l.victoires > 1 ? "s" : ""} · ${nb(l.joueurs)} joueur${l.joueurs > 1 ? "s" : ""}</span></div>`).join("")
+    : `<p class="vide">Pas encore de partie enregistrée.</p>`;
+}
+
+if (/[?&]demo\b/.test(location.search)) afficher(demo(), true);
+else fetch("/api/compteur", { cache: "no-store" }).then(r => { if (!r.ok) throw 0; return r.json() }).then(T => afficher(T, false))
+  .catch(() => { $("sous").textContent = "Impossible de lire le compteur pour l'instant. Réessaie dans un moment." });
+</script>
+</body>
+</html>

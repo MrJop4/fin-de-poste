@@ -671,6 +671,24 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmt = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 const lsGet = k => { try { return localStorage.getItem(k) } catch (e) { return null } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v) } catch (e) { } };
+/* compteur de joueurs (03/11/2026) : un numéro anonyme par téléphone, on envoie juste « partie commencée » et « partie finie »
+   (lieu, gagnée ou pas) vers /api/compteur. Rien de personnel. Pas d'envoi en local ni hors ligne : ça ne bloque jamais le jeu. */
+function idJoueur() {
+  let id = lsGet("poste-id");
+  if (!id || !/^[a-z0-9-]{8,40}$/.test(id)) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12)).toLowerCase();
+    lsSet("poste-id", id);
+  }
+  return id;
+}
+function compter(type, extra) {
+  try {
+    if (!/netlify\.app$/.test(location.hostname) || navigator.onLine === false) return;
+    const corps = JSON.stringify(Object.assign({ id: idJoueur(), type, lieu: SAVE.lieu, test: !!SAVE.test }, extra || {}));
+    if (navigator.sendBeacon) navigator.sendBeacon("/api/compteur", corps);
+    else fetch("/api/compteur", { method: "POST", body: corps, keepalive: true }).catch(() => { });
+  } catch (e) { }
+}
 /* ---------- sons : tout est synthétisé (Web Audio), aucun fichier ---------- */
 const SON = (() => {
   let ac = null, maitre = null, bruitBuf = null, coupe = false;
@@ -2447,6 +2465,7 @@ function majHud() {
 const PRIME_FIN = { quai: 100, frigo: 150, stockage: 200, parking: 300, promo: 350, atelier: 450, chargement: 525, incendie: 600 };
 function finir(gagne) {
   enJeu = false; $("hud").hidden = true; JOY.actif = false;
+  if (!S.infini) compter("fin", { gagne: !!gagne });
   const best = +(lsGet("poste-record") || 0), score = Math.floor(Math.min(S.t, VICTOIRE));
   if (score > best) lsSet("poste-record", String(score));
   // la paie déjà versée à la fin des 10 minutes n'est pas comptée deux fois en mode infini
@@ -4154,7 +4173,7 @@ function boucle(now) {
 /* ---------- commandes ---------- */
 function demarrer() {
   if (enJeu || !aPerso(SAVE.perso) || !aLieu(SAVE.lieu)) return;
-  nouvellePartie(); enJeu = true; enPause = false; choix = false;
+  nouvellePartie(); enJeu = true; enPause = false; choix = false; compter("debut");
   for (let i = 0; i < niv("vip"); i++) { const pool = offresPossibles(); if (pool.length) appliquer(pool[Math.floor(Math.random() * pool.length)]) }
   majArmes();
   { const a = rnd(0, 6.28); poserDecor(Math.cos(a) * 300, Math.sin(a) * 300, "cafe") }

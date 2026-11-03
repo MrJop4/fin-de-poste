@@ -1,0 +1,7 @@
+# Fin de Poste : le jeu est publié tel quel (pas de build). Le compteur de joueurs est une fonction Netlify.
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
