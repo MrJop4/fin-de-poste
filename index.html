@@ -779,6 +779,8 @@ const SON = (() => {
     // atelier : le chariot fou qui démarre (moteur qui monte) et l'acide qui grésille
     moteur() { ton(70, { type: "sawtooth", v: .16, a: .05, r: .6, f2: 210, glis: .5 }); ton(105, { type: "square", v: .06, a: .05, r: .5, f2: 300, glis: .5 }); bruit({ filtre: "lowpass", f: 300, f2: 900, glis: .5, v: .25, a: .05, r: .5 }) },
     acide() { bruit({ filtre: "highpass", f: 4000, v: .14, a: .08, r: .9 }); for (let i = 0; i < 5; i++) bruit({ t: .1 + i * .15, filtre: "bandpass", f: 2200 + Math.random() * 1500, q: 6, v: .1, r: .04 }) },
+    // entrepôt en perdition : le feu qui prend d'un coup (souffle et crépitements)
+    feu() { bruit({ filtre: "lowpass", f: 300, f2: 1400, glis: .35, v: .4, a: .05, r: .9 }); for (let i = 0; i < 8; i++) bruit({ t: .1 + Math.random() * .8, filtre: "bandpass", f: 1800 + Math.random() * 2500, q: 5, v: .12, r: .03 }) },
     // une rangée de pneus qui déboule : grondement sourd et caoutchouc qui claque
     roule() { bruit({ filtre: "lowpass", f: 180, f2: 420, glis: .5, v: .5, a: .12, r: .9 }); ton(55, { type: "sawtooth", v: .08, a: .1, r: .8, f2: 75, glis: .6 }); for (let i = 0; i < 6; i++) bruit({ t: .1 + i * .13, filtre: "bandpass", f: 260, q: 3, v: .18, r: .06 }) },
     // le choc dans la pile : boule de bowling dans les quilles
@@ -4495,9 +4497,67 @@ const INTROS = {
       I.porte = I.bip2 = I.q = true; I.x = I.xp;
     },
   },
+  /* Entrepôt en perdition : le perso aperçoit le panneau vert « SORTIE » au bout et file vers lui… le panneau
+     se décroche, tombe, prend feu, et un mur de flammes se lève derrière. « ?! », demi-tour, et les colis
+     surgissent de la fumée. */
+  incendie: {
+    dezoom: 4.6, fin: 5.7,
+    init(I) {
+      I.z0 = clamp(W / 260, 1.3, 2.1); I.hh = H / 2 / I.z0; I.camx = 0; I.camy = -110;
+      I.x = 0; I.y0 = I.camy + I.hh + 30; I.y = I.y0; I.pan = { x: 0, y: -235, rot: 0, h: 0, tombe: false };
+      const dep = [[-150, -330], [-60, -360], [40, -350], [140, -320], [-210, -200], [210, -190], [0, -400]];
+      I.colis = dep.map(([x, y], i) => { const e = introColis("crabe", x, y); e.introCache = true; return { e, x0: x, y0: y, x1: x * .9, y1: y + 70, del: .1 * i, vu: false } });
+    },
+    passer(I) { this.fini(I) },
+    maj(I, dt) {
+      const t = I.t, P = I.pan, vu = 1.1, chute = 1.95, mur = 2.45, stop = 2.6, demi = 3.05;
+      if (t < chute) { const fr = t < vu ? .35 * t / vu : .35 + .65 * (t - vu) / (chute - vu); I.y = I.y0 + (-95 - I.y0) * fr; I.cours = true; I.vite = t > vu; I.face = 1 }   // il marche, voit la sortie et accélère
+      else if (t < demi) { I.y = -95; I.cours = false; I.face = 1 }
+      else { const u = Math.min(1, (t - demi) / .8); I.y = -95 + 145 * (u * (2 - u)); I.cours = I.vite = u < .95; I.face = -1 }   // demi-tour !
+      if (t >= vu && !I.vuSortie) { I.vuSortie = true; I.fx.push({ k: "bulle", txt: "!", t: 0, vie: .6 }) }
+      if (t >= chute && !P.tombe) { P.tombe = true; P.t0 = t; son("casse") }
+      if (P.tombe) { const k = Math.min(1, (t - P.t0) / .35); P.rot = k * 1.25; P.h = k * 34; if (k >= 1 && !P.pose) { P.pose = true; I.shake = .4; son("carton") } }
+      if (t >= chute + .4 && !I.feuPanneau) { I.feuPanneau = true; introFeu(P.x, P.y + 34, 30, t); son("feu") }
+      if (t >= mur && !I.mur) {               // le mur de flammes se lève derrière le panneau
+        I.mur = true; I.shake = .7; I.flash = .4; son("feu");
+        for (let i = 0; i < 7; i++) introFeu(-240 + i * 80 + rnd(-10, 10), -285 + rnd(-12, 12), rnd(48, 62), t + i * .05);
+      }
+      if (t >= stop && !I.surpris) { I.surpris = true; I.fx.push({ k: "bulle", txt: "?!", t: 0, vie: .8 }) }
+      for (const d of S.dangers) if (d.intro) { d.t = Math.max(0, t - d.t0); d.ph += dt; d.rr = d.r * Math.min(1, d.t / .6) }
+      if (I.mur && Math.random() < dt * 14) I.fx.push({ k: "fumee", x: rnd(-260, 260), y: -300 + rnd(-20, 20), vx: rnd(-10, 10), vy: -26, t: 0, vie: 1.6 });
+      if (t >= demi) for (const c of I.colis) {   // les colis surgissent de la fumée
+        const k = t - demi - c.del; if (k < 0) continue; c.e.introCache = false; c.e.ph += dt;
+        if (!c.vu) { c.vu = true; I.fx.push({ k: "bulle", txt: "!", cible: c.e, t: 0, vie: .8 }); for (let j = 0; j < 4; j++) I.fx.push({ k: "fumee", x: c.x0 + rnd(-12, 12), y: c.y0 + rnd(-8, 8), vx: rnd(-20, 20), vy: -20, t: 0, vie: 1 }) }
+        const u = Math.min(1, k / 1); c.e.x = c.x0 + (c.x1 - c.x0) * u; c.e.y = c.y0 + (c.y1 - c.y0) * u;
+      }
+    },
+    fini(I) {
+      const P = I.pan; P.tombe = P.pose = true; P.rot = 1.25; P.h = 34;
+      if (!I.feuPanneau) { I.feuPanneau = true; introFeu(P.x, P.y + 34, 30, I.t - 1) }
+      if (!I.mur) { I.mur = true; for (let i = 0; i < 7; i++) introFeu(-240 + i * 80, -285, rnd(48, 62), I.t - 1) }
+      for (const d of S.dangers) if (d.intro) { d.t = Math.max(d.t, 2); d.rr = d.r; d.intro = false }
+      for (const c of I.colis) { c.e.introCache = false; c.e.x = c.x1; c.e.y = c.y1 }
+      I.vuSortie = I.surpris = true; I.y = 50; I.face = -1;
+    },
+    // le panneau « SORTIE » (accroché au plafond, puis par terre) et la fumée
+    monde(I, X, Y) {
+      const P = I.pan, x = X(P.x), y = Y(P.y) + P.h;
+      for (const f of I.fx) if (f.k === "fumee") { const k = f.t / f.vie; cx.globalAlpha = .4 * (1 - k); cx.fillStyle = "#2a2522"; cx.beginPath(); cx.arc(X(f.x), Y(f.y), 8 + k * 18, 0, 7); cx.fill() }
+      cx.globalAlpha = 1;
+      if (!P.tombe) { cx.strokeStyle = "#8a8f96"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x - 22, y - 13); cx.lineTo(x - 22, y - 60); cx.moveTo(x + 22, y - 13); cx.lineTo(x + 22, y - 60); cx.stroke() }
+      else ombreSol(x, y + 12, 34, 7);
+      if (!P.tombe || I.t < (P.t0 || 0) + 1.2) ajouter(lueur("80,240,120"), x, y, 120, 70, P.tombe ? .4 : .8);
+      cx.save(); cx.translate(x, y); cx.rotate(P.rot);
+      rrect(cx, -34, -13, 68, 26, 4); cx.fillStyle = "#1f9e4a"; cx.fill(); cx.lineWidth = 2.5; cx.strokeStyle = ENCRE; cx.stroke();
+      cx.strokeStyle = "#e9fff0"; cx.lineWidth = 1.5; cx.strokeRect(-30, -9, 60, 18);
+      cx.font = "13px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillStyle = "#fff"; cx.fillText("SORTIE", 0, 5);
+      cx.restore();
+    },
+  },
 };
 function introColis(type, x, y) { spawn_(type); const e = S.ennemis[S.ennemis.length - 1]; e.x = x; e.y = y; return e }
 function souffle(I, dt, cad) { if ((I.souffle -= dt) <= 0) { I.souffle = cad; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) } }
+function introFeu(x, y, r, t0) { S.dangers.push({ k: "feu", intro: true, t0, x, y, t: 0, r, rr: 0, vie: 14 + rnd(0, 6), prop: 1e9, ph: rnd(0, 6) }) }
 function introBoomAtelier(I, t) {
   I.boom = true; I.tBoom = t; I.shake = 1; I.flash = .7; son("quilles"); son("casse");
   const P = I.pile; for (let i = 0; i < 18; i++) { const a = rnd(.1, 3.04); I.fx.push({ k: "eclat", x: P.x, y: P.y - 10, vx: Math.cos(a) * rnd(60, 190), vy: Math.sin(a) * rnd(40, 140) - 90, t: 0, vie: rnd(.5, .9), c: ["#b98a52", "#6fe02c", "#ffc21a", "#2a2d33"][i % 4] }) }
