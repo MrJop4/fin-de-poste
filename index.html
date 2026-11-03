@@ -3844,13 +3844,13 @@ function dessinerJeu() {
     else { cx.save(); cx.globalAlpha = Math.max(0, f.t / .45); cx.translate(X(f.x), Y(f.y)); cx.rotate(f.t * 14 + f.x); cx.fillStyle = ENCRE; cx.fillRect(-4, -3, 8, 6); cx.fillStyle = f.c; cx.fillRect(-3, -2, 6, 4); cx.restore() }
   }
   // aura glacée de Djefrais
-  if (p.givre) { const ga = cx.createRadialGradient(X(p.x), Y(p.y), 20, X(p.x), Y(p.y), 140); ga.addColorStop(0, "rgba(160,220,255,.16)"); ga.addColorStop(1, "rgba(160,220,255,0)"); cx.fillStyle = ga; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, 0, 7); cx.fill(); cx.strokeStyle = "rgba(190,235,255,.35)"; cx.setLineDash([6, 8]); cx.lineWidth = 2; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, S.t, S.t + 6.28); cx.stroke(); cx.setLineDash([]) }
+  if (p.givre && !S.intro) { const ga = cx.createRadialGradient(X(p.x), Y(p.y), 20, X(p.x), Y(p.y), 140); ga.addColorStop(0, "rgba(160,220,255,.16)"); ga.addColorStop(1, "rgba(160,220,255,0)"); cx.fillStyle = ga; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, 0, 7); cx.fill(); cx.strokeStyle = "rgba(190,235,255,.35)"; cx.setLineDash([6, 8]); cx.lineWidth = 2; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, S.t, S.t + 6.28); cx.stroke(); cx.setLineDash([]) }
   // préparateur : gilet orange à bandes, casquette
   const px = X(p.x), py = Y(p.y), bob = Math.sin(p.pas) * 1.5;
   if (S.mort) { const St = MORTS[S.mort.v]; if (St.sous) { cx.save(); cx.translate(px, py); St.sous(S.mort, S.mort.t); cx.restore() } }
-  else ombreSol(px, py + 13, 12, 4.5);
+  else if (!S.intro) ombreSol(px, py + 13, 12, 4.5);
   // rayon de la douchette
-  if (S.armes.lanterne) {
+  if (S.armes.lanterne && !S.intro) {
     const port = 110 + 16 * S.armes.lanterne, arc = .32 + .03 * S.armes.lanterne;
     const evoL = S.armes.lanterne >= EVO, C1 = evoL ? "80,240,220" : "255,59,48";
     for (const off of evoL ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : S.armes.lanterne >= 4 ? [0, Math.PI] : [0]) {
@@ -3865,7 +3865,7 @@ function dessinerJeu() {
   }
   const PP = PERSOS[S.perso] || PERSOS.preparateur;
   if (S.mort) joueurMort(px, py, PP);
-  else if (!(p.inv > 0 && Math.floor(p.inv * 20) % 2)) {
+  else if (!S.intro && !(p.inv > 0 && Math.floor(p.inv * 20) % 2)) {
     const sq = 1 + Math.abs(Math.sin(p.pas)) * .06, f = Math.cos(p.dir) < 0 ? -1 : 1;
     // il se dandine en marchant (balancement gauche-droite), immobile il reste droit
     const allure = Math.min(1, Math.hypot(p.vx, p.vy) / 80), dand = Math.sin(p.pas) * .12 * allure;
@@ -3907,7 +3907,7 @@ function dessinerJeu() {
     cx.fillStyle = "#fff"; cx.font = "22px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillText("!", gx, gy + 8);
   }
   // vie
-  if (!S.mort) barre(px, py + 20, 40, 6, Math.max(0, p.hp / p.max), p.hp / p.max < .3 ? "#ff3b30" : "#5ff07a", p.hp / p.max < .3 ? "#a8231a" : "#1f9e4a");
+  if (!S.mort && !S.intro) barre(px, py + 20, 40, 6, Math.max(0, p.hp / p.max), p.hp / p.max < .3 ? "#ff3b30" : "#5ff07a", p.hp / p.max < .3 ? "#a8231a" : "#1f9e4a");
   // chiffres de dégâts
   cx.textAlign = "center"; cx.lineJoin = "round";
   for (const t of S.textes) {
@@ -4164,6 +4164,7 @@ function joueurMort(px, py, PP) {
   cx.restore();
 }
 function dessiner() {
+  if (S.intro) { dessinerIntro(); return }
   const M = S.mort;
   if (!M) { const sk = (S.secousse || 0) * 10; S.secousse = Math.max(0, (S.secousse || 0) - .04); if (sk > .3) { cx.save(); cx.translate(rnd(-sk, sk), rnd(-sk, sk)); dessinerJeu(); cx.restore() } else dessinerJeu(); return }
   const St = MORTS[M.v], t = M.t, z = St.zoom(t), sh = M.shake * 14, cam = St.cam ? St.cam(t) : [0, 0];
@@ -4188,11 +4189,115 @@ function dessiner() {
   if (t > .8 && !M.fini) { cx.font = "800 14px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "rgba(255,246,227,.7)"; cx.fillText(TACTILE ? "Touche l'écran pour passer" : "Espace pour passer", W / 2, H - 18) }
 }
 
+/* ---------- mini-scènes d'intro des lieux ----------
+   Chambre froide : le perso entre en courant, glisse sur le givre jusqu'au point de départ,
+   percute une pile de colis (qui deviennent les premiers ennemis), tombe sur les fesses,
+   puis la caméra dézoome et la partie commence. Un appui saute directement au dézoom. */
+const INTRO_FRIGO = { course: .9, impact: 2.35, debout: 3.5, dezoom: 3.3, fin: 4.4, pile: 26 };
+const INTROS = { frigo: true };
+function lancerIntro(lieu) {
+  const F = INTRO_FRIGO, z0 = clamp(W / 200, 1.7, 2.4), camx = -55;
+  const x0 = camx - W / 2 / z0 - 30;
+  const decal = [[0, 0], [14, -7], [-7, 8], [12, 10], [3, -15], [20, 4], [7, -2]];
+  const colis = decal.map(([dx, dy], i) => {
+    spawn_("crabe"); const e = S.ennemis[S.ennemis.length - 1];
+    e.x = F.pile + dx; e.y = dy;
+    const a = -1.5 + i / (decal.length - 1) * 3 + rnd(-.15, .15), d = rnd(85, 140);
+    return { e, x0: e.x, y0: e.y, x1: F.pile + Math.cos(a) * d, y1: Math.sin(a) * d * .8, h: rnd(35, 75), dur: rnd(.7, 1), del: rnd(0, .08) };
+  });
+  S.intro = { lieu, t: 0, z0, camx, x0, x: x0, colis, fx: [], souffle: 0, boom: false, shake: 0, flash: 0, rot: 0, sx: 1, sy: 1, dy: 0 };
+  S.p.x = x0; S.p.y = 0; S.p.vx = S.p.vy = 0; S.p.dir = 0;
+  $("hud").hidden = true;
+}
+function passerIntro() {
+  const I = S.intro; if (!I || I.t >= INTRO_FRIGO.dezoom) return;
+  I.t = INTRO_FRIGO.dezoom; I.saute = true;
+  if (!I.boom) { I.boom = true; for (const c of I.colis) c.del = -9 }
+}
+function majIntro(dt) {
+  const I = S.intro, F = INTRO_FRIGO, p = S.p; I.t += dt; const t = I.t;
+  I.shake = Math.max(0, I.shake - dt * 2.5); I.flash = Math.max(0, I.flash - dt * 5);
+  I.rot = 0; I.sx = 1; I.sy = 1; I.dy = 0; p.vx = 0;
+  if (t < F.course) {                       // il arrive en courant
+    const u = t / F.course; I.x = I.x0 + (-145 - I.x0) * u; p.pas += dt * 15; p.vx = 120;
+    if ((I.souffle -= dt) <= 0) { I.souffle = .3; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) }
+  } else if (t < F.impact) {                // il glisse sur le givre, bras qui moulinent
+    const u = (t - F.course) / (F.impact - F.course), k = .75 * u + .25 * u * (2 - u);
+    I.x = -145 + 145 * k; I.rot = Math.sin(t * 13) * .34; I.dy = -Math.abs(Math.sin(t * 13)) * 2;
+    if (Math.random() < dt * 40) I.fx.push({ k: "givre", x: I.x - 6 + rnd(-4, 4), y: 12 + rnd(-3, 3), vx: rnd(-70, -20), vy: rnd(-40, 5), t: 0, vie: rnd(.35, .6) });
+    if ((I.souffle -= dt) <= 0) { I.souffle = .45; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) }
+  } else {
+    I.x = 0;
+    if (!I.boom) {                          // BOUM dans la pile
+      I.boom = true; I.shake = 1; I.flash = .8; son("carton"); son("coup");
+      for (let i = 0; i < 16; i++) { const a = rnd(-1.6, 1.6); I.fx.push({ k: "eclat", x: F.pile - 8, y: rnd(-10, 10), vx: Math.cos(a) * rnd(60, 180), vy: Math.sin(a) * rnd(60, 180) - 40, t: 0, vie: rnd(.4, .8) }) }
+      I.fx.push({ k: "boum", x: F.pile, y: -30, t: 0, vie: 1 });
+    }
+    if (t < F.debout) {                      // assis par terre, sonné
+      const b = t - F.impact; I.sy = .72 + Math.max(0, .12 - b) * 1.5; I.sx = 1.22; I.dy = 5 - Math.max(0, Math.sin(b * 12) * 6 * (1 - b * 3));
+      I.etoiles = true;
+    } else {                                 // il se relève (petit rebond)
+      const b = Math.min(1, (t - F.debout) / .25); I.sy = 1 + Math.sin(b * Math.PI) * .12; I.sx = 1 - Math.sin(b * Math.PI) * .06; I.etoiles = false;
+    }
+  }
+  for (const c of I.colis) {                // les colis volent puis retombent autour
+    const u = I.boom ? clamp((t - F.impact - c.del) / c.dur, 0, 1) : 0;
+    c.e.x = c.x0 + (c.x1 - c.x0) * u; c.e.y = c.y0 + (c.y1 - c.y0) * u - c.h * 4 * u * (1 - u);
+  }
+  for (const f of I.fx) { f.t += dt; f.x += (f.vx || 0) * dt; f.y += (f.vy || 0) * dt; if (f.k === "eclat") f.vy += 260 * dt }
+  I.fx = I.fx.filter(f => f.t < f.vie);
+  p.x = I.x; p.y = 0;
+  if (t >= F.fin) finIntro();
+}
+function finIntro() {
+  const I = S.intro, p = S.p;
+  for (const c of I.colis) { c.e.x = c.x1; c.e.y = c.y1 }
+  p.x = 0; p.y = 0; p.vx = p.vy = 0; S.intro = null;
+  $("hud").hidden = false; last = performance.now(); majHud();
+}
+function introCam(I) {
+  const F = INTRO_FRIGO, u = mEase(clamp((I.t - F.dezoom) / (F.fin - F.dezoom), 0, 1));
+  return { z: I.z0 + (1 - I.z0) * u, x: I.camx * (1 - u), y: -6 * (1 - u) };
+}
+function dessinerIntro() {
+  const I = S.intro, p = S.p, c = introCam(I), rx = p.x, ry = p.y, tS = S.t, sk = I.shake * 12;
+  S.t = I.t; p.x = c.x; p.y = c.y;
+  cx.save(); cx.translate(W / 2 + rnd(-1, 1) * sk, H / 2 + rnd(-1, 1) * sk); cx.scale(c.z, c.z); cx.translate(-W / 2, -H / 2);
+  dessinerJeu();
+  const X = x => x - c.x + W / 2, Y = y => y - c.y + H / 2;
+  // le perso
+  const px = X(rx), py = Y(ry);
+  ombreSol(px, py + 13, 12 * I.sx, 4.5);
+  const cours = I.t < INTRO_FRIGO.course, dand = cours ? Math.sin(p.pas) * .12 : 0;
+  poser(spriteJoueur(S.perso), px, py + I.dy - (cours ? Math.abs(Math.sin(p.pas)) * 2 : 0) + (1 - I.sy) * 14, I.rot + dand, I.sx, I.sy);
+  if (I.etoiles) for (let i = 0; i < 3; i++) { const a = I.t * 6 + i * 2.09; cx.fillStyle = "#ffe14d"; cx.strokeStyle = ENCRE; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(px + Math.cos(a) * 13, py - 22 + Math.sin(a) * 4, 3.2, 0, 7); cx.fill(); cx.stroke() }
+  // buée, givre, éclats, BOUM
+  for (const f of I.fx) {
+    const k = f.t / f.vie, x = X(f.x), y = Y(f.y);
+    if (f.k === "buee") { cx.globalAlpha = .5 * (1 - k); cx.fillStyle = "#e8f6ff"; cx.beginPath(); cx.arc(x, y, 3 + k * 7, 0, 7); cx.fill() }
+    else if (f.k === "givre") { cx.globalAlpha = 1 - k; cx.fillStyle = "#cfefff"; cx.fillRect(x - 1.5, y - 1.5, 3, 3) }
+    else if (f.k === "eclat") { cx.globalAlpha = 1 - k; cx.fillStyle = Math.random() < .5 ? "#b98a52" : "#e8f6ff"; cx.fillRect(x - 2, y - 2, 4, 4) }
+    else if (f.k === "boum") {
+      const s = k < .15 ? .4 + k / .15 * .9 : 1.3 - Math.min(.3, (k - .15) * .6);
+      cx.globalAlpha = k > .7 ? (1 - k) / .3 : 1; cx.save(); cx.translate(x, y - k * 10); cx.rotate(-.12); cx.scale(s, s);
+      cx.font = "26px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineJoin = "round"; cx.lineWidth = 6; cx.strokeStyle = ENCRE; cx.strokeText("BOUM !", 0, 0); cx.fillStyle = "#ffe14d"; cx.fillText("BOUM !", 0, 0); cx.restore();
+    }
+  }
+  cx.globalAlpha = 1; cx.restore();
+  p.x = rx; p.y = ry; S.t = tS;
+  // bandes noires façon cinéma, qui s'effacent au dézoom
+  const bande = H * .09 * (1 - mEase(clamp((I.t - INTRO_FRIGO.dezoom) / .8, 0, 1)));
+  if (bande > .5) { cx.fillStyle = "#000"; cx.fillRect(0, 0, W, bande); cx.fillRect(0, H - bande, W, bande) }
+  if (I.flash > 0) { cx.fillStyle = `rgba(235,248,255,${I.flash * .6})`; cx.fillRect(0, 0, W, H) }
+  if (I.t > .3 && I.t < INTRO_FRIGO.dezoom) { cx.font = "800 14px 'Nunito', sans-serif"; cx.textAlign = "center"; cx.fillStyle = "rgba(255,246,227,.75)"; cx.fillText(TACTILE ? "Touche l'écran pour passer" : "Espace pour passer", W / 2, H - Math.max(18, bande * .4 + 6)) }
+}
+
 function boucle(now) {
   requestAnimationFrame(boucle);
   if (!S) return;
   const dt = Math.min(.05, (now - last) / 1000 || 0); last = now;
   if (S.mort) majMort(dt);
+  else if (S.intro) majIntro(dt);
   else if (enJeu && !enPause && !choix) maj(dt);
   dessiner();
 }
@@ -4205,6 +4310,7 @@ function demarrer() {
   majArmes();
   { const a = rnd(0, 6.28); poserDecor(Math.cos(a) * 300, Math.sin(a) * 300, "cafe") }
   ["accueil", "fin", "niveau", "pause", "vestiaire", "aideJeu"].forEach(id => $(id).hidden = true); $("hud").hidden = false; last = performance.now(); majHud();
+  if (INTROS[S.lieu]) lancerIntro(S.lieu);
 }
 /* inventaire de la pause : niveau de chaque carte et où en est chaque évolution */
 function pips(n, max) { return `<span class="pips">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</span>` }
@@ -4224,7 +4330,7 @@ function dessinerInventaire() {
     return `<div class="inv-carte k-objet"><img src="${IMG(O.img)}" alt=""><div><strong>${O.nom}</strong>${pips(l, O.max)}<span class="niv-txt">${O.desc()}</span>${info}</div></div>`;
   }).join("") : `<div class="inv-carte vide"><div><strong>Aucun équipement</strong><span class="niv-txt">Les équipements débloquent les évolutions de tes outils.</span></div></div>`;
 }
-function basculerPause() { if (!enJeu || choix || S.mort) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
+function basculerPause() { if (!enJeu || choix || S.mort || S.intro) return; enPause = !enPause; JOY.actif = false; if (enPause) { dessinerInventaire(); $("pause").scrollTop = 0 } $("pause").hidden = !enPause; if (!enPause) last = performance.now() }
 /* menus (fin de partie, pause, vestiaire) : flèches ou ZQSD pour passer d'un bouton à l'autre, Espace ou Entrée pour valider */
 function menuClavier(e) {
   const v = ["fin", "pause", "vestiaire"].map($).find(el => !el.hidden); if (!v) return false;
@@ -4239,6 +4345,7 @@ addEventListener("keydown", e => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   if (!(S && S.mort && !S.mort.fini) && menuClavier(e)) return;
   // pendant l'animation de mort, une touche la passe (pas tout de suite, pour ne pas la sauter sans le vouloir)
+  if (S && S.intro) { if (!e.repeat && ["Space", "Enter", "Escape", "NumpadEnter"].includes(e.code)) passerIntro(); return }
   if (S && S.mort && !S.mort.fini) { if (!e.repeat && S.mort.t > .8 && ["Space", "Enter", "Escape", "NumpadEnter"].includes(e.code)) finirMort(); return }
   // accueil : Q/D change de perso, Z/S de lieu, Espace lance la partie
   if (!enJeu && !$("accueil").hidden && $("aideJeu").hidden) {
@@ -4278,6 +4385,7 @@ addEventListener("keyup", e => keys.delete(e.code));
 addEventListener("blur", () => { keys.clear(); if (enJeu && !choix && !enPause) basculerPause() });
 document.addEventListener("visibilitychange", () => { if (document.hidden && enJeu && !choix && !enPause) basculerPause() });
 cv.addEventListener("pointerdown", e => {
+  if (S && S.intro) { e.preventDefault(); passerIntro(); return }
   if (S && S.mort && !S.mort.fini) { e.preventDefault(); if (S.mort.t > .8) finirMort(); return }
   if (e.pointerType === "mouse" || !enJeu || enPause || choix || JOY.actif) return;
   e.preventDefault(); JOY.actif = true; JOY.id = e.pointerId; JOY.ox = JOY.x = e.clientX; JOY.oy = JOY.y = e.clientY;
