@@ -824,7 +824,7 @@ const ARMES = {
   sel: { nom: "Rouleaux de film", img: "rouleaux", max: 6, desc: l => l === 1 ? "Deux rouleaux de film étirable tournent autour de toi." : `${l + 1} rouleaux en orbite.` },
   fusee: { nom: "Palette du rack", img: "palette", max: 6, desc: l => l === 1 ? "Une palette tombe du rack sur un ennemi." : `Chute plus large, ${22 + 11 * l} dégâts.` },
   agrafeuse: { nom: "Agrafeuse pneumatique", img: "agrafeuse", max: 6, desc: l => l === 1 ? "Une rafale d'agrafes en éventail devant toi." : `${2 + l} agrafes par rafale, ${10 + 5 * l} dégâts, traversent ${l >= 4 ? 3 : 2} colis.` },
-  feuillard: { nom: "Feuillard de cerclage", img: "feuillard", max: 6, desc: l => l === 1 ? "Un coup de fouet sec sur le côté, qui coupe les colis sur une ligne." : l === 3 ? "Le fouet claque à gauche et à droite." : `Fouet plus long, ${20 + 10 * l} dégâts.` },
+  feuillard: { nom: "Feuillard de cerclage", img: "feuillard", max: 6, desc: l => l === 1 ? "Lance une bobine de feuillard sur les colis : elle se déroule au sol et ses sangles fouettent tout ce qui passe dedans." : l === 3 || l === 6 ? "Une bobine de plus à chaque lancer." : `Nœud plus large et plus long, ${Math.round(5 + 2.5 * l)} dégâts.` },
   ventilo: { nom: "Ventilateur de quai", img: "ventilo", max: 6, desc: l => l === 1 ? "Lâche une petite tornade qui part en zigzag, aspire les colis et les fait tourner en les abîmant." : l === 4 ? "Deux tornades à la fois." : `Tornade plus grosse et plus longue, ${6 + 3 * l} dégâts.` },
   // armes liées aux persos : elles entrent dans les cartes quand le perso est débloqué
   fourches: { nom: "Fourches", img: "fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
@@ -852,7 +852,7 @@ const EVOS = {
   corne: { nom: "Sirène d'évacuation", avec: "cire", desc: "Double onde rouge, énorme, qui fait tout reculer." },
   sel: { nom: "Tornade de film", avec: "boussole", desc: "Huit rouleaux sur une orbite qui respire." },
   agrafeuse: { nom: "Cloueuse industrielle", avec: "huile", desc: "Une rafale de clous tout autour de toi, qui traversent les colis." },
-  feuillard: { nom: "Cercleuse automatique", avec: "ceinture", desc: "Deux fouets qui claquent en croix, dans les quatre directions." },
+  feuillard: { nom: "Cercleuse automatique", avec: "ceinture", desc: "Quatre bobines tout autour de toi : de grands nœuds de sangles dorées qui ligotent presque les colis et les fouettent sans arrêt." },
   ventilo: { nom: "Cyclone de quai", avec: "genoux", desc: "Une énorme tornade qui reste longtemps, fonce sur les paquets de colis et les aspire tous." },
   fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Un rack entier s'écroule en dominos : sept chutes en ligne qui écrasent tout." },
   fourches: { nom: "Chariot fou", avec: "meule", desc: "Fourches dorées qui frappent dans les quatre directions." },
@@ -1068,7 +1068,7 @@ function nouvellePartie() {
     perso: persoActif(), lieu: lieuActif(), argent: 0, coups: [], cles: [], arcs: [], cleId: 0,
     p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0, armure: 1, recul: 1 },
     armes: { [P.arme]: 1 }, objets: {},
-    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8, agrafeuse: .5, feuillard: .6, ventilo: 1 }, sabres: [], agrafes: [], fouets: [], tornades: [], speedT: 0, troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
+    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8, agrafeuse: .5, feuillard: .6, ventilo: 1 }, sabres: [], agrafes: [], bobines: [], noeuds: [], tornades: [], speedT: 0, troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [], quais: new Map(), films: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0, cpt: { piege: 0, filmeur: 0, antivol: 0, semi: 0, batterie: 0, detrempe: 0, glisse: 0 },
@@ -1909,22 +1909,35 @@ function armes(dt) {
     for (const e of S.ennemis) { if (h.perce <= 0) break; if (e.decor || h.deja.has(e)) continue; if (Math.hypot(e.x - h.x, e.y - h.y) < e.r + 5) { h.deja.add(e); h.perce--; blesser(e, h.deg, h.vx / 200, h.vy / 200) } }
   }
   S.agrafes = S.agrafes.filter(h => h.t > 0 && h.perce > 0);
-  // feuillard de cerclage : coup de fouet sur le côté (à gauche et à droite au niveau 3, en croix une fois évolué)
+  // feuillard de cerclage : on lance des bobines (comme la fiole de Vampire Survivors) ; elles se déroulent au sol en un nœud de sangles qui fouettent
   if (A.feuillard && (S.timers.feuillard -= dt) <= 0) {
-    const l = A.feuillard, evo = l >= EVO; S.timers.feuillard = (evo ? .95 : 1.2 - .06 * l) * cd;
-    const cote = Math.cos(p.dir) >= 0 ? 0 : Math.PI, dirs = evo ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : l >= 3 ? [cote, cote + Math.PI] : [cote];
-    dirs.forEach((a, i) => S.fouets.push({ a, t: -i * .08, len: evo ? 230 : 120 + 16 * l, w: evo ? 24 : 16 + 2 * l, deg: evo ? (20 + 10 * l) * 1.4 : 20 + 10 * l, deja: new Set(), evo }));
-  }
-  for (const f of S.fouets) {
-    f.t += dt; if (f.t < 0 || f.t > .14) continue;
-    const ext = Math.min(1, f.t / .08), ca = Math.cos(f.a), sa = Math.sin(f.a);
-    for (const e of S.ennemis) {
-      if (e.decor || f.deja.has(e)) continue;
-      const dx = e.x - p.x, dy = e.y - p.y, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
-      if (u > 0 && u < f.len * ext + e.r && Math.abs(v) < f.w + e.r) { f.deja.add(e); blesser(e, f.deg, ca * 5, sa * 5) }
+    const l = A.feuillard, evo = l >= EVO; S.timers.feuillard = (evo ? 3.2 : 2.7 - .12 * l) * cd;
+    const n = evo ? 4 : 1 + Math.floor(l / 3), vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < W / 2 && Math.abs(e.y - p.y) < H / 2 && Math.hypot(e.x - p.x, e.y - p.y) < 340);
+    for (let i = 0; i < n; i++) {
+      let cx2, cy2;
+      if (evo) { const a = p.dir + Math.PI / 4 + i * Math.PI / 2; cx2 = p.x + Math.cos(a) * 130; cy2 = p.y + Math.sin(a) * 130 }
+      else if (vis.length) { const c = vis[Math.floor(Math.random() * vis.length)]; cx2 = c.x + rnd(-20, 20); cy2 = c.y + rnd(-20, 20) }
+      else { const a = p.dir + rnd(-.8, .8); cx2 = p.x + Math.cos(a) * rnd(110, 220); cy2 = p.y + Math.sin(a) * rnd(110, 220) }
+      S.bobines.push({ x0: p.x, y0: p.y - 10, x: cx2, y: cy2, t: -i * .08, vol: .5, l, evo });
     }
   }
-  S.fouets = S.fouets.filter(f => f.t < .3);
+  for (const b of S.bobines) {
+    b.t += dt; if (b.t < b.vol || b.pose) continue;
+    b.pose = true; const l = b.l;
+    S.noeuds.push({ x: b.x, y: b.y, t: 0, vie: b.evo ? 4.5 : 2.2 + .25 * l, r: b.evo ? 80 : 34 + 4 * l, deg: b.evo ? (5 + 2.5 * l) * 1.4 : 5 + 2.5 * l, lent: b.evo ? .75 : .25, id: "nd" + (S.ndId = ((S.ndId || 0) + 1) % 6), ph: rnd(0, 6), evo: b.evo });
+    for (let k = 0; k < 6; k++) S.fx.push({ x: b.x, y: b.y, vx: rnd(-140, 140), vy: rnd(-140, 40), t: .3, c: b.evo ? "#ffd447" : "#5aa0ff" });
+  }
+  S.bobines = S.bobines.filter(b => !b.pose);
+  for (const nd of S.noeuds) {
+    nd.t += dt; nd.ph += dt;
+    const R = nd.r * Math.min(1, nd.t / .15);
+    for (const e of S.ennemis) {
+      if (e.decor || Math.hypot(e.x - nd.x, (e.y - nd.y) / .75) > R + e.r) continue;
+      const f = e.boss ? nd.lent * .3 : nd.lent; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, f) : f; e.colle = .2;
+      if ((e.hit[nd.id] || 0) <= 0) { e.hit[nd.id] = .35; blesser(e, nd.deg, 0, 0) }
+    }
+  }
+  S.noeuds = S.noeuds.filter(nd => nd.t < nd.vie);
   // ventilateur de quai : il lâche des tornades qui partent en zigzag, aspirent les colis et les font tourner
   if (A.ventilo && (S.timers.ventilo -= dt) <= 0) {
     const l = A.ventilo, evo = l >= EVO; S.timers.ventilo = (evo ? 5 : 3.2 - .15 * l) * cd;
@@ -3936,17 +3949,34 @@ function dessinerJeu() {
     cx.restore();
     if (to.evo) ajouter(lueur("120,220,255"), x, y - R * .5, R * 2.6, R * 2.2, .35 * fin);
   }
-  // feuillard : sangle bleue qui claque, avec un éclair blanc au bout
-  for (const f of S.fouets) {
-    if (f.t < 0) continue;
-    const ext = Math.min(1, f.t / .08), L2 = f.len * ext, al = Math.max(0, 1 - Math.max(0, f.t - .12) / .18), ond = Math.sin(f.t * 60) * (1 - ext) * 8;
-    cx.save(); cx.translate(X(p.x), Y(p.y) - 6); cx.rotate(f.a); cx.globalAlpha = al;
-    cx.fillStyle = f.evo ? "rgba(255,220,90,.22)" : "rgba(80,150,255,.18)"; cx.fillRect(8, -f.w, L2, f.w * 2);
-    cx.strokeStyle = f.evo ? "#e0a400" : "#2f6fd9"; cx.lineWidth = f.evo ? 7 : 5; cx.lineCap = "round";
-    cx.beginPath(); cx.moveTo(8, 0); cx.quadraticCurveTo(L2 * .5, ond, L2, 0); cx.stroke();
-    cx.strokeStyle = "rgba(255,255,255,.7)"; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(8, -1.5); cx.quadraticCurveTo(L2 * .5, ond - 1.5, L2, -1.5); cx.stroke();
-    if (ext >= 1 && f.t < .16) { cx.fillStyle = "rgba(255,255,255,.9)"; cx.beginPath(); cx.arc(L2, 0, f.evo ? 12 : 8, 0, 7); cx.fill() }
-    cx.restore(); cx.globalAlpha = 1; cx.lineCap = "butt";
+  // feuillard : bobines en vol (avec leur ombre) puis nœuds de sangles qui fouettent au sol
+  for (const nd of S.noeuds) {
+    const x = X(nd.x), y = Y(nd.y), fin = Math.min(1, (nd.vie - nd.t) / .35), R = Math.max(4, nd.r * Math.min(1, nd.t / .15) * (.6 + .4 * fin));
+    cx.save(); cx.globalAlpha = fin;
+    cx.fillStyle = nd.evo ? "rgba(255,210,70,.16)" : "rgba(70,140,255,.16)"; cx.beginPath(); cx.ellipse(x, y, R, R * .75, 0, 0, 7); cx.fill();
+    cx.lineCap = "round";
+    for (let k = 0; k < (nd.evo ? 7 : 5); k++) {   // sangles qui claquent dans tous les sens
+      const a = nd.ph * (k % 2 ? 3.1 : -2.6) + k * 1.3, a2 = a + 1.4 + Math.sin(nd.ph * 9 + k) * .5, rr = Math.max(4, R * (.55 + .4 * Math.sin(nd.ph * 4 + k * 2)));
+      cx.strokeStyle = nd.evo ? "#e0a400" : "#2f6fd9"; cx.lineWidth = nd.evo ? 5 : 4;
+      cx.beginPath(); cx.ellipse(x, y, rr, rr * .75, 0, a, a2); cx.stroke();
+      cx.strokeStyle = "rgba(255,255,255,.65)"; cx.lineWidth = 1.2; cx.beginPath(); cx.ellipse(x, y, rr - 1.5, rr * .75 - 1.5, 0, a, a2); cx.stroke();
+    }
+    cx.fillStyle = nd.evo ? "#b07a00" : "#1d4fa8"; cx.beginPath(); cx.ellipse(x, y, 9, 6, 0, 0, 7); cx.fill();   // le cœur de la bobine
+    cx.fillStyle = "#cfd4da"; cx.beginPath(); cx.ellipse(x, y, 4, 2.6, 0, 0, 7); cx.fill();
+    cx.restore(); cx.lineCap = "butt";
+    if (nd.evo) ajouter(lueur("255,200,60"), x, y, R * 2.4, R * 1.8, .3 * fin);
+  }
+  for (const b of S.bobines) {
+    if (b.t < 0) continue;
+    const k = Math.min(1, b.t / b.vol), bx = b.x0 + (b.x - b.x0) * k, by = b.y0 + (b.y - b.y0) * k, haut = Math.sin(k * Math.PI) * 70;
+    ombreSol(X(b.x0 + (b.x - b.x0) * k), Y(by) + 4, 9, 4);
+    const x = X(bx), y = Y(by) - haut;
+    cx.save(); cx.translate(x, y); cx.rotate(b.t * 14);
+    cx.fillStyle = b.evo ? "#e0a400" : "#2f6fd9"; cx.beginPath(); cx.arc(0, 0, 10, 0, 7); cx.fill();
+    cx.strokeStyle = "rgba(255,255,255,.7)"; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(0, 0, 7, 0, 7); cx.stroke();
+    cx.fillStyle = "#cfd4da"; cx.beginPath(); cx.arc(0, 0, 3.5, 0, 7); cx.fill();
+    cx.strokeStyle = b.evo ? "#e0a400" : "#2f6fd9"; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(8, 4); cx.quadraticCurveTo(16, 10, 22, 4); cx.stroke();
+    cx.restore();
   }
   // agrafes (évolution : clous dorés)
   for (const h of S.agrafes) {
