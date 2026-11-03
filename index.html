@@ -204,6 +204,7 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .carte.k-objet, .inv-carte.k-objet { border: 5px solid #2f8fe0; background: linear-gradient(#fff6e3, #d9ecff); }
 .carte.k-evo { border: 5px solid #e0a400; }
 .carte.k-soin { border: 5px solid #2fbf71; background: linear-gradient(#fff6e3, #d6f5e3); }
+.carte.k-bonus { border: 5px solid #9b4fe0; background: linear-gradient(#fff6e3, #ecdcff); } .carte.k-bonus .tag { background: #9b4fe0; color: #fff; } .carte.k-bonus .art { border-color: #6a2fb0; }
 .carte.k-arme .art, .inv-carte.k-arme img { border-color: #c24a00; }
 .carte.k-objet .art, .inv-carte.k-objet img { border-color: #1d5f9e; }
 .carte.k-arme .tag { background: #ff6a10; color: #fff; } .carte.k-objet .tag { background: #2f8fe0; color: #fff; }
@@ -322,6 +323,13 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .g-lieu .carte .art { border-color: #5b2fa0; } .g-perso .carte .art { border-color: #c24a00; } .g-amelio .carte .art { border-color: #1d5f9e; }
 .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; width: 100%; }
 .grille .carte .art, .grille .carte .bandeau { height: 120px; }
+/* mode test : choisir son build avant la partie */
+.g-build .carte { cursor: default; } .g-build .carte.k-arme { border: 5px solid #ff6a10; } .g-build .carte.k-objet { border: 5px solid #2f8fe0; }
+.g-build .carte.choisi { box-shadow: 0 0 0 4px #ffc21a, 6px 6px 0 var(--encre); } .g-build .carte.bloque { opacity: .45; }
+.pas { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.pas button { width: 40px; height: 36px; border-radius: 10px; border: 3px solid var(--encre); background: #fff6e3; font: 900 20px/1 "Nunito", sans-serif; color: var(--encre); cursor: pointer; }
+.pas button:disabled { opacity: .35; cursor: default; } .pas b { font: 900 15px/1.1 "Nunito", sans-serif; text-align: center; flex: 1; }
+.build-info { font: 800 15px/1.4 "Nunito", sans-serif; text-align: center; margin: 0 0 12px; }
 .bascule { pointer-events: auto; cursor: pointer; font: 800 15px var(--ui); color: var(--encre); background: #d8ccb0; border: 3px solid var(--encre); border-radius: 12px; padding: 6px 14px; box-shadow: 3px 3px 0 var(--encre); }
 .bascule.on { background: #b9f3d2; }
 
@@ -371,7 +379,7 @@ button { touch-action: manipulation; }
 #cartes .carte .art, .mode-coffre #cartes .carte .fenetre-jeu { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; min-height: 0 !important; border: 0; border-radius: 11px; object-fit: cover; object-position: 50% 50% !important; box-shadow: none; }
 .mode-coffre #cartes .carte .bande-jeu img { width: 100% !important; height: auto; aspect-ratio: 432 / 578; object-fit: cover; }
 #cartes .carte .tag { position: absolute; left: 7px; top: 7px; z-index: 2; max-width: calc(100% - 14px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; background: var(--cat, var(--encre)); border: 2px solid var(--encre); font-size: clamp(9px, 1.25vw, 11.5px); padding: 1px 7px; }
-#cartes .carte.k-arme { --cat: #ff6a10; } #cartes .carte.k-objet { --cat: #2f8fe0; } #cartes .carte.k-evo { --cat: #c98a00; } #cartes .carte.k-soin { --cat: #1f9e4a; }
+#cartes .carte.k-arme { --cat: #ff6a10; } #cartes .carte.k-objet { --cat: #2f8fe0; } #cartes .carte.k-evo { --cat: #c98a00; } #cartes .carte.k-soin { --cat: #1f9e4a; } #cartes .carte.k-bonus { --cat: #8a3fd0; }
 #cartes .carte .corps { position: absolute; left: 0; right: 0; bottom: 0; padding: 42% 10px 10px; gap: 3px; border-radius: 0 0 11px 11px; background: linear-gradient(transparent, rgba(16,12,9,.82) 36%, rgba(16,12,9,.96)); text-align: left; }
 #cartes .carte strong { color: #fff; text-shadow: 2px 2px 0 var(--encre), -1px -1px 0 var(--encre); font-size: clamp(14px, 2.3vw, 23px) !important; }
 #cartes .carte .txt { color: #f1ebdf; font-size: clamp(10.5px, 1.6vw, 14px) !important; line-height: 1.22; }
@@ -395,7 +403,7 @@ button { touch-action: manipulation; }
   #cartes .carte.sel { transform: translateY(-6px); }
   .detail-carte { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; width: 100%; max-width: 440px; margin-top: -2px; text-align: left; color: var(--encre); background: var(--papier); border: 3px solid var(--encre); border-left: 9px solid var(--cat, var(--encre)); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); padding: 9px 12px 11px; }
   .detail-carte:empty, #niveau.revel .detail-carte { visibility: hidden; }
-  .detail-carte.k-arme { --cat: #ff6a10; } .detail-carte.k-objet { --cat: #2f8fe0; } .detail-carte.k-evo { --cat: #c98a00; } .detail-carte.k-soin { --cat: #1f9e4a; }
+  .detail-carte.k-arme { --cat: #ff6a10; } .detail-carte.k-objet { --cat: #2f8fe0; } .detail-carte.k-evo { --cat: #c98a00; } .detail-carte.k-soin { --cat: #1f9e4a; } .detail-carte.k-bonus { --cat: #8a3fd0; }
   .detail-carte .tag { font-size: 11px; color: #fff; background: var(--cat, var(--encre)); border: 2px solid var(--encre); border-radius: 6px; padding: 1px 7px; text-transform: uppercase; letter-spacing: .05em; }
   .detail-carte b { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1; }
   .detail-carte .txt { font-size: 15px; line-height: 1.3; color: #3a332a; }
@@ -550,7 +558,7 @@ button { touch-action: manipulation; }
         <button class="fleche" id="lieuSuiv" aria-label="Lieu suivant">›</button>
       </div>
       <button class="btn go" id="jouer">Jouer</button>
-      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="aide">Comment jouer ?</button></div>
+      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="aide">Comment jouer ?</button><button class="btn" id="btnBuild" hidden>Mon build</button></div>
       <div class="puces" id="puces"></div>
       <div class="touches-mini clavier"><kbd>Q</kbd><kbd>D</kbd> perso · <kbd>Z</kbd><kbd>S</kbd> lieu · <kbd>Espace</kbd> jouer</div>
     </div>
@@ -606,6 +614,18 @@ button { touch-action: manipulation; }
     <h3 class="cat cat-amelio">Améliorations permanentes <small>Achetées avec ta paie, elles restent pour toutes les parties : plus de vie, de vitesse, de dégâts…</small></h3>
     <div class="grille g-amelio" id="amelios"></div>
     <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button><button class="btn" id="voirStats" hidden>📊 Joueurs</button></div>
+  </div>
+</div>
+
+<div class="voile" id="build" hidden>
+  <div class="panneau large">
+    <h2>Mon build</h2>
+    <p class="build-info" id="buildInfo"></p>
+    <h3 class="cat">Outils <small>3 maximum. Niveau 7 = évolution ★ directement.</small></h3>
+    <div class="grille g-build" id="buildArmes"></div>
+    <h3 class="cat">Équipements</h3>
+    <div class="grille g-build" id="buildObjets"></div>
+    <div class="boutons"><button class="btn go" id="buildJouer">Jouer avec ce build</button><button class="btn" id="buildVider">Tout vider</button><button class="btn" id="buildRetour">Retour</button></div>
   </div>
 </div>
 
@@ -803,6 +823,9 @@ const ARMES = {
   corne: { nom: "Klaxon de transpalette", img: "klaxon", max: 6, desc: l => l === 1 ? "Un coup de klaxon repousse tout autour de toi." : `Onde plus large, ${12 + 7 * l} dégâts.` },
   sel: { nom: "Rouleaux de film", img: "rouleaux", max: 6, desc: l => l === 1 ? "Deux rouleaux de film étirable tournent autour de toi." : `${l + 1} rouleaux en orbite.` },
   fusee: { nom: "Palette du rack", img: "palette", max: 6, desc: l => l === 1 ? "Une palette tombe du rack sur un ennemi." : `Chute plus large, ${22 + 11 * l} dégâts.` },
+  agrafeuse: { nom: "Agrafeuse pneumatique", img: "agrafeuse", max: 6, desc: l => l === 1 ? "Une rafale d'agrafes en éventail devant toi." : `${2 + l} agrafes par rafale, ${10 + 5 * l} dégâts, traversent ${l >= 4 ? 3 : 2} colis.` },
+  feuillard: { nom: "Feuillard de cerclage", img: "feuillard", max: 6, desc: l => l === 1 ? "Un coup de fouet sec sur le côté, qui coupe les colis sur une ligne." : l === 3 ? "Le fouet claque à gauche et à droite." : `Fouet plus long, ${20 + 10 * l} dégâts.` },
+  ventilo: { nom: "Ventilateur de quai", img: "ventilo", max: 6, desc: l => l === 1 ? "Un souffle permanent autour de toi abîme et repousse les colis trop proches." : `Souffle plus large, ${Math.round(5 + 2.5 * l)} dégâts toutes les demi-secondes.` },
   // armes liées aux persos : elles entrent dans les cartes quand le perso est débloqué
   fourches: { nom: "Fourches", img: "fourches", max: 6, perso: "cariste", desc: l => l === 1 ? "Un coup de fourches devant toi : transperce et repousse." : l === 4 ? "Les fourches frappent aussi derrière toi." : `Coup plus long, ${16 + 8 * l} dégâts.` },
   cle: { nom: "Clé à molette", img: "cle", max: 6, perso: "reparateur", desc: l => l === 1 ? "Lancée sur l'ennemi le plus proche, elle revient comme un boomerang." : `${1 + Math.floor(l / 3)} clé(s), ${12 + 6 * l} dégâts à l'aller et au retour.` },
@@ -828,6 +851,9 @@ const EVOS = {
   harpon: { nom: "Lame infinie", avec: "meule", desc: "Cinq cutters dorés qui traversent tout." },
   corne: { nom: "Sirène d'évacuation", avec: "cire", desc: "Double onde rouge, énorme, qui fait tout reculer." },
   sel: { nom: "Tornade de film", avec: "boussole", desc: "Huit rouleaux sur une orbite qui respire." },
+  agrafeuse: { nom: "Cloueuse industrielle", avec: "huile", desc: "Une rafale de clous tout autour de toi, qui traversent les colis." },
+  feuillard: { nom: "Cercleuse automatique", avec: "ceinture", desc: "Deux fouets qui claquent en croix, dans les quatre directions." },
+  ventilo: { nom: "Rideau d'air", avec: "genoux", desc: "Une grande zone de vent qui fige presque les colis et les abîme sans arrêt." },
   fusee: { nom: "Effondrement de rack", avec: "bottes", desc: "Un rack entier s'écroule en dominos : sept chutes en ligne qui écrasent tout." },
   fourches: { nom: "Chariot fou", avec: "meule", desc: "Fourches dorées qui frappent dans les quatre directions." },
   cle: { nom: "Caisse à outils", avec: "soupe", desc: "Six clés lancées en étoile tout autour de toi." },
@@ -838,7 +864,7 @@ const EVOS = {
   talkie: { nom: "Réseau radio", avec: "huile", desc: "Tu poses des antennes relais reliées par des arcs électriques : tout colis qui traverse le réseau grille." },
 };
 const NB_ARMES = 3, EVO = 7;
-const COUL_ARME = { sabre: "#c0392b", tronc: "#8a5a2b", scotch: "#c9a15a", co2: "#7fd3ff", lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9" };
+const COUL_ARME = { sabre: "#c0392b", tronc: "#8a5a2b", scotch: "#c9a15a", co2: "#7fd3ff", lanterne: "#e8412c", harpon: "#3d8bd9", corne: "#ff6a10", sel: "#4fb3d9", fusee: "#a0703c", fourches: "#d4a017", cle: "#5a6f8a", talkie: "#8a4fd9", agrafeuse: "#9aa3ad", feuillard: "#2f6fd9", ventilo: "#7fe0d0" };
 const OBJETS = {
   bottes: { nom: "Chaussures de sécu", img: "cebien", max: 5, desc: () => "+8 % de vitesse de déplacement." },
   cire: { nom: "Gilet haute visibilité", img: "blinde", max: 5, desc: () => "+20 points de vie maximum (et soigne de 20)." },
@@ -846,7 +872,18 @@ const OBJETS = {
   boussole: { nom: "Scanner longue portée", img: "stocktampon", max: 5, desc: () => "Attire les étiquettes de plus loin (+35 %)." },
   huile: { nom: "Batterie neuve", img: "rode", max: 5, desc: () => "Les outils se déclenchent 8 % plus souvent." },
   meule: { nom: "Gants renforcés", img: "memoiremusculaire", max: 5, desc: () => "+12 % de dégâts pour tous les outils." },
+  genoux: { nom: "Genouillères", img: "genouilleres", max: 5, desc: () => "−8 % de dégâts reçus." },
+  ceinture: { nom: "Ceinture lombaire", img: "ceinture", max: 5, desc: () => "Les colis sont repoussés 25 % plus loin." },
 };
+/* cartes coup de pouce : effet immédiat, ne prennent pas de place ; l'une d'elles sort de temps en temps à la place d'une carte normale */
+const BONUS = {
+  balai: { nom: "Coup de balai", img: "balai", desc: () => "Aspire toutes les étiquettes de la carte." },
+  alarme: { nom: "Alarme incendie", img: "alarme", desc: () => "Repousse et abîme tous les colis à l'écran." },
+  prime: { nom: "Prime exceptionnelle", img: "prime", desc: () => "Une poignée de pièces pour la caisse." },
+  pausecafe: { nom: "Pause café", img: "pausecafe", desc: () => "Rend la moitié de ta vie." },
+  speed: { nom: "Coup de speed", img: "speed", desc: () => "Outils 30 % plus rapides pendant 20 secondes." },
+};
+const CHANCE_BONUS = .3, POIDS_MIENS = 3;
 
 /* ---------- ennemis ---------- */
 const TYPES = {
@@ -996,7 +1033,8 @@ if (!PERSOS[SAVE.perso]) SAVE.perso = "preparateur";
 if (!Array.isArray(SAVE.lieux) || !SAVE.lieux.includes("quai")) SAVE.lieux = ["quai"].concat(Array.isArray(SAVE.lieux) ? SAVE.lieux : []);
 if (!LIEUX[SAVE.lieu]) SAVE.lieu = "quai";
 if (!SAVE.amelioTest || typeof SAVE.amelioTest !== "object") SAVE.amelioTest = {};
-for (const k of ["trophees", "tropheesTest", "stats"]) if (!SAVE[k] || typeof SAVE[k] !== "object") SAVE[k] = {};
+for (const k of ["trophees", "tropheesTest", "stats", "buildTest"]) if (!SAVE[k] || typeof SAVE[k] !== "object") SAVE[k] = {};
+for (const k of ["armes", "objets"]) if (!SAVE.buildTest[k] || typeof SAVE.buildTest[k] !== "object") SAVE.buildTest[k] = {};
 /* mode test : désactivé pour les joueurs ; on l'active seulement en ouvrant le jeu avec #test à la fin de l'adresse */
 SAVE.test = location.hash === "#test";
 if (!SAVE.test) { if (!SAVE.persos.includes(SAVE.perso)) SAVE.perso = "preparateur"; if (!SAVE.lieux.includes(SAVE.lieu)) SAVE.lieu = "quai" }
@@ -1028,9 +1066,9 @@ function nouvellePartie() {
   S = {
     t: 0, kills: 0, spawnAcc: 0, bossFaits: 0,
     perso: persoActif(), lieu: lieuActif(), argent: 0, coups: [], cles: [], arcs: [], cleId: 0,
-    p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0 },
+    p: { x: 0, y: 0, r: 13, hp: 100, max: 100, vit: 165, niv: 1, xp: 0, next: 8, aimant: 70, regen: 0, deg: 1, cd: 1, inv: 0, dir: 0, pas: 0, boost: 0, xpm: 1, relance: 0, vx: 0, vy: 0, armure: 1, recul: 1 },
     armes: { [P.arme]: 1 }, objets: {},
-    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8 }, sabres: [], troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
+    timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8, agrafeuse: .5, feuillard: .6 }, sabres: [], agrafes: [], fouets: [], speedT: 0, troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [], quais: new Map(), films: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
     angleLampe: 0, angleSel: 0, selN: 0, selR: 0, cpt: { piege: 0, filmeur: 0, antivol: 0, semi: 0, batterie: 0, detrempe: 0, glisse: 0 },
@@ -1414,7 +1452,7 @@ function contraindreEv(e) {
 function blesser(e, d, kx, ky) {
   if (!e.decor) son("coup");
   d *= S.p.deg; if ((e.ch && e.ch.etat === "sonne") || (e.at && e.at.etat === "sonne")) d *= 1.5; if (e.gel > 0) d *= 1.5; e.hp -= d; e.flash = .1;
-  if (kx || ky) { const f = e.boss ? .15 : 1; e.kb.x += kx * f; e.kb.y += ky * f }
+  if (kx || ky) { const f = (e.boss ? .15 : 1) * (S.p.recul || 1); e.kb.x += kx * f; e.kb.y += ky * f }
   if (S.textes.length < 60) S.textes.push({ x: e.x + rnd(-6, 6), y: e.y - e.r, v: Math.round(d), t: .6 });
   if (S.fx.length < 240) for (let i = 0; i < 2; i++) { const a = rnd(0, 6.28), v = rnd(60, 170); S.fx.push({ x: e.x, y: e.y - e.r * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: .3, etin: true }) }
 }
@@ -1783,7 +1821,7 @@ function mourir(e) {
 
 /* ---------- armes ---------- */
 function armes(dt) {
-  const p = S.p, A = S.armes, cd = p.cd;
+  const p = S.p, A = S.armes, cd = p.cd * (S.speedT > 0 ? .77 : 1);
   // lanterne : faisceau tournant
   if (A.lanterne) {
     const l = A.lanterne, port = 110 + 16 * l, arc = .32 + .03 * l;
@@ -1855,7 +1893,48 @@ function armes(dt) {
     for (const e of S.ennemis) { if (h.perce <= 0) break; if (h.deja.has(e)) continue; if (Math.hypot(e.x - h.x, e.y - h.y) < e.r + 6) { h.deja.add(e); h.perce--; blesser(e, h.deg, h.vx / 120, h.vy / 120) } }
   }
   S.tirs = S.tirs.filter(h => h.t > 0 && h.perce > 0);
-  const proche = (x, y, max, sauf) => { let m = null, md = max; for (const e of S.ennemis) { if (e.decor || (sauf && sauf.has(e))) continue; const d = Math.hypot(e.x - x, e.y - y); if (d < md) { md = d; m = e } } return m };
+  // agrafeuse pneumatique : rafale d'agrafes en éventail devant toi (évolution : clous tout autour)
+  if (A.agrafeuse && (S.timers.agrafeuse -= dt) <= 0) {
+    const l = A.agrafeuse, evo = l >= EVO; S.timers.agrafeuse = (evo ? .95 : 1.25 - .07 * l) * cd;
+    const n = evo ? 18 : 2 + l, ouv = .45 + .07 * l;
+    for (let i = 0; i < n; i++) {
+      const a = evo ? p.dir + i * Math.PI * 2 / n : p.dir + (n > 1 ? (i / (n - 1) - .5) * ouv : 0) + rnd(-.04, .04), v = evo ? 520 : 600;
+      S.agrafes.push({ x: p.x, y: p.y - 6, vx: Math.cos(a) * v, vy: Math.sin(a) * v, a, t: evo ? .7 : .5, deg: evo ? (10 + 5 * l) * 1.3 : 10 + 5 * l, perce: evo ? 5 : l >= 4 ? 3 : 2, deja: new Set(), evo });
+    }
+  }
+  for (const h of S.agrafes) {
+    h.x += h.vx * dt; h.y += h.vy * dt; h.t -= dt;
+    if (LL().murs && dansMur(h.x, h.y, 2)) { h.t = 0; continue }
+    for (const e of S.ennemis) { if (h.perce <= 0) break; if (e.decor || h.deja.has(e)) continue; if (Math.hypot(e.x - h.x, e.y - h.y) < e.r + 5) { h.deja.add(e); h.perce--; blesser(e, h.deg, h.vx / 200, h.vy / 200) } }
+  }
+  S.agrafes = S.agrafes.filter(h => h.t > 0 && h.perce > 0);
+  // feuillard de cerclage : coup de fouet sur le côté (à gauche et à droite au niveau 3, en croix une fois évolué)
+  if (A.feuillard && (S.timers.feuillard -= dt) <= 0) {
+    const l = A.feuillard, evo = l >= EVO; S.timers.feuillard = (evo ? .95 : 1.2 - .06 * l) * cd;
+    const cote = Math.cos(p.dir) >= 0 ? 0 : Math.PI, dirs = evo ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : l >= 3 ? [cote, cote + Math.PI] : [cote];
+    dirs.forEach((a, i) => S.fouets.push({ a, t: -i * .08, len: evo ? 230 : 120 + 16 * l, w: evo ? 24 : 16 + 2 * l, deg: evo ? (20 + 10 * l) * 1.4 : 20 + 10 * l, deja: new Set(), evo }));
+  }
+  for (const f of S.fouets) {
+    f.t += dt; if (f.t < 0 || f.t > .14) continue;
+    const ext = Math.min(1, f.t / .08), ca = Math.cos(f.a), sa = Math.sin(f.a);
+    for (const e of S.ennemis) {
+      if (e.decor || f.deja.has(e)) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
+      if (u > 0 && u < f.len * ext + e.r && Math.abs(v) < f.w + e.r) { f.deja.add(e); blesser(e, f.deg, ca * 5, sa * 5) }
+    }
+  }
+  S.fouets = S.fouets.filter(f => f.t < .3);
+  // ventilateur de quai : souffle permanent autour de toi (évolution : rideau d'air qui fige presque les colis)
+  if (A.ventilo) {
+    const l = A.ventilo, evo = l >= EVO, R = evo ? 150 : 58 + 8 * l; S.ventR = R; S.ventEvo = evo;
+    for (const e of S.ennemis) {
+      if (e.decor) continue;
+      const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy); if (d > R + e.r) continue;
+      if (evo) { const fr = e.boss ? .3 : .8; e.colleF = e.colle > 0 ? Math.max(e.colleF || 0, fr) : fr; e.colle = .2 }
+      if ((e.hit.vent || 0) <= 0) { e.hit.vent = .5; blesser(e, evo ? 7 + 3 * l : 5 + 2.5 * l, dx / (d || 1) * (evo ? 1.5 : 3), dy / (d || 1) * (evo ? 1.5 : 3)) }
+    }
+  } else S.ventR = 0;
+  const proche =(x, y, max, sauf) => { let m = null, md = max; for (const e of S.ennemis) { if (e.decor || (sauf && sauf.has(e))) continue; const d = Math.hypot(e.x - x, e.y - y); if (d < md) { md = d; m = e } } return m };
   // fourches : coup droit dans le sens de la marche
   if (A.fourches && (S.timers.fourches -= dt) <= 0) {
     const l = A.fourches; S.timers.fourches = (1.5 - .08 * l) * cd;
@@ -2147,6 +2226,7 @@ function maj(dt) {
   bornerCouloir(p, p.r);
   if (LL().huile) glisserHuile(dt);
   p.hp = Math.min(p.max, p.hp + p.regen * dt); p.inv -= dt;
+  const hpAvant = p.hp; if (S.speedT > 0) S.speedT -= dt;
 
   vagues(dt); cycleNoir(dt); flaques(dt); sinistre(dt); quaiCharge(dt); machines(dt); armes(dt); transpalettes(dt); evenements(dt); tirsChef(dt);
 
@@ -2258,6 +2338,7 @@ function maj(dt) {
   S.textes = S.textes.filter(t => t.t > 0);
   annonceT -= dt;
 
+  if (p.armure < 1 && p.hp < hpAvant) p.hp = hpAvant - (hpAvant - p.hp) * p.armure;   // genouillères
   if (p.hp < (S.hpVu ?? p.hp) - .5 && performance.now() - (S.aieT || 0) > 260) { S.aieT = performance.now(); son("aie") }
   if (p.hp < (S.hpVu ?? p.hp) - .5 && S.premierCoup == null) S.premierCoup = S.t;
   if (enJeu && (S.trophT = (S.trophT || 0) - dt) <= 0) { S.trophT = .5; verifierTrophees("jeu") }   // pas pendant la démo de l'accueil
@@ -2323,11 +2404,31 @@ function appliquer(o) {
     if (o.id === "boussole") p.aimant *= 1.35;
     if (o.id === "huile") p.cd *= .92;
     if (o.id === "meule") p.deg *= 1.12;
-  } else p.hp = Math.min(p.max, p.hp + 40);
+    if (o.id === "genoux") p.armure *= .92;
+    if (o.id === "ceinture") p.recul *= 1.25;
+  } else if (o.kind === "bonus") coupDePouce(o.id);
+  else p.hp = Math.min(p.max, p.hp + 40);
+}
+function coupDePouce(id) {
+  const p = S.p;
+  if (id === "balai") { for (const g of S.gemmes) if (!g.coffre && !g.vole) { g.att = true; g.jet = 0 } annonce("Coup de balai !"); S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 }) }
+  else if (id === "alarme") {
+    son("klaxon"); annonce("Alarme incendie !"); S.secousse = Math.max(S.secousse || 0, .4); vibrer(120);
+    const dg = 25 * (1 + S.t / EQ.pvTemps) * LL().pv;
+    for (const e of S.ennemis) {
+      if (e.decor || e.ev || e.hp <= 0 || Math.abs(e.x - p.x) > W / 2 + 40 || Math.abs(e.y - p.y) > H / 2 + 40) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y) || 1; blesser(e, dg * (e.boss ? .5 : 1) / p.deg, (e.x - p.x) / d * 16, (e.y - p.y) / d * 16);
+    }
+    S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 }); S.alarmeT = 1.2;
+  }
+  else if (id === "prime") { const n = Math.round(40 * LL().gain * (1 + .1 * niv("paie"))); S.argent += n; son("piece"); S.textes.push({ x: p.x, y: p.y - 34, v: "+" + n + " €", t: 1, c: "#ffd447" }) }
+  else if (id === "pausecafe") { const v = Math.round(p.max / 2); p.hp = Math.min(p.max, p.hp + v); son("cafe"); S.textes.push({ x: p.x, y: p.y - 30, v: "+" + v + " vie", t: .8, c: "#5ff07a" }) }
+  else if (id === "speed") { S.speedT = 20; annonce("Coup de speed : outils plus rapides !") }
 }
 const CASSE_CROUTE = { nom: "Casse-croûte", img: "cassecroute", desc: () => "Rend 40 points de vie." };
 function infosCarte(o) {
   if (o.kind === "evo") return { d: { nom: EVOS[o.id].nom, img: "evo-" + o.id, desc: () => EVOS[o.id].desc }, tag: "★ Évolution", indice: "" };
+  if (o.kind === "bonus") return { d: BONUS[o.id], tag: "Coup de pouce", indice: "" };
   const d = o.kind === "arme" ? ARMES[o.id] : o.kind === "objet" ? OBJETS[o.id] : CASSE_CROUTE;
   const tag = o.kind === "soin" ? "Soin" : o.kind === "arme" ? (o.l === 1 ? "Nouvel outil" : "Outil · niv. " + o.l) : (o.l === 1 ? "Nouvel équipement" : "Équipement · niv. " + o.l);
   let indice = "";
@@ -2336,9 +2437,13 @@ function infosCarte(o) {
   return { d, tag, indice };
 }
 function tirer(n) {
-  const pool = offresPossibles();
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]] }
-  const r = pool.slice(0, n); return r.length ? r : [{ id: "rhum", kind: "soin", l: 1 }];
+  // tirage pondéré : les outils qu'on a déjà sortent plus souvent, pour pouvoir en monter au moins 2 au max avant le boss final
+  const pool = offresPossibles().map(o => ({ o, k: Math.pow(Math.random(), 1 / (o.kind === "arme" && o.l > 1 ? POIDS_MIENS : 1)) }));
+  pool.sort((a, b) => b.k - a.k);
+  const r = pool.slice(0, n).map(x => x.o);
+  // de temps en temps, une carte coup de pouce prend la place de la dernière carte
+  if (r.length >= 2 && Math.random() < CHANCE_BONUS) { const ids = Object.keys(BONUS); r[r.length - 1] = { id: ids[Math.floor(Math.random() * ids.length)], kind: "bonus", l: 1 } }
+  return r.length ? r : [{ id: "rhum", kind: "soin", l: 1 }];
 }
 /* animations de révélation : on peut toujours les passer d'un tap ou d'Espace */
 let revel = [], revelEnCours = false, revelType = "", attenteOuverture = null;
@@ -2545,6 +2650,7 @@ function continuerInfini() {
 function record() { majAccueil() }
 const LP = Object.keys(PERSOS), LLX = Object.keys(LIEUX);
 function majAccueil() {
+  $("btnBuild").hidden = !SAVE.test;
   try { majCoupe() } catch (e) { }
   const P = PERSOS[SAVE.perso], L = LIEUX[SAVE.lieu], okP = aPerso(SAVE.perso), okL = aLieu(SAVE.lieu);
   $("persoImg").src = IMG(P.img); $("persoNom").textContent = P.nom; $("persoCourt").textContent = P.court;
@@ -2557,7 +2663,7 @@ function majAccueil() {
   $("lieuNom").textContent = L.nom; $("lieuInfo").textContent = okL ? L.info : "🔒 " + L.info;
   $("jouer").disabled = !(okP && okL); $("jouer").textContent = okP && okL ? "Jouer" : "À débloquer";
   const b = +(lsGet("poste-record") || 0);
-  $("puces").innerHTML = `<span class="puce">💰 ${SAVE.banque} €</span>` + (b ? `<span class="puce">🏆 ${fmt(b)}</span>` : "") + (+(lsGet("poste-infini") || 0) ? `<span class="puce">∞ +${fmt(+lsGet("poste-infini"))}</span>` : "") + (SAVE.test ? `<span class="puce test">Mode test</span>` : "");
+  $("puces").innerHTML = `<span class="puce">💰 ${SAVE.banque} €</span>` + (b ? `<span class="puce">🏆 ${fmt(b)}</span>` : "") + (+(lsGet("poste-infini") || 0) ? `<span class="puce">∞ +${fmt(+lsGet("poste-infini"))}</span>` : "") + (SAVE.test ? `<span class="puce test">Mode test</span>` : "") + (SAVE.test && Object.keys(SAVE.buildTest.armes).length + Object.keys(SAVE.buildTest.objets).length ? `<span class="puce test">Build perso</span>` : "");
 }
 /* débloquer un perso ou un lieu directement depuis l'accueil */
 function debloquer(cle) {
@@ -3794,6 +3900,40 @@ function dessinerJeu() {
     cx.fillStyle = "#cfd4da"; cx.fillRect(4, -c.w * .6 - 3, L2, 2); cx.fillRect(4, c.w * .6 - 3, L2, 2);
     cx.restore(); cx.globalAlpha = 1;
   }
+  // ventilateur de quai : disque d'air avec des filets de vent qui tournent
+  if (S.ventR) {
+    const x = X(p.x), y = Y(p.y), R = S.ventR, ev = S.ventEvo;
+    cx.save(); cx.globalCompositeOperation = "lighter";
+    const g = cx.createRadialGradient(x, y, R * .2, x, y, R); g.addColorStop(0, "rgba(160,255,235,0)"); g.addColorStop(.75, ev ? "rgba(140,240,255,.16)" : "rgba(140,255,225,.10)"); g.addColorStop(1, ev ? "rgba(200,250,255,.32)" : "rgba(170,255,235,.22)");
+    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, R, 0, 7); cx.fill();
+    cx.lineCap = "round"; cx.lineWidth = ev ? 3 : 2;
+    const nb = ev ? 9 : 5;
+    for (let i = 0; i < nb; i++) {
+      const a0 = S.t * (ev ? 3.2 : 4.5) + i * Math.PI * 2 / nb, rr = R * (.45 + .45 * ((i * .37 + S.t * .6) % 1));
+      cx.strokeStyle = `rgba(225,255,250,${ev ? .55 : .45})`; cx.beginPath(); cx.arc(x, y, rr, a0, a0 + .7); cx.stroke();
+    }
+    cx.restore(); cx.lineCap = "butt";
+  }
+  // feuillard : sangle bleue qui claque, avec un éclair blanc au bout
+  for (const f of S.fouets) {
+    if (f.t < 0) continue;
+    const ext = Math.min(1, f.t / .08), L2 = f.len * ext, al = Math.max(0, 1 - Math.max(0, f.t - .12) / .18), ond = Math.sin(f.t * 60) * (1 - ext) * 8;
+    cx.save(); cx.translate(X(p.x), Y(p.y) - 6); cx.rotate(f.a); cx.globalAlpha = al;
+    cx.fillStyle = f.evo ? "rgba(255,220,90,.22)" : "rgba(80,150,255,.18)"; cx.fillRect(8, -f.w, L2, f.w * 2);
+    cx.strokeStyle = f.evo ? "#e0a400" : "#2f6fd9"; cx.lineWidth = f.evo ? 7 : 5; cx.lineCap = "round";
+    cx.beginPath(); cx.moveTo(8, 0); cx.quadraticCurveTo(L2 * .5, ond, L2, 0); cx.stroke();
+    cx.strokeStyle = "rgba(255,255,255,.7)"; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(8, -1.5); cx.quadraticCurveTo(L2 * .5, ond - 1.5, L2, -1.5); cx.stroke();
+    if (ext >= 1 && f.t < .16) { cx.fillStyle = "rgba(255,255,255,.9)"; cx.beginPath(); cx.arc(L2, 0, f.evo ? 12 : 8, 0, 7); cx.fill() }
+    cx.restore(); cx.globalAlpha = 1; cx.lineCap = "butt";
+  }
+  // agrafes (évolution : clous dorés)
+  for (const h of S.agrafes) {
+    const x = X(h.x), y = Y(h.y);
+    cx.save(); cx.translate(x, y); cx.rotate(h.a);
+    if (h.evo) { ajouter(lueur("255,210,80"), x, y, 22, 22, .5); cx.fillStyle = "#e8b830"; cx.fillRect(-7, -1.5, 14, 3); cx.fillStyle = "#fff0b0"; cx.fillRect(5, -3, 3, 6) }
+    else { cx.strokeStyle = "#dfe4ea"; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(-5, -4); cx.lineTo(4, -4); cx.lineTo(4, 4); cx.lineTo(-5, 4); cx.stroke() }
+    cx.restore();
+  }
   // clés à molette
   for (const k of S.cles) {
     if (k.evo) ajouter(lueur("255,190,40"), X(k.x), Y(k.y), 50, 50, .6);
@@ -4722,6 +4862,7 @@ function demarrer() {
   if (enJeu || !aPerso(SAVE.perso) || !aLieu(SAVE.lieu)) return;
   nouvellePartie(); enJeu = true; enPause = false; choix = false; compter("debut");
   for (let i = 0; i < niv("vip"); i++) { const pool = offresPossibles(); if (pool.length) appliquer(pool[Math.floor(Math.random() * pool.length)]) }
+  appliquerBuild();
   majArmes();
   { const a = rnd(0, 6.28); poserDecor(Math.cos(a) * 300, Math.sin(a) * 300, "cafe") }
   ["accueil", "fin", "niveau", "pause", "vestiaire", "aideJeu"].forEach(id => $(id).hidden = true); $("hud").hidden = false; last = performance.now(); majHud();
@@ -5389,6 +5530,37 @@ $("continuer").onclick = continuerInfini;
 $("versAccueil").onclick = () => { $("fin").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
 // précharger les illustrations pour que les cartes s'affichent sans attendre
 for (const n of new Set([...Object.values(ARMES), ...Object.values(PERSOS), ...Object.values(LIEUX), ...Object.values(OBJETS), ...Object.values(AMELIOS)].map(x => x.img).concat(["jourdepaie", "tetereposee", "cassecroute"]).filter(Boolean))) { const im = new Image(); im.src = IMG(n) }
+
+/* ---------- mode test : choisir son build (outils et équipements) avant la partie ---------- */
+const B = () => SAVE.buildTest;
+function appliquerBuild() {
+  if (!SAVE.test) return;
+  const A = Object.entries(B().armes).filter(([id, l]) => ARMES[id] && l > 0);
+  if (A.length) { S.armes = {}; for (const [id, l] of A) S.armes[id] = Math.min(EVO, l) }
+  for (const [id, n] of Object.entries(B().objets)) if (OBJETS[id]) for (let l = 1; l <= Math.min(n, OBJETS[id].max); l++) appliquer({ id, kind: "objet", l });
+}
+function dessinerBuild() {
+  const nbA = Object.values(B().armes).filter(l => l > 0).length;
+  const carte = (kind, id, D, n, max, bloque) => {
+    const txt = n === 0 ? "Pas pris" : kind === "arme" && n >= EVO ? "★ " + EVOS[id].nom : "Niveau " + n;
+    const img = kind === "arme" && n >= EVO ? "evo-" + id : D.img;
+    return `<div class="carte k-${kind}${n ? " choisi" : ""}${bloque ? " bloque" : ""}"><img class="art" src="${IMG(img)}" alt=""><span class="corps"><strong>${D.nom}</strong><span class="pas"><button data-k="${kind}" data-id="${id}" data-d="-1" aria-label="Moins"${n ? "" : " disabled"}>−</button><b>${txt}</b><button data-k="${kind}" data-id="${id}" data-d="1" aria-label="Plus"${n >= max || bloque ? " disabled" : ""}>+</button></span></span></div>`;
+  };
+  $("buildArmes").innerHTML = Object.entries(ARMES).map(([id, A]) => { const n = B().armes[id] || 0; return carte("arme", id, A, n, EVO, !n && nbA >= NB_ARMES) }).join("");
+  $("buildObjets").innerHTML = Object.entries(OBJETS).map(([id, O]) => carte("objet", id, O, B().objets[id] || 0, O.max, false)).join("");
+  const nbO = Object.values(B().objets).filter(l => l > 0).length;
+  $("buildInfo").textContent = (nbA ? nbA + " outil" + (nbA > 1 ? "s" : "") : "Outil du perso") + " · " + (nbO ? nbO + " équipement" + (nbO > 1 ? "s" : "") : "aucun équipement") + " · " + PERSOS[persoActif()].nom + ", " + LIEUX[lieuActif()].nom;
+}
+$("build").addEventListener("click", e => {
+  const b = e.target.closest(".pas button"); if (!b || b.disabled) return;
+  const o = b.dataset.k === "arme" ? B().armes : B().objets, id = b.dataset.id;
+  o[id] = Math.max(0, (o[id] || 0) + +b.dataset.d); if (!o[id]) delete o[id];
+  sauver(); son("choisir"); dessinerBuild();
+});
+$("btnBuild").onclick = () => { $("accueil").hidden = true; $("build").hidden = false; dessinerBuild(); $("build").scrollTop = 0 };
+$("buildRetour").onclick = () => { $("build").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
+$("buildVider").onclick = () => { SAVE.buildTest = { armes: {}, objets: {} }; sauver(); dessinerBuild() };
+$("buildJouer").onclick = () => { $("build").hidden = true; demarrer() };
 
 /* ---------- vestiaire ---------- */
 let retourVers = "accueil";

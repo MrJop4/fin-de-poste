@@ -18,8 +18,9 @@ window.SIM = function (opts) {
     if (o.kind === "arme") s += (S.armes[o.id] ? 50 + o.l : 40) - (opts.armes && !opts.armes.includes(o.id) ? 200 : 0);
     else if (o.kind === "objet") {
       const lie = Object.keys(S.armes).some(id => EVOS[id].avec === o.id);
-      s += (lie && !S.objets[o.id] ? 60 : 0) + ({ meule: 30, huile: 30, cire: 24, soupe: 18, bottes: 16, boussole: 12 })[o.id];
-    } else s += 1;
+      s += (lie && !S.objets[o.id] ? 60 : 0) + (({ meule: 30, huile: 30, cire: 24, soupe: 18, bottes: 16, boussole: 12, genoux: 20, ceinture: 10 })[o.id] || 10);
+    } else if (o.kind === "bonus") s += ({ pausecafe: S.p.hp < S.p.max * .5 ? 70 : 5, balai: 25, alarme: 20, speed: 15, prime: 8 })[o.id] || 5;
+    else s += 1;
     return s;
   };
   ouvrirChoix = function () {
@@ -38,6 +39,7 @@ window.SIM = function (opts) {
   nouvellePartie(); enJeu = false;
   for (let i = 0; i < niv("vip"); i++) { const pool = offresPossibles(); if (pool.length) appliquer(pool[Math.floor(Math.random() * pool.length)]) }
   JOY.actif = true; JOY.ox = 0; JOY.oy = 0;
+  if (opts.immortel) { S.p.max = S.p.hp = 1e7; S.p.regen = 1e6 }   // pour mesurer seulement le rythme des cartes
   const dt = opts.dt || 1 / 30, maxT = opts.maxT || VICTOIRE + 240;
   let prochain = 1, hpPrec = S.p.hp;
   let reflexe = 0;
@@ -83,6 +85,7 @@ window.SIM = function (opts) {
       const k = prochain;
       log.niveaux[k] = S.p.niv; log.vivants[k] = S.ennemis.filter(e => !e.decor).length; log.hp[k] = Math.round(S.p.hp); log.kills[k] = S.kills;
       log.dps[k] = Math.round(degats); log.entrant[k] = Math.round(entrant); log.degSubis[k] = Math.round(subis);
+      if (k === 595) log.armes595 = Object.assign({}, S.armes);   // juste avant le boss final
       degats = 0; entrant = 0; subis = 0; prochain++;
     }
   }
