@@ -163,6 +163,28 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .feuille h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 32px; text-align: center; }
 .regle { display: grid; grid-template-columns: 54px 1fr; gap: 12px; align-items: center; font-size: 18px; line-height: 1.25; }
 .regle .ico { width: 54px; height: 54px; border: 3px solid var(--encre); border-radius: 12px; display: grid; place-items: center; font-size: 26px; background: var(--jaune); box-shadow: 3px 3px 0 var(--encre); }
+/* ---- comment jouer animé ---- */
+#aideJeu { grid-template-columns: minmax(0, 470px); justify-content: center; }
+#aideJeu .feuille { min-width: 0; max-width: 470px; gap: 12px; padding: 18px 18px 20px; }
+.tuto { display: flex; flex-direction: column; gap: 10px; }
+.tuto-barres { display: flex; gap: 4px; }
+.tuto-barres span { flex: 1; height: 7px; border-radius: 4px; background: rgba(23,19,15,.18); overflow: hidden; border: 1.5px solid var(--encre); }
+.tuto-barres i { display: block; height: 100%; width: 0; background: var(--orange); }
+.tuto-ecran { position: static; inset: auto; display: block; width: calc(52vh * 360 / 420); max-width: 100%; height: auto; aspect-ratio: 360 / 420; margin: 0 auto; border: 4px solid var(--encre); border-radius: 14px; box-shadow: 5px 5px 0 var(--encre); background: #2a2c30; cursor: pointer; touch-action: manipulation; }
+.tuto-legende { min-height: 74px; text-align: center; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+.tuto-legende.neuf { animation: tutoLeg .35s ease-out; }
+.tuto-titre { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.05; }
+.tuto-texte { font-size: 16px; line-height: 1.25; }
+.tuto-astuce { text-align: center; font-size: 12px; color: var(--gris); margin-top: -4px; }
+@keyframes tutoLeg { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+.tuto-plus { border: 3px solid var(--encre); border-radius: 12px; background: var(--papier-2); padding: 8px 12px; }
+.tuto-plus summary { cursor: pointer; font-family: var(--display); font-size: 18px; list-style: none; text-align: center; }
+.tuto-plus summary::-webkit-details-marker { display: none; }
+.tuto-plus summary::after { content: " ▾"; }
+.tuto-plus[open] summary::after { content: " ▴"; }
+.tuto-plus .regle { margin-top: 10px; font-size: 15px; grid-template-columns: 42px 1fr; }
+.tuto-plus .regle .ico { width: 42px; height: 42px; font-size: 20px; }
+@media (prefers-reduced-motion: reduce) { .tuto-legende.neuf { animation: none } }
 
 /* ---- cartes (niveau, vestiaire) ---- */
 .cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; width: 100%; }
@@ -546,15 +568,20 @@ button { touch-action: manipulation; }
 <div class="voile" id="aideJeu" hidden>
   <div class="feuille">
     <h3>Comment jouer</h3>
-    <div class="regle"><span class="ico">🕹️</span><span><span class="clavier"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> pour bouger.</span><span class="tactile">Pose ton pouce et glisse pour bouger.</span> Tes outils tapent tout seuls.</span></div>
-    <div class="regle"><span class="ico">🏷️</span><span>Ramasse les étiquettes pour monter de niveau et choisir une carte.</span></div>
-    <div class="regle"><span class="ico">🚨</span><span>Lumière rouge = une transpalette arrive. Dégage !</span></div>
-    <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
-    <div class="regle"><span class="ico">💰</span><span>Les semis lâchent la paie : débloque persos et lieux depuis l'accueil (flèches puis « Débloquer »), et achète des améliorations au vestiaire.</span></div>
-    <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie. Outil au max + son équipement + un gros coffre (semi, hors gabarit) = évolution !</span></div>
-    <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
-    <div class="regle"><span class="ico">⏱️</span><span>Tiens 10 minutes, puis bats le boss du lieu pour finir ton poste.</span></div>
-    <div class="boutons"><button class="btn go" id="aideOk">C'est parti</button></div>
+    <div class="tuto" id="tuto">
+      <div class="tuto-barres"></div>
+      <canvas class="tuto-ecran" aria-label="Animation qui montre comment jouer"></canvas>
+      <div class="tuto-astuce"><span class="tactile">Touche l'image pour avancer (à gauche pour revenir)</span><span class="clavier">Clique l'image ou <kbd>←</kbd><kbd>→</kbd> pour avancer</span></div>
+      <div class="tuto-legende"><b class="tuto-titre"></b><span class="tuto-texte"></span></div>
+    </div>
+    <details class="tuto-plus">
+      <summary>Bon à savoir</summary>
+      <div class="regle"><span class="ico">☕</span><span>Casse les machines pour un bonus.</span></div>
+      <div class="regle"><span class="ico">⭐</span><span>3 outils max par partie.</span></div>
+      <div class="regle"><span class="ico">🚧</span><span>Chaque lieu a son moment spécial : tu te retrouves enfermé, à toi de t'en sortir !</span></div>
+      <div class="regle"><span class="ico">💰</span><span>Avec la paie : débloque persos et lieux depuis l'accueil (flèches puis « Débloquer »), et achète des améliorations au vestiaire.</span></div>
+    </details>
+    <div class="boutons"><button class="btn" id="tutoRevoir">↺ Revoir</button><button class="btn go" id="aideOk">C'est parti</button></div>
   </div>
 </div>
 
@@ -4223,7 +4250,8 @@ addEventListener("keydown", e => {
     return;
   }
   if (!$("trophees").hidden) { if (e.code === "Escape" || e.code === "Space" || e.code === "Enter") { e.preventDefault(); $("trophRetour").click() } return }
-  if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
+  if (!$("aideJeu").hidden && (e.code === "ArrowRight" || e.code === "ArrowLeft")) { e.preventDefault(); e.code === "ArrowRight" ? Tuto.suivant() : Tuto.precedent(); return }
+  if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); Tuto.arreter(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
   if (e.code === "Escape" || e.code === "KeyP") return basculerPause();
   if (choix && revelEnCours) {
     if (e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter") { e.preventDefault(); if (e.repeat) return; if (attenteOuverture) return ouvrirBooster(); if (revelType === "machine") return passerRevel() }
@@ -4276,8 +4304,564 @@ $("cartePerso").onclick = () => tourner(LP, "perso", 1);
 document.addEventListener("contextmenu", e => { if (TACTILE) e.preventDefault() });
 $("tro1").onclick = () => { $("accueil").hidden = true; $("trophees").hidden = false; dessinerTrophees(); $("trophees").scrollTop = 0; $("trophRetour").focus({ preventScroll: true }) };
 $("trophRetour").onclick = () => { $("trophees").hidden = true; $("accueil").hidden = false; majAccueil() };
-$("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = false; $("aideOk").focus() };
-$("aideOk").onclick = () => { $("aideJeu").hidden = true; $("accueil").hidden = false };
+/* ---------- « Comment jouer » animé : une petite vidéo en 8 scènes, dessinée sur un canvas ---------- */
+/* ---------- « Comment jouer » animé : une petite vidéo en 8 scènes, dessinée sur un canvas ---------- */
+/* ---------- « Comment jouer » animé : une petite vidéo en 8 scènes, dessinée sur un canvas ---------- */
+/* ---------- « Comment jouer » animé : une petite vidéo en 8 scènes, dessinée sur un canvas ---------- */
+const Tuto = (() => {
+  const W = 360, H = 420, ENC = "#17130f", PAP = "#fff6e3", JAU = "#ffc21a", ROU = "#e8412c";
+  const FONTE = "'Luckiest Guy', 'Arial Black', Impact, sans-serif", UI = "Nunito, system-ui, sans-serif";
+  const TACT = matchMedia("(pointer: coarse)").matches;
+  const SRC = { perso: "persos/preparateur.webp", boss: "boss/megacolis.webp", dos: "cartes/dos.webp", douchette: "cartes/douchette.webp", cutter: "cartes/cutter.webp", rouleaux: "cartes/rouleaux.webp", rode: "cartes/rode.webp", gyro: "murs/gyrophare.webp" };
+  const IM = {};
+  let cv, c, dpr = 1, idx = 0, t = 0, st = null, raf = 0, last = 0, fini = false, legendeCle = "";
+  let el = {};
+
+  /* ---- outils ---- */
+  const cl = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const eo = k => 1 - Math.pow(1 - cl(k), 3);
+  const eio = k => { k = cl(k); return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2 };
+  const eback = k => { k = cl(k); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2) };
+  const ebounce = k => { k = cl(k); const n = 7.5625, d = 2.75; if (k < 1 / d) return n * k * k; if (k < 2 / d) return n * (k -= 1.5 / d) * k + .75; if (k < 2.5 / d) return n * (k -= 2.25 / d) * k + .9375; return n * (k -= 2.625 / d) * k + .984375 };
+  const ent = (a, b) => t >= a && t < b;
+  let graine = 1; const alea = () => (graine = (graine * 16807) % 2147483647) / 2147483647;
+  const pret = im => im && im.complete && im.naturalWidth;
+  const rr = (x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r) };
+  const trait = (lw = 3) => { c.lineWidth = lw; c.strokeStyle = ENC; c.lineJoin = "round"; c.stroke() };
+  function texte(s, x, y, taille, coul = "#fff", rot = 0, ech = 1, alpha = 1) {
+    if (alpha <= 0) return;
+    c.save(); c.globalAlpha = alpha; c.translate(x, y); c.rotate(rot); c.scale(ech, ech);
+    c.font = `${taille}px ${FONTE}`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
+    c.lineWidth = taille * .28; c.strokeStyle = ENC; c.strokeText(s, 2, taille * .1); c.strokeText(s, 0, 0);
+    c.fillStyle = coul; c.fillText(s, 0, 0); c.restore();
+  }
+  function petit(s, x, y, taille = 13, coul = PAP, alpha = 1) {
+    c.save(); c.globalAlpha = alpha; c.font = `900 ${taille}px ${UI}`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
+    if (coul !== ENC) { c.lineWidth = 4; c.strokeStyle = ENC; c.strokeText(s, x, y) } c.fillStyle = coul; c.fillText(s, x, y); c.restore();
+  }
+  const teintes = new Map();
+  function teinte(nom, coul) {   // silhouette colorée d'une image (pour les flashs blancs ou rouges)
+    const k = nom + coul; if (teintes.has(k)) return teintes.get(k);
+    const im = IM[nom]; if (!pret(im)) return null;
+    const s = document.createElement("canvas"); s.width = im.naturalWidth; s.height = im.naturalHeight;
+    const x = s.getContext("2d"); x.drawImage(im, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = coul; x.fillRect(0, 0, s.width, s.height);
+    teintes.set(k, s); return s;
+  }
+  function lueur(x, y, r, rgb, a) { if (a <= 0) return; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2) }
+  function ombre(x, y, rx, ry) { c.fillStyle = "rgba(0,0,0,.35)"; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, 7); c.fill() }
+  function rayons(x, y, r, n, rot, coul, a) {
+    c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate(rot); c.fillStyle = coul;
+    for (let i = 0; i < n; i++) { c.rotate(Math.PI * 2 / n); c.beginPath(); c.moveTo(0, 0); c.lineTo(r, -r * .1); c.lineTo(r, r * .1); c.closePath(); c.fill() }
+    c.restore();
+  }
+
+  /* ---- décor et personnages ---- */
+  function sol() {
+    c.fillStyle = "#2a2c30"; c.fillRect(0, 0, W, H);
+    c.strokeStyle = "rgba(0,0,0,.28)"; c.lineWidth = 2;
+    for (let x = 0; x <= W; x += 60) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke() }
+    for (let y = 0; y <= H; y += 60) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke() }
+    c.fillStyle = "rgba(10,10,12,.35)"; c.beginPath(); c.ellipse(250, 120, 34, 14, .3, 0, 7); c.ellipse(80, 330, 26, 11, -.2, 0, 7); c.fill();
+    c.strokeStyle = "rgba(255,194,26,.55)"; c.lineWidth = 5; c.setLineDash([26, 18]);
+    for (const x of [24, 336]) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke() }
+    c.setLineDash([]);
+    c.save(); c.globalAlpha = .07; c.font = `64px ${FONTE}`; c.fillStyle = "#fff"; c.textAlign = "center"; c.fillText("QUAI", 180, 395); c.restore();
+  }
+  function perso(x, y, o = {}) {
+    const im = IM.perso, h = o.h || 66; if (!pret(im)) return;
+    const w = h * im.naturalWidth / im.naturalHeight, saut = o.bouge ? -Math.abs(Math.sin(t * 13)) * 3 : 0;
+    ombre(x, y, w * .38, 6);
+    c.save(); c.translate(x, y + saut); if (o.gauche) c.scale(-1, 1);
+    if (o.bouge) c.rotate(Math.sin(t * 13) * .05);
+    c.drawImage(im, -w / 2, -h, w, h);
+    if (o.rouge > 0) { const s = teinte("perso", "#ff2a1f"); if (s) { c.globalAlpha = o.rouge; c.drawImage(s, -w / 2, -h, w, h) } }
+    c.restore();
+  }
+  function colis(x, y, r, o = {}) {
+    const w = r * 2.2, h = r * 1.9, cx0 = o.vx || 0, cy0 = o.vy || 0;
+    ombre(x, y + h * .5, r * 1.1, r * .35);
+    c.save(); c.translate(x, y); c.rotate(o.rot || 0);
+    rr(-w / 2, -h / 2, w, h, 4); c.fillStyle = o.flash ? "#fff" : (o.coul || "#c8955a"); c.fill(); trait(2.6);
+    if (!o.flash) {
+      c.fillStyle = "rgba(0,0,0,.14)"; c.fillRect(-w / 2 + 2, -h / 2 + 2, w - 4, h * .2);
+      c.fillStyle = "#e8c48a"; c.fillRect(-w * .1, -h / 2 + 1.5, w * .2, h - 3);
+      for (const s of [-1, 1]) {
+        const ex = s * r * .45, ey = r * .02;
+        c.fillStyle = "#fff"; c.beginPath(); c.ellipse(ex, ey, r * .26, r * .3, 0, 0, 7); c.fill(); trait(1.6);
+        c.fillStyle = ENC; c.beginPath(); c.arc(ex + cx0 * r * .1, ey + cy0 * r * .1 + r * .05, r * .13, 0, 7); c.fill();
+        c.beginPath(); c.moveTo(ex - s * r * .32, ey - r * .42); c.lineTo(ex + s * r * .22, ey - r * .26); trait(2.2);
+      }
+    }
+    c.restore();
+  }
+  function etiquette(x, y, rot = 0, ech = 1, a = 1) {
+    c.save(); c.globalAlpha = a; lueur(x, y, 20 * ech, "63,224,255", .45);
+    c.translate(x, y); c.rotate(rot); c.scale(ech, ech);
+    c.beginPath(); c.moveTo(-9, -6); c.lineTo(4, -6); c.lineTo(10, 0); c.lineTo(4, 6); c.lineTo(-9, 6); c.closePath();
+    c.fillStyle = "#3fe0ff"; c.fill(); trait(2.2); c.fillStyle = ENC; c.beginPath(); c.arc(4, 0, 1.7, 0, 7); c.fill();
+    c.restore();
+  }
+  function barreVie(x, y, w, k) {
+    rr(x - w / 2, y, w, 8, 4); c.fillStyle = "#3a0f0b"; c.fill();
+    if (k > 0) { rr(x - w / 2, y, w * k, 8, 4); c.fillStyle = k > .5 ? "#5ff07a" : "#ffb21a"; c.fill() }
+    rr(x - w / 2, y, w, 8, 4); trait(2.2);
+  }
+  function rayonLaser(x, y, a, len, coul = "255,60,40", ep = 1) {
+    const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
+    c.save(); c.lineCap = "round";
+    c.strokeStyle = `rgba(${coul},.3)`; c.lineWidth = 11 * ep; c.beginPath(); c.moveTo(x, y); c.lineTo(x2, y2); c.stroke();
+    c.strokeStyle = `rgb(${coul})`; c.lineWidth = 4 * ep; c.stroke();
+    c.strokeStyle = "#fff"; c.lineWidth = 1.4 * ep; c.stroke();
+    c.restore(); lueur(x2, y2, 14, coul, .8);
+  }
+  function tuile(nom, x, y, taille, o = {}) {
+    const im = IM[nom];
+    c.save(); if (o.glow) { lueur(x, y, taille * 1.2, "255,210,60", o.glow) }
+    rr(x - taille / 2, y - taille / 2, taille, taille, taille * .24); c.fillStyle = o.or ? "#ffd447" : "#ffc21a"; c.fill(); trait(3);
+    if (pret(im)) {
+      c.save(); rr(x - taille / 2 + 3, y - taille / 2 + 3, taille - 6, taille - 6, taille * .16); c.clip();
+      const iw = im.naturalWidth, ih = im.naturalHeight, s = Math.max((taille - 6) / iw, (taille - 6) / ih);
+      c.drawImage(im, x - iw * s / 2, y - ih * s * .45, iw * s, ih * s); c.restore();
+    }
+    if (o.badge) {
+      c.font = `900 10px ${UI}`; const bw = Math.max(18, c.measureText(o.badge).width + 8);
+      rr(x + taille / 2 - bw + 6, y + taille / 2 - 12, bw, 17, 9); c.fillStyle = o.badgeCoul || PAP; c.fill(); trait(2);
+      c.fillStyle = o.badgeCoul ? "#fff" : ENC; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.badge, x + taille / 2 - bw / 2 + 6, y + taille / 2 - 3.5);
+    }
+    c.restore();
+  }
+  function carte(nom, titre, tag, x, y, w, o = {}) {
+    const h = w * 1.46, im = IM[nom];
+    c.save(); c.globalAlpha = o.a == null ? 1 : o.a; c.translate(x, y); c.rotate(o.rot || 0); c.scale(o.ech || 1, o.ech || 1);
+    if (o.glow) { lueur(0, 0, w * 1.1, o.or ? "255,200,40" : "255,230,120", o.glow) }
+    c.fillStyle = ENC; rr(-w / 2 + 5, -h / 2 + 5, w, h, 10); c.fill();
+    rr(-w / 2, -h / 2, w, h, 10); c.fillStyle = o.or ? "#ffd447" : PAP; c.fill(); trait(3);
+    const ih = h * .7;
+    if (pret(im)) {
+      c.save(); rr(-w / 2 + 6, -h / 2 + 6, w - 12, ih, 6); c.clip();
+      const s = Math.max((w - 12) / im.naturalWidth, ih / im.naturalHeight);
+      c.drawImage(im, -im.naturalWidth * s / 2, -h / 2 + 6 + ih / 2 - im.naturalHeight * s / 2, im.naturalWidth * s, im.naturalHeight * s); c.restore();
+      rr(-w / 2 + 6, -h / 2 + 6, w - 12, ih, 6); trait(2);
+    }
+    c.fillStyle = ENC; c.textAlign = "center"; c.textBaseline = "middle";
+    c.font = `${Math.round(w * .13)}px ${FONTE}`; c.fillText(titre, 0, h / 2 - h * .17, w - 10);
+    if (tag) {
+      c.font = `900 ${Math.round(w * .095)}px ${UI}`; const tw = c.measureText(tag).width + 12;
+      rr(-tw / 2, h / 2 - h * .1, tw, w * .14, 7); c.fillStyle = tag === "NOUVEAU" ? "#2fbf71" : "#3d8bd9"; c.fill(); trait(2);
+      c.fillStyle = "#fff"; c.fillText(tag, 0, h / 2 - h * .1 + w * .07);
+    }
+    c.restore();
+  }
+  function transpalette(x, y) {
+    c.save(); c.translate(x, y);
+    c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 3; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-70 - i * 14, -14 + i * 9); c.lineTo(-40 - i * 10, -14 + i * 9); c.stroke() }
+    ombre(5, 22, 52, 8);
+    for (const fy of [-12, 8]) { rr(0, fy, 62, 7, 2); c.fillStyle = "#8a8f98"; c.fill(); trait(2) }
+    rr(-34, -20, 38, 40, 6); c.fillStyle = "#e8a317"; c.fill(); trait(3);
+    c.fillStyle = "rgba(0,0,0,.18)"; c.fillRect(-32, 6, 34, 12);
+    c.beginPath(); c.moveTo(-30, -2); c.lineTo(-52, -30); trait(5); c.strokeStyle = "#555"; c.lineWidth = 2.5; c.stroke();
+    rr(-60, -36, 18, 10, 4); c.fillStyle = "#333"; c.fill(); trait(2.4);
+    c.restore();
+  }
+  function coffre(x, y, ouvert, ech = 1) {
+    c.save(); c.translate(x, y); c.scale(ech, ech);
+    ombre(0, 26, 44, 9);
+    rr(-40, -10, 80, 38, 6); c.fillStyle = "#e0a516"; c.fill(); trait(3);
+    c.fillStyle = "#b67a08"; c.fillRect(-40, 4, 80, 7); c.fillRect(-6, -10, 12, 38);
+    c.save(); c.translate(0, -10); c.rotate(-ouvert * 1.9);
+    rr(-42, -22, 84, 24, 8); c.fillStyle = "#ffcc33"; c.fill(); trait(3);
+    c.fillStyle = "#b67a08"; c.fillRect(-6, -22, 12, 24); c.restore();
+    rr(-8, -4, 16, 14, 3); c.fillStyle = "#fff0a8"; c.fill(); trait(2);
+    c.restore();
+  }
+  function doigt(x, y, appui) {   // un pouce qui touche l'écran
+    c.save(); c.translate(x, y); const e = appui ? .86 : 1; c.scale(e, e);
+    c.font = "40px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif"; c.textAlign = "center"; c.textBaseline = "top";
+    c.fillText("👆", 4, -6); c.restore();
+  }
+  function onde(x, y, k) { if (k <= 0 || k >= 1) return; c.strokeStyle = `rgba(255,246,227,${1 - k})`; c.lineWidth = 4; c.beginPath(); c.arc(x, y, 6 + k * 30, 0, 7); c.stroke() }
+  function horloge(s, x, y, taille, coul = "#fff", ech = 1) { texte(s, x, y, taille, coul, 0, ech) }
+  const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+
+  /* ---- effets partagés : éclats, nombres, secousses ---- */
+  const base = () => ({ parts: [], pops: [], secousse: 0, ev: {} });
+  function eclats(s, x, y, coul, n, v = 160) { for (let i = 0; i < n; i++) { const a = alea() * 7, sp = v * (.4 + alea() * .8); s.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, t: .5 + alea() * .4, t0: .9, coul, r: 2.5 + alea() * 3.5 }) } }
+  function pop(s, x, y, txt, coul = "#fff", taille = 18) { s.pops.push({ x, y, txt, coul, taille, t: 0 }) }
+  function fois(s, nom, quand) { if (t >= quand && !s.ev[nom]) { s.ev[nom] = true; return true } return false }
+  function effets(s, dt) {
+    for (const p of s.parts) { p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 380 * dt; p.vx *= .98 }
+    s.parts = s.parts.filter(p => p.t > 0);
+    for (const p of s.parts) { c.globalAlpha = cl(p.t / .3); c.fillStyle = p.coul; c.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); c.strokeStyle = ENC; c.lineWidth = 1.2; c.strokeRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2) }
+    c.globalAlpha = 1;
+    for (const p of s.pops) { p.t += dt; texte(p.txt, p.x, p.y - p.t * 40, p.taille, p.coul, 0, 1 + .3 * Math.max(0, .15 - p.t) / .15, cl((.9 - p.t) / .3)) }
+    s.pops = s.pops.filter(p => p.t < .9);
+  }
+
+  /* ---- les scènes ---- */
+  const SC = [
+    { // 1. bouger
+      dur: 4.6, titre: "Bouge",
+      texte: () => TACT ? "Pose ton pouce n'importe où et glisse : ton perso le suit." : "ZQSD ou les flèches pour bouger (au téléphone : glisse ton pouce).",
+      init: base,
+      frame(s) {
+        sol();
+        const px = 180 + Math.cos(t * 1.6) * 92, py = 228 + Math.sin(t * 3.2) * 52;
+        const vx = -Math.sin(t * 1.6) * 1.6 * 92, vy = Math.cos(t * 3.2) * 3.2 * 52, v = Math.hypot(vx, vy) || 1, dx = vx / v, dy = vy / v;
+        c.fillStyle = "rgba(255,246,227,.08)";
+        for (let k = 1; k < 9; k++) { const tk = t - k * .09, qx = 180 + Math.cos(tk * 1.6) * 92, qy = 228 + Math.sin(tk * 3.2) * 52; c.beginPath(); c.ellipse(qx, qy, 10 - k, 4 - k * .4, 0, 0, 7); c.fill() }
+        perso(px, py, { bouge: true, gauche: vx < 0 });
+        if (TACT) {
+          const bx = 76, by = 342;
+          c.fillStyle = "rgba(255,255,255,.12)"; c.beginPath(); c.arc(bx, by, 36, 0, 7); c.fill(); c.strokeStyle = "rgba(255,246,227,.55)"; c.lineWidth = 3; c.stroke();
+          const kx = bx + dx * 20, ky = by + dy * 20;
+          c.beginPath(); c.arc(kx, ky, 15, 0, 7); c.fillStyle = "rgba(255,246,227,.92)"; c.fill(); trait(3);
+          doigt(kx, ky, false);
+        } else {
+          const touches = [["Z", 64, 318, dy < -.35], ["Q", 36, 348, dx < -.35], ["S", 64, 348, dy > .35], ["D", 92, 348, dx > .35]];
+          for (const [k, x, y, on] of touches) { rr(x - 13, y - 13 + (on ? 2 : 0), 26, 26, 6); c.fillStyle = on ? JAU : PAP; c.fill(); trait(2.6); c.fillStyle = ENC; c.font = `900 14px ${UI}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(k, x, y + (on ? 2 : 0)) }
+        }
+      }
+    },
+    { // 2. les outils tapent tout seuls
+      dur: 6.2, titre: "Tes outils tapent tout seuls",
+      texte: () => "Ta douchette laser tourne autour de toi et casse les colis. Toi, tu t'occupes de bouger.",
+      init() {
+        const s = base(); s.col = []; s.etq = []; s.k = 0;
+        s.sp = [[.05, 0], [.3, 2.3], [.6, 4.2], [1, 1.1], [1.35, 3.3], [1.75, 5.3], [2.2, .6], [2.6, 2.8], [3, 4.8], [3.4, 1.7]];
+        return s;
+      },
+      frame(s, dt) {
+        sol();
+        const p = { x: 180, y: 250 + Math.sin(t * 2) * 6 };
+        while (s.k < s.sp.length && t >= s.sp[s.k][0]) { const a = s.sp[s.k][1]; s.col.push({ x: 180 + Math.cos(a) * 215, y: 236 + Math.sin(a) * 215, hp: 2, fl: 0, cd: 0, r: 14, ph: alea() * 6 }); s.k++ }
+        const A = t * 4.4 - 1, L = 128, oy = p.y - 30;
+        for (const e of s.col) {
+          const dx = p.x - e.x, dy = oy - e.y, d = Math.hypot(dx, dy);
+          if (d > 56) { e.x += dx / d * 56 * dt; e.y += dy / d * 56 * dt }
+          e.cd -= dt; e.fl -= dt; e.ph += dt;
+          const an = Math.atan2(e.y - oy, e.x - p.x), diff = Math.abs(Math.atan2(Math.sin(an - A), Math.cos(an - A)));
+          if (d < L + e.r && diff < e.r / Math.max(d, 1) + .1 && e.cd <= 0) {
+            e.hp--; e.fl = .12; e.cd = .45; pop(s, e.x, e.y - 22, "-9");
+            if (e.hp <= 0) { e.mort = true; eclats(s, e.x, e.y, "#c8955a", 10); s.etq.push({ x: e.x, y: e.y, t: 0 }) }
+          }
+        }
+        s.col = s.col.filter(e => !e.mort);
+        for (const q of s.etq) { q.t += dt; etiquette(q.x, q.y - Math.abs(Math.sin(q.t * 5)) * 4 * Math.max(0, 1 - q.t), 0, Math.min(1, q.t * 5)) }
+        const tout = s.col.map(e => ({ y: e.y, d: () => colis(e.x, e.y, e.r, { flash: e.fl > 0, rot: Math.sin(e.ph * 9) * .08, vx: (p.x - e.x) / 200, vy: (oy - e.y) / 200 }) }));
+        tout.push({ y: p.y - 20, d: () => perso(p.x, p.y) });
+        tout.sort((a, b) => a.y - b.y).forEach(o => o.d());
+        rayonLaser(p.x, oy, A, L);
+        effets(s, dt);
+      }
+    },
+    { // 3. éviter les colis et la transpalette
+      dur: 7, titre: () => t < 2.8 ? "Évite les colis" : "Lumière rouge = transpalette",
+      texte: () => t < 2.8 ? "Chaque colis qui te touche te coûte de la vie. Garde tes distances !" : "Quand une allée clignote en rouge, une transpalette arrive. Dégage !",
+      init: base,
+      frame(s, dt) {
+        sol();
+        const bande = ent(2.8, 6), clig = .5 + .5 * Math.sin(t * 15);
+        if (bande) {
+          const fa = cl((t - 2.8) / .2) * cl((6 - t) / .2);
+          c.fillStyle = `rgba(232,40,25,${(.14 + .2 * clig) * fa})`; c.fillRect(0, 214, W, 72);
+          c.strokeStyle = `rgba(255,80,60,${.8 * fa})`; c.lineWidth = 3; c.setLineDash([14, 10]); c.lineDashOffset = -t * 60;
+          for (const y of [214, 286]) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke() }
+          c.setLineDash([]);
+          lueur(30, 250, 70, "255,40,20", (.4 + .4 * clig) * fa);
+          if (pret(IM.gyro)) { c.globalAlpha = fa; c.drawImage(IM.gyro, 12, 228, 36, 44); c.globalAlpha = 1 }
+          texte("!", 70, 250, 30, "#ffd447", 0, 1 + clig * .15, fa);
+        }
+        const touche = 2.2;
+        const kx = t > touche ? -34 * eo((t - touche) / .3) : 0;
+        const py = 250 - 108 * eio((t - 3.4) / .6), px = 160 + kx;
+        let cx1 = t < touche ? 400 - 90 * t : 202 + 40 * eo((t - touche) / .4);
+        const tpx = -130 + (t - 4.4) / 1.3 * 600;
+        if (fois(s, "choc", touche)) { s.secousse = .3; pop(s, px, py - 80, "-12", "#ff6b57", 22); eclats(s, px + 20, py - 30, "#ff6b57", 8, 120) }
+        if (!s.ejecte && t > 4.4 && tpx + 62 > cx1 - 16) { s.ejecte = { x: cx1, t0: t }; eclats(s, cx1, 250, "#c8955a", 14, 220) }
+        if (fois(s, "ouf", 5.9)) pop(s, px, py - 84, "OUF !", "#ffd447", 22);
+        const vie = t < touche ? 1 : 1 - .3 * eo((t - touche) / .25);
+        const rouge = ent(touche, touche + .55) ? (Math.floor((t - touche) * 14) % 2 ? .75 : .2) : 0;
+        if (s.ejecte) { const k = t - s.ejecte.t0; if (k < .7) colis(s.ejecte.x + k * 380, 250 - k * 260 + k * k * 300, 16, { rot: k * 14 }) }
+        else colis(cx1, 250, 16, { rot: t < touche ? Math.sin(t * 9) * .08 : 0, vx: -1, vy: 0 });
+        perso(px, py, { rouge, bouge: ent(3.4, 4) || (t < 2.2 && false), gauche: false });
+        barreVie(px, py - 78, 44, vie);
+        if (ent(4.4, 5.8)) transpalette(tpx, 250);
+        effets(s, dt);
+        if (t > touche) { const a = cl(1 - (t - touche) / .6) * .6; if (a > 0) { const g = c.createRadialGradient(W / 2, H / 2, H * .25, W / 2, H / 2, H * .75); g.addColorStop(0, "rgba(232,40,25,0)"); g.addColorStop(1, `rgba(232,40,25,${a})`); c.fillStyle = g; c.fillRect(0, 0, W, H) } }
+      }
+    },
+    { // 4. ramasser les étiquettes
+      dur: 5.4, titre: "Ramasse les étiquettes",
+      texte: () => "Les colis cassés lâchent des étiquettes. Remplis la barre bleue pour monter de niveau.",
+      init() {
+        const s = base(); s.xp = 0; s.aff = 0; s.niv = 1;
+        s.etq = [95, 122, 150, 176, 204, 230, 258, 284, 310].map((x, i) => ({ x, y: 262 + Math.sin(x / 40) * 34 + (i % 2 ? -26 : 26), v: 0, pris: false, aim: false }));
+        return s;
+      },
+      frame(s, dt) {
+        sol();
+        const px = Math.min(330, 50 + t * 82), py = 262 + Math.sin(px / 40) * 34 + 20, bouge = px < 330;
+        for (const q of s.etq) {
+          if (q.pris) continue;
+          const dx = px - q.x, dy = py - 30 - q.y, d = Math.hypot(dx, dy);
+          if (d < 58) q.aim = true;
+          if (q.aim) { q.v = Math.min(700, q.v + 1800 * dt); q.x += dx / d * q.v * dt; q.y += dy / d * q.v * dt; if (d < 14) { q.pris = true; s.xp++; pop(s, px + 14, py - 70, "+1", "#8ff3ff", 15) } }
+          etiquette(q.x, q.y, q.aim ? q.v * .01 : Math.sin(t * 3 + q.x) * .2);
+        }
+        perso(px, py, { bouge, gauche: false });
+        const cible = s.xp / s.etq.length; s.aff += (cible - s.aff) * Math.min(1, dt * 10);
+        if (s.xp >= s.etq.length && !s.monte) { s.monte = t; s.niv = 2; eclats(s, 180, 190, "#ffd447", 26, 240) }
+        // barre d'XP du jeu
+        const dore = s.monte && t - s.monte < 1.2 && Math.floor((t - s.monte) * 8) % 2 === 0;
+        rr(16, 14, 290, 20, 10); c.fillStyle = "#1d2027"; c.fill();
+        if (s.aff > .01) { rr(16, 14, 290 * Math.min(1, s.aff), 20, 10); c.fillStyle = dore ? "#ffd447" : "#19b9e6"; c.fill(); c.fillStyle = "rgba(255,255,255,.5)"; c.fillRect(24, 18, Math.max(0, 290 * Math.min(1, s.aff) - 16), 4) }
+        rr(16, 14, 290, 20, 10); trait(3);
+        c.beginPath(); c.arc(330, 24, 17, 0, 7); c.fillStyle = "#ffb300"; c.fill(); trait(3);
+        texte(String(s.niv), 330, 25, 17, "#fff");
+        if (s.monte) {
+          const k = t - s.monte;
+          rayons(180, 190, 170, 14, k * .8, "rgba(255,210,60,.9)", .35 * cl(k * 4));
+          texte("NIVEAU 2 !", 180, 190, 46, JAU, -.06, eback(k * 2.2) * (1 + Math.sin(k * 6) * .03));
+        }
+        effets(s, dt);
+      }
+    },
+    { // 5. le booster et le choix d'une carte
+      dur: 7.4, titre: "Choisis une carte",
+      texte: () => "À chaque niveau, ouvre le booster : un nouvel outil, ou un outil que tu as déjà, en plus fort.",
+      init: base,
+      frame(s, dt) {
+        sol(); c.fillStyle = "rgba(15,11,6,.78)"; c.fillRect(0, 0, W, H);
+        texte("NIVEAU 2 !", 180, 66, 30, JAU, -.04);
+        // inventaire en haut à gauche
+        tuile("douchette", 32, 26, 34);
+        const cx0 = 180, cy0 = 228, slots = [[72, 236, -.12], [180, 226, 0], [288, 236, .12]];
+        const cartes = [["rouleaux", "Rouleaux de film", "NOUVEAU"], ["cutter", "Cutter", "NOUVEAU"], ["douchette", "Douchette", "NIV 2"]];
+        // le booster
+        if (t < 1.6 && pret(IM.dos)) {
+          const ouv = cl((t - 1.35) / .25), tremble = Math.sin(t * 22) * .07 * cl(t / .9);
+          c.save(); c.globalAlpha = 1 - ouv; c.translate(cx0, cy0); c.rotate(tremble); const e = (1 + .04 * Math.sin(t * 8)) * (1 + ouv * .4); c.scale(e, e);
+          lueur(0, 0, 120, "255,210,60", .3 + .2 * Math.sin(t * 6));
+          c.fillStyle = ENC; rr(-70 + 6, -98 + 6, 140, 197, 12); c.fill();
+          c.drawImage(IM.dos, -70, -98, 140, 197); rr(-70, -98, 140, 197, 12); trait(3); c.restore();
+        }
+        if (ent(.6, 1.45)) { const k = eo((t - .6) / .4); doigt(cx0 + 10, cy0 + 120 - 60 * k + 30, ent(1.15, 1.35)) }
+        onde(cx0, cy0 + 30, (t - 1.2) / .4);
+        if (ent(1.35, 1.75)) { c.fillStyle = `rgba(255,255,255,${.8 * (1 - (t - 1.35) / .4)})`; c.fillRect(0, 0, W, H) }
+        if (t >= 1.4) {
+          const choisi = t >= 3.7, part = eio((t - 3.7) / .5), vers = eio((t - 5) / .8);
+          cartes.forEach(([nom, titre, tag], i) => {
+            const u = eback((t - 1.4 - i * .09) / .6), [sx, sy, sr] = slots[i];
+            let x = lerp(cx0, sx, u), y = lerp(cy0, sy, u), rot = lerp(0, sr, u), ech = lerp(.3, 1, cl(u)), a = 1, glow = 0;
+            if (i === 1) {
+              if (t > 2.3) { glow = .5 + .3 * Math.sin(t * 6); y -= 10 * eo((t - 2.3) / .3); ech *= 1 + .08 * eo((t - 2.3) / .3) }
+              if (choisi) { x = lerp(x, 180, part); y = lerp(y, 200, part); ech = lerp(ech, 1.35, part); glow = .8 }
+              if (t >= 5) { x = lerp(180, 72, vers); y = lerp(200, 26, vers); ech = lerp(1.35, .3, vers); glow = .8 * (1 - vers) }
+              if (t >= 5.8) return;
+            } else if (choisi) { y += part * 260; a = 1 - part }
+            carte(nom, titre, tag, x, y, 100, { rot, ech, a, glow });
+          });
+          if (ent(2.9, 3.85)) { const k = eo((t - 2.9) / .4); doigt(186, 300 + 70 * (1 - k), ent(3.5, 3.75)) }
+          onde(180, 260, (t - 3.55) / .4);
+          if (ent(4, 5.1)) texte("NOUVEL OUTIL !", 180, 330, 26, "#5ff07a", -.08, eback((t - 4) * 3));
+        }
+        if (t >= 5.8) { tuile("cutter", 72, 26, 34, { glow: .6 * cl(1 - (t - 5.8)) }); if (fois(s, "pose", 5.8)) eclats(s, 72, 26, "#ffd447", 12, 140); petit("2 / 3 outils", 140, 27, 13, PAP, cl((t - 6) * 3)) }
+        effets(s, dt);
+      }
+    },
+    { // 6. l'évolution
+      dur: 7, titre: "L'évolution",
+      texte: () => t < 1.9 ? "Monte un outil au max et prends l'équipement qui va avec…" : t < 4.6 ? "…puis ouvre un gros coffre (semi vidé, colis hors gabarit)…" : "…et ton outil évolue : il devient bien plus fort !",
+      init() { const s = base(); s.col = []; return s },
+      frame(s, dt) {
+        sol();
+        const fin = t >= 4.6, voile = cl((t - 2.6) / .3) * (1 - cl((t - 4.6) / .4));
+        if (!fin) {
+          const g1 = ent(.3, 2.3) ? .5 + .4 * Math.sin(t * 8) : 0, g2 = ent(1, 2.3) ? .5 + .4 * Math.sin(t * 8) : 0;
+          tuile("douchette", 32, 30, 38, { badge: "MAX", badgeCoul: "#2fbf71", glow: g1 });
+          tuile("cutter", 78, 30, 38, { badge: "3" });
+          c.fillStyle = "rgba(255,246,227,.35)"; c.fillRect(104, 16, 2, 28);
+          tuile("rode", 130, 30, 32, { badge: "1", glow: g2 });
+          if (g1) { c.save(); c.globalAlpha = cl((t - .3) * 4); rr(10, 60, 108, 24, 8); c.fillStyle = PAP; c.fill(); trait(2.4); c.restore(); petit("Outil au max", 64, 72, 13, ENC, cl((t - .3) * 4)) }
+          if (g2) { c.save(); c.globalAlpha = cl((t - 1) * 4); rr(122, 60, 150, 24, 8); c.fillStyle = PAP; c.fill(); trait(2.4); c.restore(); petit("+ son équipement", 197, 72, 13, ENC, cl((t - 1) * 4)) }
+          perso(180, 372, { h: 60 });
+          if (t > 1.9) {
+            const y = lerp(-60, 245, ebounce((t - 1.9) / .7)), ouv = eo((t - 3) / .35);
+            if (voile > 0) { c.fillStyle = `rgba(15,11,6,${.55 * voile})`; c.fillRect(0, 0, W, H) }
+            if (t > 3) rayons(180, 220, 200, 16, t * .7, "rgba(255,214,70,.95)", .4 * ouv * (1 - cl((t - 4.4) / .3)));
+            coffre(180, y, ouv, 1.1);
+            if (fois(s, "boum", 2.35)) { s.secousse = .2; eclats(s, 180, 270, "#e0a516", 12, 160) }
+            if (ent(2.4, 3.1)) texte("GROS COFFRE", 180, 190, 22, "#ffd447", -.05, eback((t - 2.4) * 4));
+            if (t > 3.2) {
+              const k = eback((t - 3.2) / .7);
+              carte("douchette", "Scanner industriel", "", 180, lerp(240, 150, k), 104, { ech: lerp(.3, 1.05, cl(k)), glow: .9, or: true, rot: Math.sin(t * 3) * .03, a: 1 - cl((t - 4.4) / .25) });
+              texte("ÉVOLUTION !", 180, 286, 34, "#ffd447", -.05, eback((t - 3.6) * 3), 1 - cl((t - 4.4) / .25));
+            }
+          }
+        } else {
+          const k = t - 4.6, px = 180, py = lerp(372, 262, eio(k / .5));
+          if (fois(s, "anneau", 4.9)) for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + .2; s.col.push({ x: 180 + Math.cos(a) * 190, y: 232 + Math.sin(a) * 190, r: 14, mort: false }) }
+          const A = t * 4.2, oy = py - 30, L = 118;
+          for (const e of s.col) {
+            const dx = px - e.x, dy = oy - e.y, d = Math.hypot(dx, dy); if (d > 44) { e.x += dx / d * 80 * dt; e.y += dy / d * 80 * dt }
+            const an = Math.atan2(e.y - oy, e.x - px);
+            for (let r = 0; r < 4; r++) { const diff = Math.abs(Math.atan2(Math.sin(an - A - r * Math.PI / 2), Math.cos(an - A - r * Math.PI / 2))); if (d < L + 10 && diff < .3 && !e.mort) { e.mort = true; eclats(s, e.x, e.y, "#c8955a", 10, 200); pop(s, e.x, e.y - 20, "-60", "#8ff3ff", 18) } }
+          }
+          s.col = s.col.filter(e => !e.mort);
+          s.col.forEach(e => colis(e.x, e.y, e.r, { vx: (px - e.x) / 200, vy: (oy - e.y) / 200 }));
+          perso(px, py);
+          lueur(px, oy, 140, "63,224,255", .18);
+          if (k > .4) for (let r = 0; r < 4; r++) rayonLaser(px, oy, A + r * Math.PI / 2, L, "63,224,255", 1.15);
+          tuile("douchette", 32, 30, 38, { or: true, badge: "★", badgeCoul: "#e0a516" });
+          petit("Scanner industriel", 120, 31, 13, "#ffd447");
+        }
+        effets(s, dt);
+      }
+    },
+    { // 7. dix minutes, puis le boss
+      dur: 9, titre: () => t < 2.7 ? "Tiens 10 minutes" : t < 6.4 ? "Puis bats le boss" : "Fin de poste !",
+      texte: () => t < 2.7 ? "Plus le chrono avance, plus les colis débarquent nombreux." : t < 6.4 ? "À 10:00, le boss du lieu arrive. Fais-le tomber pour finir ton poste !" : "Tu touches ta paie : elle sert à débloquer persos, lieux et améliorations.",
+      init() { const s = base(); s.col = []; s.tirs = []; s.pv = 1; s.fl = 0; s.pieces = []; s.nt = 3.8; return s },
+      frame(s, dt) {
+        sol();
+        const p = { x: 180, y: 336 };
+        const chrono = 600 * Math.pow(cl(t / 2.6), 1.6);
+        if (t < 2.6) {
+          const voulu = Math.floor(42 * Math.pow(t / 2.6, 1.4)) + 2;
+          while (s.col.length + (s.morts || 0) < voulu) {
+            const a = alea() * Math.PI * 2; s.col.push({ x: 180 + Math.cos(a) * 250, y: 230 + Math.sin(a) * 250, r: 10 + alea() * 5 });
+            s.morts = (s.morts || 0);
+          }
+        }
+        const oy = p.y - 30, A = t * 3.8;
+        for (const e of s.col) {
+          const dx = p.x - e.x, dy = oy - e.y, d = Math.hypot(dx, dy); e.x += dx / d * 70 * dt; e.y += dy / d * 70 * dt;
+          if (d < 78) { e.mort = true; s.morts = (s.morts || 0) + 1; eclats(s, e.x, e.y, "#c8955a", 5, 140) }
+        }
+        if (fois(s, "dix", 2.6)) { for (const e of s.col) eclats(s, e.x, e.y, "#c8955a", 6, 180); s.col.forEach(e => e.mort = true); s.secousse = .2 }
+        s.col = s.col.filter(e => !e.mort);
+        s.col.forEach(e => colis(e.x, e.y, e.r, { vx: (p.x - e.x) / 200, vy: (oy - e.y) / 200 }));
+        // le boss
+        const by = t < 2.9 ? -200 : lerp(-110, 150, eo((t - 2.9) / .9)) + Math.max(0, t - 3.8) * 8;
+        if (t >= 3.8 && t < 6.2 && t >= s.nt) { s.nt += .2; s.tirs.push({ x: p.x + 10, y: oy, rot: 0 }) }
+        for (const q of s.tirs) {
+          const dx = 180 - q.x, dy = by + 10 - q.y, d = Math.hypot(dx, dy); q.x += dx / d * 560 * dt; q.y += dy / d * 560 * dt; q.rot += dt * 22;
+          if (d < 40) { q.mort = true; s.pv = Math.max(0, s.pv - .084); s.fl = .08; pop(s, 180 + (alea() - .5) * 80, by + 30, "-" + (40 + Math.floor(alea() * 20)), "#fff", 18); eclats(s, q.x, q.y, "#c8955a", 4, 120) }
+        }
+        s.tirs = s.tirs.filter(q => !q.mort); s.fl -= dt;
+        const mort = t >= 6.25 || s.pv <= 0;
+        if (mort && !s.ev.explose) { s.ev.explose = t; s.secousse = .45; for (let i = 0; i < 4; i++) eclats(s, 180 + (alea() - .5) * 90, by + (alea() - .5) * 90, i % 2 ? "#c8955a" : "#ffd447", 12, 260) }
+        if (t > 2.9 && pret(IM.boss)) {
+          const k = s.ev.explose ? cl((t - s.ev.explose) / .45) : 0;
+          if (k < 1) {
+            const h = 150, w = h * IM.boss.naturalWidth / IM.boss.naturalHeight;
+            ombre(180, by + h * .48, w * .42, 12);
+            c.save(); c.globalAlpha = 1 - k; c.translate(180, by); c.rotate(Math.sin(t * 4) * .04 + k * .6); c.scale(1 + k * .4, 1 + k * .4);
+            c.drawImage(IM.boss, -w / 2, -h / 2, w, h);
+            if (s.fl > 0 || k > 0) { const b = teinte("boss", "#fff"); if (b) { c.globalAlpha = (1 - k) * (k > 0 ? .8 : .55); c.drawImage(b, -w / 2, -h / 2, w, h) } }
+            c.restore();
+          }
+          if (t < 6.4) {
+            const ap = cl((t - 3.2) / .3);
+            c.save(); c.globalAlpha = ap;
+            rr(50, 62, 260, 14, 7); c.fillStyle = "#3a0f0b"; c.fill();
+            if (s.pv > 0) { rr(50, 62, 260 * s.pv, 14, 7); c.fillStyle = "#ff6b57"; c.fill() }
+            rr(50, 62, 260, 14, 7); trait(3); c.restore();
+            petit("LE MÉGA-COLIS", 180, 90, 13, PAP, ap);
+          }
+          if (ent(2.9, 3.8)) texte("BOSS !", 180, 230, 54, ROU, -.08, eback((t - 2.9) * 3), 1 - cl((t - 3.5) / .3));
+        }
+        for (const q of s.tirs) { c.save(); c.translate(q.x, q.y); c.rotate(q.rot); c.beginPath(); c.moveTo(-9, 3); c.lineTo(9, 0); c.lineTo(-9, -3); c.closePath(); c.fillStyle = "#cfd6de"; c.fill(); trait(2); c.restore() }
+        perso(p.x, p.y);
+        if (t < 2.7) for (let r = 0; r < 2; r++) rayonLaser(p.x, oy, A + r * Math.PI, 76);
+        // chrono
+        const fini10 = t >= 2.6, pulse = fini10 && t < 3.4 ? 1 + .25 * Math.abs(Math.sin((t - 2.6) * 9)) : 1;
+        horloge(mmss(chrono), 180, 32, 34, fini10 ? "#ffd447" : "#fff", pulse);
+        // fin de poste : pluie de pièces
+        if (t > 6.5) {
+          const k = t - 6.5;
+          if (s.pieces.length < 40) for (let i = 0; i < 3; i++) s.pieces.push({ x: alea() * W, y: -20 - alea() * 60, v: 160 + alea() * 160, r: alea() * 6 });
+          for (const q of s.pieces) { q.y += q.v * dt; q.r += dt * 6; c.save(); c.translate(q.x, q.y); c.scale(Math.cos(q.r), 1); c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fillStyle = "#ffd447"; c.fill(); trait(2.2); c.fillStyle = "#b67a08"; c.font = `900 11px ${UI}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("€", 0, 1); c.restore() }
+          rayons(180, 190, 200, 16, k * .6, "rgba(255,214,70,.9)", .3 * cl(k * 3));
+          texte("FIN DE POSTE !", 180, 190, 44, JAU, -.06, eback(k * 2.4));
+          if (fois(s, "paie", 7.1)) pop(s, 180, 268, "+ PAIE", "#5ff07a", 26);
+        }
+        effets(s, dt);
+      }
+    },
+    { // 8. à toi
+      dur: 2.4, titre: "À toi de jouer !",
+      texte: () => "Touche « C'est parti » pour revenir à l'accueil, ou « Revoir » pour relancer la vidéo.",
+      init: base,
+      frame(s) {
+        c.fillStyle = "#ff7410"; c.fillRect(0, 0, W, H);
+        rayons(180, 240, 420, 20, t * .25, "#ffa040", .8);
+        const im = IM.perso;
+        if (pret(im)) { const k = eback(t * 2), h = 190 * k, w = h * im.naturalWidth / im.naturalHeight; c.drawImage(im, 180 - w / 2, 370 - h, w, h) }
+        texte("À TOI", 180, 78, 48, "#fff", -.06, eback(t * 2.5));
+        texte("DE JOUER !", 180, 128, 48, JAU, -.06, eback((t - .15) * 2.5));
+      }
+    },
+  ];
+  const valeur = v => typeof v === "function" ? v() : v;
+
+  /* ---- lecture ---- */
+  function aller(i) { idx = Math.max(0, Math.min(SC.length - 1, i)); t = 0; graine = 7 + idx * 31; st = SC[idx].init(); fini = false; legendeCle = ""; if (!raf) { last = performance.now(); raf = requestAnimationFrame(boucle) } }
+  function legende() {
+    const S = SC[idx], ti = valeur(S.titre), tx = valeur(S.texte), k = ti + tx;
+    if (k === legendeCle) return; legendeCle = k;
+    el.titre.textContent = ti; el.texte.textContent = tx;
+    el.leg.classList.remove("neuf"); void el.leg.offsetWidth; el.leg.classList.add("neuf");
+  }
+  function barres() { el.barres.querySelectorAll("i").forEach((b, i) => b.style.width = (i < idx ? 100 : i > idx ? 0 : Math.min(100, t / SC[idx].dur * 100)) + "%") }
+  function dessiner(dt) {
+    c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+    c.save();
+    if (st.secousse > 0) { st.secousse -= dt; const a = 7 * st.secousse / .3; c.translate((Math.random() - .5) * a, (Math.random() - .5) * a) }
+    SC[idx].frame(st, dt);
+    c.restore();
+  }
+  function boucle(now) {
+    raf = 0;
+    if (!cv || !cv.isConnected || !cv.offsetParent) return;   // fenêtre fermée : on s'arrête
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    t += dt;
+    const S = SC[idx];
+    if (t >= S.dur) {
+      if (idx < SC.length - 1) { aller(idx + 1); return }
+      t = S.dur; fini = true;
+    }
+    dessiner(fini ? 0 : dt); legende(); barres();
+    if (!fini) raf = requestAnimationFrame(boucle);
+  }
+  function taille() {
+    dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  }
+  function monter(racine) {
+    el = { barres: racine.querySelector(".tuto-barres"), leg: racine.querySelector(".tuto-legende"), titre: racine.querySelector(".tuto-titre"), texte: racine.querySelector(".tuto-texte") };
+    cv = racine.querySelector("canvas"); c = cv.getContext("2d");
+    el.barres.innerHTML = SC.map(() => "<span><i></i></span>").join("");
+    cv.addEventListener("click", e => { const r = cv.getBoundingClientRect(); (e.clientX - r.left < r.width * .3) ? precedent() : suivant() });
+    const base = (window.TUTO_SRC || {});
+    for (const [k, v] of Object.entries(SRC)) { IM[k] = new Image(); IM[k].src = base[k] || v }
+  }
+  function lancer() {
+    taille();
+    const go = () => { cancelAnimationFrame(raf); raf = 0; aller(0) };
+    if (document.fonts && document.fonts.load) document.fonts.load(`20px "Luckiest Guy"`).then(go, go); else go();
+  }
+  function arreter() { cancelAnimationFrame(raf); raf = 0 }
+  function suivant() { if (idx === SC.length - 1) { if (!fini) t = SC[idx].dur; return } aller(idx + 1) }
+  function precedent() { aller(t < .8 ? idx - 1 : idx) }
+  return { monter, lancer, arreter, suivant, precedent };
+})();
+
+Tuto.monter($("tuto"));
+$("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = false; $("aideJeu").scrollTop = 0; Tuto.lancer(); $("aideOk").focus({ preventScroll: true }) };
+$("tutoRevoir").onclick = () => Tuto.lancer();
+$("aideOk").onclick = () => { Tuto.arreter(); $("aideJeu").hidden = true; $("accueil").hidden = false };
 $("continuer").onclick = continuerInfini;
 $("versAccueil").onclick = () => { $("fin").hidden = true; $("accueil").hidden = false; demo(); majAccueil() };
 // précharger les illustrations pour que les cartes s'affichent sans attendre
