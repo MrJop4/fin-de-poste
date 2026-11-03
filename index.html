@@ -4054,7 +4054,7 @@ function dessinerJeu() {
     else { cx.save(); cx.globalAlpha = Math.max(0, f.t / .45); cx.translate(X(f.x), Y(f.y)); cx.rotate(f.t * 14 + f.x); cx.fillStyle = ENCRE; cx.fillRect(-4, -3, 8, 6); cx.fillStyle = f.c; cx.fillRect(-3, -2, 6, 4); cx.restore() }
   }
   // aura glacée de Djefrais
-  if (p.givre && !S.intro) { const ga = cx.createRadialGradient(X(p.x), Y(p.y), 20, X(p.x), Y(p.y), 140); ga.addColorStop(0, "rgba(160,220,255,.16)"); ga.addColorStop(1, "rgba(160,220,255,0)"); cx.fillStyle = ga; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, 0, 7); cx.fill(); }   // aura glacée : juste le voile bleuté, sans cercle
+  if (p.givre && !S.intro) { const ga = cx.createRadialGradient(X(p.x), Y(p.y), 0, X(p.x), Y(p.y), 140); ga.addColorStop(0, "rgba(170,225,255,.42)"); ga.addColorStop(.35, "rgba(150,215,255,.28)"); ga.addColorStop(.7, "rgba(130,200,255,.12)"); ga.addColorStop(1, "rgba(130,200,255,0)"); cx.save(); cx.globalCompositeOperation = "lighter"; cx.fillStyle = ga; cx.beginPath(); cx.arc(X(p.x), Y(p.y), 140, 0, 7); cx.fill(); cx.restore() }   // aura glacée : juste le voile bleuté, sans cercle
   // préparateur : gilet orange à bandes, casquette
   const px = X(p.x), py = Y(p.y), bob = Math.sin(p.pas) * 1.5;
   if (S.mort) { const St = MORTS[S.mort.v]; if (St.sous) { cx.save(); cx.translate(px, py); St.sous(S.mort, S.mort.t); cx.restore() } }
