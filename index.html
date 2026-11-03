@@ -244,6 +244,26 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 /* ---- vestiaire ---- */
 #vestiaire { place-items: start center; background: rgba(15,11,6,.94); }
 .panneau.large { max-width: 1060px; }
+/* trophées */
+.troph-resume { font-family: var(--display); font-size: 20px; color: var(--papier); text-shadow: 2px 2px 0 var(--encre); letter-spacing: .03em; }
+.troph-resume b { color: var(--jaune); font-weight: 400; }
+.troph-grille { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; text-align: left; }
+.troph { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 9px 12px; background: rgba(255,246,227,.08); border: 2px solid rgba(255,246,227,.22); border-radius: 14px; color: var(--papier); min-width: 0; }
+.troph .ico { font-size: 30px; line-height: 1; text-align: center; filter: grayscale(1) opacity(.45); }
+.troph b { display: block; font-family: var(--display); font-weight: 400; font-size: 17px; letter-spacing: .03em; }
+.troph small { display: block; font-size: 13px; line-height: 1.3; opacity: .8; }
+.troph .prime { font-family: var(--display); font-size: 16px; color: var(--jaune); white-space: nowrap; }
+.troph.ok { background: rgba(255,194,26,.16); border-color: var(--jaune); box-shadow: 3px 3px 0 var(--encre); }
+.troph.ok .ico { filter: none; }
+.troph.ok .prime::before { content: "✓ "; color: var(--vert); }
+.troph .barre-t { grid-column: 2 / 4; height: 6px; border-radius: 3px; background: rgba(255,246,227,.15); overflow: hidden; }
+.troph .barre-t i { display: block; height: 100%; background: var(--jaune); }
+.toast-troph { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 50; display: flex; gap: 10px; align-items: center; padding: 8px 16px 8px 10px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); font-family: var(--display); font-size: 18px; letter-spacing: .03em; pointer-events: none; animation: toastTroph .35s ease-out; max-width: calc(100% - 32px); }
+.toast-troph .ico { font-size: 30px; }
+.toast-troph small { display: block; font-family: var(--ui); font-size: 13px; font-weight: 700; letter-spacing: 0; }
+.toast-troph .prime { color: #b07a00; }
+@keyframes toastTroph { from { transform: translate(-50%, -30px); opacity: 0 } to { transform: translate(-50%, 0); opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .toast-troph { animation: none } }
 .caisse { font-size: 18px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 999px; padding: 4px 18px; box-shadow: 3px 3px 0 var(--encre); }
 .caisse b { font-family: var(--display); font-weight: 400; font-size: 26px; }
 .btn:focus-visible, .carte:focus-visible, .bascule:focus-visible { outline: 4px solid var(--jaune); outline-offset: 3px; }
@@ -473,7 +493,7 @@ button { touch-action: manipulation; }
         <button class="fleche" id="lieuSuiv" aria-label="Lieu suivant">›</button>
       </div>
       <button class="btn go" id="jouer">Jouer</button>
-      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="aide">Comment jouer ?</button></div>
+      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="tro1">Trophées</button><button class="btn" id="aide">Comment jouer ?</button></div>
       <div class="puces" id="puces"></div>
       <div class="touches-mini clavier"><kbd>Q</kbd><kbd>D</kbd> perso · <kbd>Z</kbd><kbd>S</kbd> lieu · <kbd>Espace</kbd> jouer</div>
     </div>
@@ -526,6 +546,17 @@ button { touch-action: manipulation; }
     <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button></div>
   </div>
 </div>
+
+<div class="voile" id="trophees" hidden>
+  <div class="panneau large">
+    <h2>Trophées</h2>
+    <div class="troph-resume" id="trophResume"></div>
+    <div class="troph-grille" id="trophGrille"></div>
+    <div class="boutons"><button class="btn go" id="trophRetour">Retour</button></div>
+  </div>
+</div>
+
+<div class="toast-troph" id="toastTroph" hidden></div>
 
 <div class="voile" id="pause" hidden>
   <button class="btn-son" id="btnSon2" aria-label="Son"></button>
@@ -795,6 +826,68 @@ const AMELIOS = {
   paie: { nom: "Cashback", img: "cashback", max: 5, base: 60, desc: n => `+10 % sur toutes les pièces par niveau (actuellement +${10 * n} %).` },
   vip: { nom: "Carte VIP", img: "cartevip", max: 2, base: 150, desc: n => `Commence chaque partie avec une carte au hasard par niveau (actuellement ${n}).` },
 };
+/* ---------- trophées : chacun rapporte une prime versée dans la caisse ---------- */
+const nbEvos = () => S && S.armes ? Object.values(S.armes).filter(l => l >= EVO).length : 0;
+const gagneA = id => P => P === "fin" && S && S.gagne && !S.infini && S.lieu === id;
+const TROPHEES = [
+  { id: "poste1", ico: "🌙", nom: "Premier poste", desc: "Finir le Quai de nuit (battre le boss).", prime: 100, ok: gagneA("quai") },
+  { id: "frigo", ico: "🧊", nom: "Patron du frigo", desc: "Finir la Chambre froide.", prime: 150, ok: gagneA("frigo") },
+  { id: "stockage", ico: "📦", nom: "Roi des allées", desc: "Finir la Zone de stockage.", prime: 200, ok: gagneA("stockage") },
+  { id: "parking", ico: "🛞", nom: "Routier d'honneur", desc: "Finir le Parking poids lourds.", prime: 250, ok: gagneA("parking") },
+  { id: "promo", ico: "🏷️", nom: "Soldeur", desc: "Finir l'Entrepôt des promos.", prime: 300, ok: gagneA("promo") },
+  { id: "atelier", ico: "🔧", nom: "Mécano en chef", desc: "Finir l'Atelier chariots.", prime: 400, ok: gagneA("atelier") },
+  { id: "chargement", ico: "🚛", nom: "Maître du quai", desc: "Finir le Quai de chargement.", prime: 450, ok: gagneA("chargement") },
+  { id: "incendie", ico: "🔥", nom: "Survivant de l'apocalypse", desc: "Finir l'Entrepôt en perdition.", prime: 600, ok: gagneA("incendie") },
+  { id: "nu", ico: "🩳", nom: "Sans filet", desc: "Gagner une partie sans aucune amélioration du vestiaire.", prime: 500, ok: P => P === "fin" && S.gagne && !SAVE.test && Object.values(SAVE.amelio).every(n => !n) },
+  { id: "intouchable", ico: "🛡️", nom: "Intouchable", desc: "Tenir 3 minutes sans prendre un seul coup.", prime: 250, ok: P => P === "jeu" && S.t >= 180 && S.premierCoup == null },
+  { id: "hs5", ico: "⏰", nom: "Heures sup", desc: "Tenir 5 minutes en heures sup.", prime: 300, ok: P => P === "jeu" && S.infini && S.t - VICTOIRE >= 300 },
+  { id: "colis1000", ico: "📮", nom: "Déménageur", desc: "Détruire 1 000 colis en une partie.", prime: 150, ok: P => P === "jeu" && S.kills >= 1000 },
+  { id: "colis3000", ico: "🌊", nom: "Raz-de-marée", desc: "Détruire 3 000 colis en une partie.", prime: 400, ok: P => P === "jeu" && S.kills >= 3000 },
+  { id: "carriere", ico: "🏭", nom: "Vieux de la vieille", desc: "Détruire 25 000 colis au total.", prime: 500, ok: () => (SAVE.stats.kills || 0) + (S && enJeu ? S.kills : 0) >= 25000, total: () => [(SAVE.stats.kills || 0) + (S && enJeu ? S.kills : 0), 25000] },
+  { id: "evo1", ico: "⭐", nom: "Évolution", desc: "Faire évoluer un outil.", prime: 150, ok: P => P === "jeu" && nbEvos() >= 1 },
+  { id: "evo3", ico: "🌟", nom: "Boîte à outils de rêve", desc: "Avoir 3 outils évolués dans la même partie.", prime: 400, ok: P => P === "jeu" && nbEvos() >= 3 },
+  { id: "semis", ico: "🚚", nom: "Démolisseur", desc: "Détruire 3 semis dans une partie.", prime: 250, ok: P => P === "jeu" && S.cpt && S.cpt.semi >= 3 },
+  { id: "demineur", ico: "💣", nom: "Démineur", desc: "Faire sauter 15 colis piégés dans une partie.", prime: 150, ok: P => P === "jeu" && S.cpt && S.cpt.piege >= 15 },
+  { id: "antivol", ico: "🛍️", nom: "Antivol", desc: "Rattraper 10 chasseurs de promos chargés d'étiquettes.", prime: 150, ok: P => P === "jeu" && S.cpt && S.cpt.antivol >= 10 },
+  { id: "patineur", ico: "⛸️", nom: "Patineur", desc: "Glisser 25 fois sur l'huile dans une partie.", prime: 100, ok: P => P === "jeu" && S.cpt && S.cpt.glisse >= 25 },
+  { id: "acide", ico: "🔋", nom: "Recyclage", desc: "Détruire 20 batteries qui fuient dans une partie.", prime: 150, ok: P => P === "jeu" && S.cpt && S.cpt.batterie >= 20 },
+  { id: "film", ico: "🎞️", nom: "Déballeur", desc: "Détruire 15 rouleaux de film dans une partie.", prime: 150, ok: P => P === "jeu" && S.cpt && S.cpt.filmeur >= 15 },
+  { id: "detrempe", ico: "💧", nom: "Serpillière", desc: "Détruire 20 colis détrempés dans une partie.", prime: 150, ok: P => P === "jeu" && S.cpt && S.cpt.detrempe >= 20 },
+  { id: "persos", ico: "👷", nom: "Toute l'équipe", desc: "Débloquer tous les personnages.", prime: 500, ok: () => !SAVE.test && Object.keys(PERSOS).every(k => SAVE.persos.includes(k)), total: () => [SAVE.persos.length, Object.keys(PERSOS).length] },
+  { id: "lieux", ico: "🗺️", nom: "Tour du site", desc: "Débloquer tous les lieux.", prime: 500, ok: () => !SAVE.test && Object.keys(LIEUX).every(k => SAVE.lieux.includes(k)), total: () => [SAVE.lieux.length, Object.keys(LIEUX).length] },
+  { id: "bas", ico: "💰", nom: "Bas de laine", desc: "Avoir 5 000 € dans la caisse.", prime: 300, ok: () => !SAVE.test && SAVE.banque >= 5000, total: () => [Math.min(SAVE.banque, 5000), 5000] },
+  { id: "vestiaire", ico: "🏆", nom: "Vestiaire complet", desc: "Toutes les améliorations au maximum.", prime: 1000, ok: () => !SAVE.test && Object.keys(AMELIOS).every(k => (SAVE.amelio[k] || 0) >= AMELIOS[k].max) },
+];
+const listeTroph = () => SAVE.test ? SAVE.tropheesTest : SAVE.trophees;
+let fileToast = [], toastEnCours = false;
+function verifierTrophees(phase) {
+  const liste = listeTroph(), gagnes = [];
+  for (const T of TROPHEES) {
+    if (liste[T.id]) continue;
+    let ok = false; try { ok = (phase === "menu" || S) && T.ok(phase) } catch (e) { ok = false }
+    if (!ok) continue;
+    liste[T.id] = Date.now(); if (!SAVE.test) SAVE.banque += T.prime; gagnes.push(T);
+    if (S && phase !== "menu") (S.trophGagnes = S.trophGagnes || []).push(T);
+    fileToast.push(T);
+  }
+  if (gagnes.length) { sauver(); son("debloquer"); afficherToast() }
+  return gagnes;
+}
+function afficherToast() {
+  if (toastEnCours || !fileToast.length) return;
+  const T = fileToast.shift(), el = $("toastTroph"); toastEnCours = true;
+  el.innerHTML = `<span class="ico">${T.ico}</span><span>Trophée : ${T.nom} <span class="prime">+${T.prime} €</span><small>${T.desc}${SAVE.test ? " (mode test : pas de prime)" : ""}</small></span>`;
+  el.hidden = false; el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+  setTimeout(() => { el.hidden = true; toastEnCours = false; afficherToast() }, 3200);
+}
+function dessinerTrophees() {
+  const liste = listeTroph(), n = TROPHEES.filter(T => liste[T.id]).length, gains = TROPHEES.filter(T => liste[T.id]).reduce((a, T) => a + T.prime, 0);
+  $("trophResume").innerHTML = `<b>${n} / ${TROPHEES.length}</b> trophées · <b>${gains} €</b> de primes gagnées${SAVE.test ? " · mode test" : ""}`;
+  $("trophGrille").innerHTML = TROPHEES.map(T => {
+    const ok = !!liste[T.id], tot = !ok && T.total ? T.total() : null;
+    return `<div class="troph${ok ? " ok" : ""}"><span class="ico">${T.ico}</span><span><b>${T.nom}</b><small>${T.desc}</small></span><span class="prime">${T.prime} €</span>${tot ? `<span class="barre-t" title="${tot[0]} / ${tot[1]}"><i style="width:${Math.round(Math.min(1, tot[0] / tot[1]) * 100)}%"></i></span>` : ""}</div>`;
+  }).join("");
+}
 const prixAmelio = (id, n) => Math.round(AMELIOS[id].base * Math.pow(1.6, n) / 5) * 5;
 let SAVE = { banque: 0, amelio: {}, persos: ["preparateur"], perso: "preparateur", lieux: ["quai"], lieu: "quai", test: false, amelioTest: {} };
 try { const v = JSON.parse(lsGet("poste-sauvegarde") || "null"); if (v && typeof v === "object") SAVE = Object.assign(SAVE, v) } catch (e) { }
@@ -804,6 +897,7 @@ if (!PERSOS[SAVE.perso]) SAVE.perso = "preparateur";
 if (!Array.isArray(SAVE.lieux) || !SAVE.lieux.includes("quai")) SAVE.lieux = ["quai"].concat(Array.isArray(SAVE.lieux) ? SAVE.lieux : []);
 if (!LIEUX[SAVE.lieu]) SAVE.lieu = "quai";
 if (!SAVE.amelioTest || typeof SAVE.amelioTest !== "object") SAVE.amelioTest = {};
+for (const k of ["trophees", "tropheesTest", "stats"]) if (!SAVE[k] || typeof SAVE[k] !== "object") SAVE[k] = {};
 /* mode test : désactivé pour les joueurs ; on l'active seulement en ouvrant le jeu avec #test à la fin de l'adresse */
 SAVE.test = location.hash === "#test";
 if (!SAVE.test) { if (!SAVE.persos.includes(SAVE.perso)) SAVE.perso = "preparateur"; if (!SAVE.lieux.includes(SAVE.lieu)) SAVE.lieu = "quai" }
@@ -840,7 +934,7 @@ function nouvellePartie() {
     timers: { harpon: 0, corne: 1.5, fusee: 1, fourches: .4, cle: .6, talkie: .8, sabre: .3, tronc: .8 }, sabres: [], troncs: [], scotchs: [], scotchPos: null, co2T: 0, co2A: 0,
     ennemis: [], tirs: [], gemmes: [], fx: [], textes: [], fusees: [], ondes: [], explos: [], flaques: [], empreintes: [], dangers: [], quais: new Map(), films: [],
     transpas: [], transpaT: 35, transpaVu: false, decorT: 4, ev: null, evFait: false,
-    angleLampe: 0, angleSel: 0, selN: 0, selR: 0,
+    angleLampe: 0, angleSel: 0, selN: 0, selR: 0, cpt: { piege: 0, filmeur: 0, antivol: 0, semi: 0, batterie: 0, detrempe: 0, glisse: 0 },
   };
   const p = S.p;
   p.max = 100 + (P.vie || 0) + 10 * niv("vie"); p.hp = p.max;
@@ -1501,6 +1595,7 @@ function glisserHuile(dt) {
     let gx = p.vx, gy = p.vy, n = Math.hypot(gx, gy); if (n < 20) { gx = Math.cos(p.dir); gy = Math.sin(p.dir); n = 1 }
     const v = Math.max(p.vit, n) * H.vitesse; p.glisse = { x: gx / n * v, y: gy / n * v, bloque: 0, px: p.x, py: p.y };
     if (!S.huileVu) { S.huileVu = true; annonce("De l'huile : ça glisse !") }
+    if (S.cpt) S.cpt.glisse++;
   }
   if (p.glisse) {
     if (!dedans) { p.glisse = null; p.traces = H.traces }
@@ -1561,6 +1656,7 @@ function exploser(e) {
 }
 function mourir(e) {
   if (e.decor) { son("casse"); return casser(e) }
+  if (S.cpt) { if (e.type === "piege") S.cpt.piege++; if (e.type === "filmeur") S.cpt.filmeur++; if (e.type === "chasseur" && e.vol > 0) S.cpt.antivol++; if (e.type === "leviathan") S.cpt.semi++; if (e.type === "batterie") S.cpt.batterie++; if (e.type === "detrempe") S.cpt.detrempe++ }
   if (e.type === "piege") exploser(e);
   if (e.type === "detrempe") for (let i = 0; i < EQ.detrempe.petits; i++) {   // il se divise en petits colis rapides
     spawn("crabe"); const m = S.ennemis[S.ennemis.length - 1], a = i / EQ.detrempe.petits * 6.28 + rnd(-.4, .4);
@@ -2064,6 +2160,8 @@ function maj(dt) {
   annonceT -= dt;
 
   if (p.hp < (S.hpVu ?? p.hp) - .5 && performance.now() - (S.aieT || 0) > 260) { S.aieT = performance.now(); son("aie") }
+  if (p.hp < (S.hpVu ?? p.hp) - .5 && S.premierCoup == null) S.premierCoup = S.t;
+  if (enJeu && (S.trophT = (S.trophT || 0) - dt) <= 0) { S.trophT = .5; verifierTrophees("jeu") }   // pas pendant la démo de l'accueil
   S.hpVu = p.hp;
   if (p.hp <= 0 && p.relance > 0) {
     p.relance--; p.hp = p.max / 2; p.inv = 2; annonce("Seconde chance !");
@@ -2316,7 +2414,10 @@ function finir(gagne) {
   // la paie déjà versée à la fin des 10 minutes n'est pas comptée deux fois en mode infini
   const paie = S.argent - (S.dejaPaye || 0) + (gagne ? 100 : 0) + (S.infini ? Math.floor((S.t - VICTOIRE) / 60) * 50 : 0);
   S.dejaPaye = S.argent;
-  SAVE.banque += paie; sauver(); record();
+  SAVE.banque += paie; S.gagne = gagne;
+  if (!SAVE.test) SAVE.stats.kills = (SAVE.stats.kills || 0) + S.kills - (S.killsComptes || 0); S.killsComptes = S.kills;
+  enJeu = false; verifierTrophees("fin"); verifierTrophees("menu");
+  sauver(); record();
   if (S.infini) {
     const bi = +(lsGet("poste-infini") || 0), hs = Math.floor(S.t - VICTOIRE), nouveau = hs > bi;
     if (nouveau) lsSet("poste-infini", String(hs));
@@ -2327,6 +2428,7 @@ function finir(gagne) {
     $("finTitre").textContent = gagne ? "Fin de poste !" : "Arrêt de travail";
     $("finArt").src = IMG(gagne ? "jourdepaie" : "tetereposee");
     $("bilan").innerHTML = `<span><b>${fmt(S.t)}</b>tenu</span><span><b>${S.kills}</b>colis</span><span><b>${S.p.niv}</b>niveau</span><span><b>+${paie} €</b>${gagne ? "avec la prime" : "de paie"}</span>`;
+    if (S.trophGagnes && S.trophGagnes.length) $("bilan").innerHTML += `<span><b>${S.trophGagnes.map(T => T.ico).join(" ")}</b>${S.trophGagnes.length > 1 ? S.trophGagnes.length + " trophées" : "trophée"} (+${S.trophGagnes.reduce((a, T) => a + T.prime, 0)} €)</span>`;
   }
   son(gagne ? "victoire" : "defaite");
   $("continuer").hidden = !(gagne && !S.infini);
@@ -2358,7 +2460,7 @@ function majAccueil() {
 function debloquer(cle) {
   const id = SAVE[cle], D = cle === "perso" ? PERSOS[id] : LIEUX[id], liste = cle === "perso" ? SAVE.persos : SAVE.lieux;
   if (liste.includes(id) || SAVE.banque < D.prix) return false;
-  SAVE.banque -= D.prix; liste.push(id); sauver(); majAccueil(); vibrer(60); son("debloquer");
+  SAVE.banque -= D.prix; liste.push(id); sauver(); verifierTrophees("menu"); majAccueil(); vibrer(60); son("debloquer");
   const el = cle === "perso" ? $("cartePerso") : document.querySelector(".lieu-sel"); el.classList.remove("debloque"); void el.offsetWidth; el.classList.add("debloque");
   return true;
 }
@@ -4062,6 +4164,7 @@ addEventListener("keydown", e => {
     if ((e.code === "Space" || e.code === "Enter") && !e.repeat) { e.preventDefault(); if (!aPerso(SAVE.perso)) return debloquer("perso"); if (!aLieu(SAVE.lieu)) return debloquer("lieu"); return demarrer() }
     return;
   }
+  if (!$("trophees").hidden) { if (e.code === "Escape" || e.code === "Space" || e.code === "Enter") { e.preventDefault(); $("trophRetour").click() } return }
   if (!$("aideJeu").hidden && (e.code === "Space" || e.code === "Enter" || e.code === "Escape")) { e.preventDefault(); $("aideJeu").hidden = true; $("accueil").hidden = false; return }
   if (e.code === "Escape" || e.code === "KeyP") return basculerPause();
   if (choix && revelEnCours) {
@@ -4113,6 +4216,8 @@ $("persoPrec").onclick = () => tourner(LP, "perso", -1); $("persoSuiv").onclick 
 $("lieuPrec").onclick = () => tourner(LLX, "lieu", -1); $("lieuSuiv").onclick = () => tourner(LLX, "lieu", 1);
 $("cartePerso").onclick = () => tourner(LP, "perso", 1);
 document.addEventListener("contextmenu", e => { if (TACTILE) e.preventDefault() });
+$("tro1").onclick = () => { $("accueil").hidden = true; $("trophees").hidden = false; dessinerTrophees(); $("trophees").scrollTop = 0; $("trophRetour").focus({ preventScroll: true }) };
+$("trophRetour").onclick = () => { $("trophees").hidden = true; $("accueil").hidden = false; majAccueil() };
 $("aide").onclick = () => { $("accueil").hidden = true; $("aideJeu").hidden = false; $("aideOk").focus() };
 $("aideOk").onclick = () => { $("aideJeu").hidden = true; $("accueil").hidden = false };
 $("continuer").onclick = continuerInfini;
@@ -4147,13 +4252,14 @@ $("vestiaire").addEventListener("click", e => {
     const id = b.dataset.amelio, n = niv(id); if (n >= AMELIOS[id].max) return;
     if (SAVE.test) SAVE.amelioTest[id] = n + 1;
     else { const prix = prixAmelio(id, n); if (SAVE.banque < prix) return; SAVE.banque -= prix; SAVE.amelio[id] = n + 1 }
+    setTimeout(() => { verifierTrophees("menu"); dessinerVestiaire() }, 0);
   }
   sauver(); dessinerVestiaire(); record();
 });
 $("vest1").onclick = () => ouvrirVestiaire("accueil");
 $("persoAchat").onclick = e => { e.stopPropagation(); debloquer("perso") }; $("lieuAchat").onclick = e => { e.stopPropagation(); debloquer("lieu") };
 $("modeTest").onclick = () => { SAVE.test = !SAVE.test; sauver(); dessinerVestiaire(); record() };
-$("raz").onclick = () => { SAVE.amelioTest = {}; sauver(); dessinerVestiaire() };
+$("raz").onclick = () => { SAVE.amelioTest = {}; SAVE.tropheesTest = {}; sauver(); dessinerVestiaire() };
 $("retour").onclick = () => { $("vestiaire").hidden = true; $(retourVers).hidden = false; if (retourVers === "accueil") { demo(); majAccueil() } };
 
 /* écran d'accueil : une partie de démonstration tourne derrière, sans joueur qui bouge */
