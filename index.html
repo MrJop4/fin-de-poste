@@ -4223,7 +4223,8 @@ function majIntro(dt) {
     if ((I.souffle -= dt) <= 0) { I.souffle = .3; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) }
   } else if (t < F.impact) {                // il glisse sur le givre, bras qui moulinent
     const u = (t - F.course) / (F.impact - F.course), k = .75 * u + .25 * u * (2 - u);
-    I.x = -145 + 145 * k; I.rot = Math.sin(t * 13) * .34; I.dy = -Math.abs(Math.sin(t * 13)) * 2;
+    I.x = -145 + 145 * k; I.rot = -.2 + Math.sin(t * 4) * .05; I.sx = 1.06; I.sy = .94;   // figé, penché en arrière : il glisse, il ne marche plus
+    if (Math.random() < dt * 25) I.fx.push({ k: "trait", x: I.x - 16, y: rnd(-14, 10), vx: -20, vy: 0, t: 0, vie: .25 });
     if (Math.random() < dt * 40) I.fx.push({ k: "givre", x: I.x - 6 + rnd(-4, 4), y: 12 + rnd(-3, 3), vx: rnd(-70, -20), vy: rnd(-40, 5), t: 0, vie: rnd(.35, .6) });
     if ((I.souffle -= dt) <= 0) { I.souffle = .45; I.fx.push({ k: "buee", x: I.x + 10, y: -14, vx: 30, vy: -8, t: 0, vie: .9 }) }
   } else {
@@ -4275,6 +4276,7 @@ function dessinerIntro() {
   for (const f of I.fx) {
     const k = f.t / f.vie, x = X(f.x), y = Y(f.y);
     if (f.k === "buee") { cx.globalAlpha = .5 * (1 - k); cx.fillStyle = "#e8f6ff"; cx.beginPath(); cx.arc(x, y, 3 + k * 7, 0, 7); cx.fill() }
+    else if (f.k === "trait") { cx.globalAlpha = .55 * (1 - k); cx.fillStyle = "#e8f6ff"; cx.fillRect(x - 14, y, 14, 1.5) }
     else if (f.k === "givre") { cx.globalAlpha = 1 - k; cx.fillStyle = "#cfefff"; cx.fillRect(x - 1.5, y - 1.5, 3, 3) }
     else if (f.k === "eclat") { cx.globalAlpha = 1 - k; cx.fillStyle = Math.random() < .5 ? "#b98a52" : "#e8f6ff"; cx.fillRect(x - 2, y - 2, 4, 4) }
     else if (f.k === "boum") {
