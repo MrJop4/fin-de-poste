@@ -82,6 +82,23 @@ kbd { font-family: var(--ui); font-weight: 900; color: var(--encre); background:
 .logo span { display: block; text-shadow: 6px 6px 0 var(--encre), -3px -3px 0 var(--encre), 3px -3px 0 var(--encre), -3px 3px 0 var(--encre), 0 3px 0 var(--encre), 3px 0 0 var(--encre), 0 -3px 0 var(--encre), -3px 0 0 var(--encre); }
 .logo .l1 { color: #fff; font-size: clamp(40px, 6vw, 70px); }
 .logo .l2 { color: var(--jaune); font-size: clamp(70px, 11vw, 136px); }
+.logo .l2 { position: relative; display: inline-block; }
+/* coupe des trophées, posée au-dessus du E de « Poste » */
+.coupe { position: absolute; right: .02em; bottom: calc(100% - .1em); width: max(46px, .5em); aspect-ratio: 64 / 70; padding: 0; border: 0; background: none; cursor: pointer; font-size: inherit; pointer-events: auto; transform: rotate(6deg); }
+.coupe svg { width: 100%; height: 100%; overflow: visible; display: block; filter: drop-shadow(3px 4px 0 var(--encre)); animation: coupeFlotte 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.coupe .reflet { animation: coupeReflet 3.2s ease-in-out infinite; }
+.coupe:hover svg, .coupe:focus-visible svg { animation: coupeSaute .5s ease-out; }
+.coupe:focus-visible { outline: 3px solid var(--papier); outline-offset: 4px; border-radius: 10px; }
+.logo .coupe span { text-shadow: none; }
+.coupe .nb { position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%) rotate(-6deg); display: block; font-family: var(--display); font-size: max(12px, .11em); line-height: 1; color: var(--encre); background: var(--papier); border: 2px solid var(--encre); border-radius: 999px; padding: 3px 7px 1px; white-space: nowrap; box-shadow: 2px 2px 0 var(--encre); }
+.coupe .eclat { position: absolute; display: block; color: #fff6c0; font-family: var(--ui); line-height: 1; font-size: max(12px, .12em); opacity: 0; animation: eclat 2.4s ease-in-out infinite; }
+.coupe .e1 { left: -18%; top: 4%; } .coupe .e2 { right: -20%; top: -6%; animation-delay: .8s; font-size: max(9px, .09em); } .coupe .e3 { right: -6%; top: 46%; animation-delay: 1.6s; }
+@keyframes coupeFlotte { 0%, 100% { transform: translateY(0) rotate(-4deg) } 50% { transform: translateY(-7%) rotate(4deg) } }
+@keyframes coupeSaute { 0% { transform: scale(1) } 40% { transform: scale(1.18) rotate(-8deg) } 100% { transform: scale(1) } }
+@keyframes coupeReflet { 0%, 55% { transform: rotate(20deg) translateX(0) } 85%, 100% { transform: rotate(20deg) translateX(110px) } }
+@keyframes eclat { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0) } 45% { opacity: 1; transform: scale(1.15) rotate(45deg) } 70% { opacity: 0; transform: scale(.6) rotate(90deg) } }
+@media (prefers-reduced-motion: reduce) { .coupe svg, .coupe .reflet, .coupe .eclat { animation: none } .coupe .eclat { opacity: .8 } }
+@media (max-width: 760px) { .coupe { right: auto; left: calc(100% + 10px); bottom: .12em; width: 44px; } .coupe .nb { font-size: 11px; } }
 .sticker { position: absolute; right: -18px; bottom: -14px; transform: rotate(9deg); font-family: var(--display); font-size: 18px; color: #fff; background: var(--rouge); border: 3px solid var(--encre); border-radius: 10px; padding: 4px 10px 2px; box-shadow: 3px 3px 0 var(--encre); white-space: nowrap; }
 .lieu-sel { display: flex; align-items: center; gap: 10px; background: var(--papier); color: var(--encre); border: 3px solid var(--encre); border-radius: 14px; box-shadow: 4px 4px 0 var(--encre); padding: 6px 8px; }
 .lieu-sel .nom { min-width: 210px; text-align: center; line-height: 1.1; }
@@ -493,14 +510,25 @@ button { touch-action: manipulation; }
   </div>
   <div class="acc">
     <div class="acc-g">
-      <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste</span><span class="sticker">10 minutes + le boss !</span></h1>
+      <h1 class="logo"><span class="l1">Fin de</span><span class="l2">Poste<button class="coupe" id="tro1" aria-label="Trophées" title="Trophées">
+        <span class="eclat e1">✦</span><span class="eclat e2">✦</span><span class="eclat e3">✦</span>
+        <svg viewBox="0 0 64 70" aria-hidden="true"><defs><linearGradient id="orCoupe" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset=".45" stop-color="#ffc21a"/><stop offset="1" stop-color="#d08a00"/></linearGradient><clipPath id="clipCoupe"><path d="M14 6h36v14c0 13-8 22-18 22S14 33 14 20z"/></clipPath></defs>
+          <path d="M14 12H6c0 12 6 18 12 18M50 12h8c0 12-6 18-12 18" fill="none" stroke="#17130f" stroke-width="7" stroke-linecap="round"/>
+          <path d="M14 12H6c0 12 6 18 12 18M50 12h8c0 12-6 18-12 18" fill="none" stroke="#ffc21a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M14 6h36v14c0 13-8 22-18 22S14 33 14 20z" fill="url(#orCoupe)" stroke="#17130f" stroke-width="3.5" stroke-linejoin="round"/>
+          <g clip-path="url(#clipCoupe)"><rect class="reflet" x="-30" y="-10" width="12" height="70" fill="rgba(255,255,255,.75)" transform="rotate(20)"/></g>
+          <path d="M32 13l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" fill="#fff6e3" stroke="#17130f" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M28 42h8v8h-8z" fill="#d08a00" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
+          <rect x="18" y="50" width="28" height="12" rx="3" fill="#3a2a1c" stroke="#17130f" stroke-width="3"/>
+          <rect x="24" y="53" width="16" height="5" rx="1" fill="#ffc21a"/>
+        </svg><span class="nb" id="tropheesNb"></span></button></span><span class="sticker">10 minutes + le boss !</span></h1>
       <div class="lieu-sel">
         <button class="fleche" id="lieuPrec" aria-label="Lieu précédent">‹</button>
         <div class="nom"><b id="lieuNom">Quai de nuit</b><small id="lieuInfo"></small><button class="btn debloquer petit" id="lieuAchat" hidden></button></div>
         <button class="fleche" id="lieuSuiv" aria-label="Lieu suivant">›</button>
       </div>
       <button class="btn go" id="jouer">Jouer</button>
-      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="tro1">Trophées</button><button class="btn" id="aide">Comment jouer ?</button></div>
+      <div class="boutons"><button class="btn" id="vest1">Vestiaire</button><button class="btn" id="aide">Comment jouer ?</button></div>
       <div class="puces" id="puces"></div>
       <div class="touches-mini clavier"><kbd>Q</kbd><kbd>D</kbd> perso · <kbd>Z</kbd><kbd>S</kbd> lieu · <kbd>Espace</kbd> jouer</div>
     </div>
@@ -887,6 +915,7 @@ function afficherToast() {
   el.hidden = false; el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
   setTimeout(() => { el.hidden = true; toastEnCours = false; afficherToast() }, 3200);
 }
+function majCoupe() { const l = listeTroph(); $("tropheesNb").textContent = TROPHEES.filter(T => l[T.id]).length + " / " + TROPHEES.length }
 function dessinerTrophees() {
   const liste = listeTroph(), n = TROPHEES.filter(T => liste[T.id]).length, gains = TROPHEES.filter(T => liste[T.id]).reduce((a, T) => a + T.prime, 0);
   $("trophResume").innerHTML = `<b>${n} / ${TROPHEES.length}</b> trophées · <b>${gains} €</b> de primes gagnées${SAVE.test ? " · mode test" : ""}`;
@@ -2452,6 +2481,7 @@ function continuerInfini() {
 function record() { majAccueil() }
 const LP = Object.keys(PERSOS), LLX = Object.keys(LIEUX);
 function majAccueil() {
+  try { majCoupe() } catch (e) { }
   const P = PERSOS[SAVE.perso], L = LIEUX[SAVE.lieu], okP = aPerso(SAVE.perso), okL = aLieu(SAVE.lieu);
   $("persoImg").src = IMG(P.img); $("persoNom").textContent = P.nom; $("persoCourt").textContent = P.court;
   $("persoArme").textContent = "Arme : " + ARMES[P.arme].nom;
