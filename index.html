@@ -578,7 +578,7 @@ button { touch-action: manipulation; }
     <button class="bascule" id="modeTest"></button>
     <h3 class="cat cat-amelio">Améliorations permanentes <small>Achetées avec ta paie, elles restent pour toutes les parties : plus de vie, de vitesse, de dégâts…</small></h3>
     <div class="grille g-amelio" id="amelios"></div>
-    <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button></div>
+    <div class="boutons"><button class="btn go" id="retour">Retour</button><button class="btn" id="raz">Remettre à zéro</button><button class="btn" id="voirStats" hidden>📊 Joueurs</button></div>
   </div>
 </div>
 
@@ -4290,6 +4290,7 @@ function dessinerVestiaire() {
   $("banque").textContent = SAVE.banque;
   $("modeTest").textContent = SAVE.test ? "Mode test : tout est débloqué (clic pour jouer pour de vrai)" : "Progression réelle (clic pour tout débloquer)";
   $("modeTest").classList.toggle("on", SAVE.test); $("raz").hidden = !SAVE.test; $("modeTest").hidden = !SAVE.test;
+  $("voirStats").hidden = location.hash !== "#test"; // page des joueurs, seulement dans la version #test
   $("amelios").innerHTML = Object.entries(AMELIOS).map(([id, A]) => {
     const n = niv(id), max = n >= A.max, prix = max ? 0 : prixAmelio(id, n), peut = !max && (SAVE.test || SAVE.banque >= prix);
     const pips = Array.from({ length: A.max }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
@@ -4316,6 +4317,7 @@ $("vestiaire").addEventListener("click", e => {
 });
 $("vest1").onclick = () => ouvrirVestiaire("accueil");
 $("persoAchat").onclick = e => { e.stopPropagation(); debloquer("perso") }; $("lieuAchat").onclick = e => { e.stopPropagation(); debloquer("lieu") };
+$("voirStats").onclick = () => { window.open("/stats", "_blank") || (location.href = "/stats") };
 $("modeTest").onclick = () => { SAVE.test = !SAVE.test; sauver(); dessinerVestiaire(); record() };
 $("raz").onclick = () => { SAVE.amelioTest = {}; SAVE.tropheesTest = {}; sauver(); dessinerVestiaire() };
 $("retour").onclick = () => { $("vestiaire").hidden = true; $(retourVers).hidden = false; if (retourVers === "accueil") { demo(); majAccueil() } };
