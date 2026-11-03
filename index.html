@@ -618,7 +618,7 @@ const EQ = {
   xp: 1.3,                                              // multiplicateur de la courbe d'expérience
   plante: { grace: 15, avert: 3, apres: 5, debit: .9, hausse: .2, dist: 260, vitesse: 2.6 },   // après 0:15, immobile 3 s : avertissement ; 5 s : des colis surgissent à 260 px et foncent sur toi (×2,6), 0,9 par s puis +0,2 par s chaque seconde
   piege: { des: 40, part: .1, declenche: 70, meche: 1.1, rayon: 90, mult: 3.2, degColis: 70 },   // colis piégé (lieux avec « pieges ») : à partir de 0:40, ~10 % des colis ; à 70 px de toi il s'arrête et clignote 1,1 s puis explose (rayon 90 px, dégâts ×3,2 d'un coup de carton) ; il explose aussi quand on le tue, et blesse les colis autour
-  pneus: { n: 2, parSec: 90, max: 8, deg: 14, degColis: 45, vertical: .4, croise: 420 },   // parking : les pneus remplacent les camionnettes ; 2 pneus par rangée au début, +1 toutes les 90 s (8 au plus), 14 dégâts chacun ; 40 % des files à la verticale (allées entre camions) ; à partir de 7:00, croisement : une file horizontale et une verticale en même temps
+  pneus: { n: 2, parSec: 90, max: 5, deg: 14, degColis: 45, vertical: .4, croise: 420 },   // parking : les pneus remplacent les camionnettes ; 2 pneus par rangée au début, +1 toutes les 90 s (8 au plus), 14 dégâts chacun ; 40 % des files à la verticale (allées entre camions) ; à partir de 7:00, croisement : une file horizontale et une verticale en même temps
   noir: { premier: 25, allume: 16, gresille: 2, noir: 8, noirPlus: 5, poursuite: 150 },   // promos : coupures de courant ; 1re à 0:25, puis 16 s allumé, 2 s de néons qui grésillent, 8 s de noir (+1 s par 100 s de partie, +5 au plus) ; poursuite de 150 px sur le perso
   chasseur: { des: 30, toutes: 14, mini: 6, max: 4, prend: 6, fuite: 1.15 },   // promos : chasseur de promos ; dès 0:30, un toutes les 14 s (puis de plus en plus souvent, jusqu'à toutes les 6 s), 4 à la fois au plus ; il ramasse jusqu'à 6 d'expérience puis s'enfuit (vitesse ×1,15) ; tué, il rend tout
   acide: { dps: 12, trace: .45, traceR: 15, traceVie: 5, mortR: 42, mortVie: 7, toutes: 9, solR: 46, solVie: 9 },   // atelier : flaques d'acide ; 12 dégâts par seconde dedans (×1 + t/degTemps) ; traînée des batteries (une flaque toutes les 0,45 s, 5 s), grosse flaque à leur mort (7 s), et une fuite au sol près de toi toutes les 9 s (9 s)
@@ -807,17 +807,17 @@ const LIEUX = {
     boss1: "Le semi des promos est là !", boss2: "Deux semis de promos !", coul: { crabe: "#b44cff", feu: "#e8f6ff", noye: "#d29a5a", murene: "#ff8a1f", leviathan: "#ff46be" } },
   atelier: { nom: "Atelier chariots", img: "bastos", info: "Le plus dur · paie ×2,4", prix: 1300, desc: "L'atelier de réparation : des chariots en panne démarrent tout seuls et foncent, des batteries fuient et laissent des flaques d'acide. Taches d'huile qui font glisser. Le lieu le plus dur : colis bien plus solides et plus violents. Paie ×2,4.",
     sol: { fond: "#3a4842", joint: "rgba(0,0,0,.28)", allee: "rgba(255,200,40,.62)", texte: "BAIE", tache: "rgba(12,14,10,.55)", miette: "rgba(255,210,60,.4)", resine: true },
-    ombre: "8,12,8", gain: 2.4, pv: 4, pvBoss: 2, deg: 1.05, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
+    ombre: "8,12,8", gain: 2.4, pv: 2.6, pvBoss: 2, deg: 1.05, spawn: 1, huile: true, tpCoul: "#ffc21a", tpNom: "chariot fou", tpRate: 1.4, chariots: true, acide: true,
     murs: { type: "atelier", cw: 480, ch: 480, w: 130, h: 70, trou: .15, vars: [{ img: "atelier-etabli", w: 168, h: 104, larg: 180 }, { img: "atelier-rackpieces", w: 122, h: 140, larg: 130 }, { img: "atelier-reparation", w: 140, h: 146, larg: 150 }, { img: "atelier-charge", w: 126, h: 120, larg: 135 }] },
     boss1: "Un semi arrive en réparation !", boss2: "Deux semis en panne à l'atelier", coul: {} },
   chargement: { nom: "Quai de chargement", img: "retardcamion", info: "Camions à quai · paie ×2,6", prix: 1450, desc: "Le grand quai : les camions reculent aux portes et vident des vagues de colis, de plus en plus nombreux. Gare aux niveleurs qui se rabattent et aux rouleaux de film qui t'emballent. Paie ×2,6.",
     sol: { fond: "#323438", joint: "rgba(0,0,0,.28)", allee: "rgba(240,240,232,.5)", texte: "TRI", tache: "rgba(8,8,10,.45)", miette: "rgba(185,138,82,.5)" },
-    ombre: "8,9,12", gain: 2.6, pv: 4.1, pvBoss: 2.1, deg: 1.08, spawn: 1, portes: true, filmeurs: true, couloir: { haut: -480, bas: 1440, case: 480, style: "quai" },
+    ombre: "8,9,12", gain: 2.6, pv: 3.2, pvBoss: 2.1, deg: 1.08, spawn: 1, portes: true, filmeurs: true, couloir: { haut: -480, bas: 1440, case: 480, style: "quai" },
     tpCoul: "#e8a317", tpNom: "chef pressé", tpRate: 1.2, chefPresse: true,
     boss1: "Un semi express force le passage !", boss2: "Deux semis express à quai", coul: {} },
   incendie: { nom: "Entrepôt en perdition", img: "tetereposee", info: "L'apocalypse · paie ×2,8", prix: 1600, desc: "Tout part en cacahuète, et de pire en pire : câbles électriques qui pendent et font des arcs, incendies qui se propagent, gicleurs qui inondent le sol (et l'eau conduit le courant !). Colis détrempés qui se divisent. Paie ×2,8.",
     sol: { fond: "#2b2724", joint: "rgba(0,0,0,.3)", allee: "rgba(255,190,40,.4)", texte: "ISSUE", tache: "rgba(8,6,4,.55)", miette: "rgba(255,120,40,.4)", brule: true },
-    ombre: "14,6,4", gain: 2.8, pv: 4.2, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, couloir: { haut: -480, bas: 960, case: 480, vertical: true }, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
+    ombre: "14,6,4", gain: 2.8, pv: 4, pvBoss: 2.2, deg: 1.1, spawn: 1, sinistre: true, couloir: { haut: -480, bas: 960, case: 480, vertical: true }, tpCoul: "#e8a317", tpNom: "transpalette en feu", tpRate: 1.1,
     murs: { type: "decombres", cw: 480, ch: 480, w: 140, h: 90, trou: 0, amas: [.18, .42], garde: [.55, .2, .02], vars: [{ img: "ruine-rack-grille", w: 370, h: 310, larg: 420 }, { img: "ruine-rack-brule", w: 285, h: 370, larg: 330 }, { img: "ruine-gravats", w: 250, h: 240, larg: 320 }, { img: "ruine-palettes", w: 250, h: 225, larg: 320 }] },
     boss1: "Le camion des pompiers est en panne !", boss2: "Deux camions de pompiers bloqués", coul: {} },
 };
@@ -895,7 +895,7 @@ function dessinerTrophees() {
     return `<div class="troph${ok ? " ok" : ""}"><span class="ico">${T.ico}</span><span><b>${T.nom}</b><small>${T.desc}</small></span><span class="prime">${T.prime} €</span>${tot ? `<span class="barre-t" title="${tot[0]} / ${tot[1]}"><i style="width:${Math.round(Math.min(1, tot[0] / tot[1]) * 100)}%"></i></span>` : ""}</div>`;
   }).join("");
 }
-const prixAmelio = (id, n) => Math.round(AMELIOS[id].base * Math.pow(1.6, n) / 5) * 5;
+const prixAmelio = (id, n) => Math.round(AMELIOS[id].base * 2 * Math.pow(1.6, n) / 5) * 5;   // ×2 (équilibrage du 03/11 : vestiaire complet vers la 25e partie)
 let SAVE = { banque: 0, amelio: {}, persos: ["preparateur"], perso: "preparateur", lieux: ["quai"], lieu: "quai", test: false, amelioTest: {} };
 try { const v = JSON.parse(lsGet("poste-sauvegarde") || "null"); if (v && typeof v === "object") SAVE = Object.assign(SAVE, v) } catch (e) { }
 if (!SAVE.amelio || typeof SAVE.amelio !== "object") SAVE.amelio = {};
@@ -1971,7 +1971,7 @@ function lancerPneus(vise, sensImpose) {
 }
 function lancerTranspa(vise) {
   if (LL().pneus) {
-    if (S.t < EQ.pneus.croise) return lancerPneus(vise);
+    if (S.t < EQ.pneus.croise || Math.random() < .5) return lancerPneus(vise);   // après 7:00, un croisement une fois sur deux
     lancerPneus(vise, true); lancerPneus(vise, false);   // croisement : les deux couloirs se coupent
     if (!S.croiseVu) { S.croiseVu = true; annonce("Croisement de pneus !") }
     return;
@@ -2414,12 +2414,14 @@ function majHud() {
   $("xp").style.width = (S.p.xp / S.p.next * 100).toFixed(1) + "%"; $("xp").classList.toggle("palier", S.p.niv === PALIER);
   $("argent").textContent = S.argent; $("niv").textContent = S.p.niv; $("temps").textContent = S.infini ? "+" + fmt(S.t - VICTOIRE) : S.chefE ? "BOSS" : fmt(Math.max(0, VICTOIRE - S.t)); $("temps").classList.toggle("infini", !!S.infini); $("kills").textContent = S.kills;
 }
+/* prime de fin de poste : plus le lieu est dur, plus elle rapporte */
+const PRIME_FIN = { quai: 100, frigo: 150, stockage: 200, parking: 300, promo: 350, atelier: 450, chargement: 525, incendie: 600 };
 function finir(gagne) {
   enJeu = false; $("hud").hidden = true; JOY.actif = false;
   const best = +(lsGet("poste-record") || 0), score = Math.floor(Math.min(S.t, VICTOIRE));
   if (score > best) lsSet("poste-record", String(score));
   // la paie déjà versée à la fin des 10 minutes n'est pas comptée deux fois en mode infini
-  const paie = S.argent - (S.dejaPaye || 0) + (gagne ? 100 : 0) + (S.infini ? Math.floor((S.t - VICTOIRE) / 60) * 50 : 0);
+  const paie = S.argent - (S.dejaPaye || 0) + (gagne ? (PRIME_FIN[S.lieu] || 100) : 0) + (S.infini ? Math.floor((S.t - VICTOIRE) / 60) * 50 : 0);
   S.dejaPaye = S.argent;
   SAVE.banque += paie; S.gagne = gagne;
   if (!SAVE.test) SAVE.stats.kills = (SAVE.stats.kills || 0) + S.kills - (S.killsComptes || 0); S.killsComptes = S.kills;
