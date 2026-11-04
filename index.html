@@ -673,6 +673,9 @@ function resize() {
   cv.width = Math.round(innerWidth * DPR); cv.height = Math.round(innerHeight * DPR); cx.setTransform(DPR * ZOOM, 0, 0, DPR * ZOOM, 0, 0);
 }
 addEventListener("resize", resize); resize();
+cv.addEventListener("contextrestored", resize);   // zone de dessin vidée puis rendue par le téléphone pendant l'arrière-plan
+document.addEventListener("visibilitychange", () => { if (!document.hidden) resize() });
+addEventListener("pageshow", resize);
 /* vue de jeu : sur un petit écran (téléphone), les colis apparaissent et les armes visent comme sur un écran de PC,
    sinon les colis naissent tout près du perso et les armes ne visent que la bande étroite de l'écran */
 const VW = () => Math.max(W, 1280), VH = () => Math.max(H, 800);
@@ -4923,6 +4926,7 @@ function boucle(now) {
   if (S.mort) majMort(dt);
   else if (S.intro) majIntro(dt);
   else if (enJeu && !enPause && !choix) maj(dt);
+  cx.setTransform(DPR * ZOOM, 0, 0, DPR * ZOOM, 0, 0);   // remis à chaque image : au retour d'une autre appli, le téléphone peut rendre la zone de dessin remise à zéro (jeu dessiné trop petit, bords qui bavent)
   dessiner();
 }
 
