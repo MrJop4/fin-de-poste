@@ -673,6 +673,9 @@ function resize() {
   cv.width = Math.round(innerWidth * DPR); cv.height = Math.round(innerHeight * DPR); cx.setTransform(DPR * ZOOM, 0, 0, DPR * ZOOM, 0, 0);
 }
 addEventListener("resize", resize); resize();
+/* vue de jeu : sur un petit écran (téléphone), les colis apparaissent et les armes visent comme sur un écran de PC,
+   sinon les colis naissent tout près du perso et les armes ne visent que la bande étroite de l'écran */
+const VW = () => Math.max(W, 1280), VH = () => Math.max(H, 800);
 
 const $ = id => document.getElementById(id);
 const VICTOIRE = 600;
@@ -914,6 +917,7 @@ const LIEUX = {
   quai: { nom: "Quai de nuit", img: "premiereheure", info: "Paie normale", prix: 0, desc: "Le quai d'origine. Pas de surprise.",
     sol: { fond: "#2a2c30", joint: "rgba(0,0,0,.28)", allee: "rgba(255,194,26,.55)", texte: "QUAI", tache: "rgba(10,10,12,.35)", miette: "rgba(185,138,82,.5)" },
     ombre: "10,11,13", gain: 1, pv: 1, spawn: 1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1,
+    deg: .85, pvBoss: .65, cercle: { debut: 120, n: .6, trou: 4, pv: 1, vit: 1 },   // lieu de découverte : colis −15 % de dégâts, semis −35 % de vie ; 1er encerclement à 2:00, anneau plus petit (×0,6), ni plus solide ni plus rapide, passage deux fois plus large
     boss1: "Semi en retard au quai 7 !", boss2: "Deux semis arrivent en même temps", coul: {} },
   frigo: { nom: "Chambre froide", img: "ludido", info: "Tu glisses · paie ×1,3", ev: "glace", prix: 400, desc: "Sol verglacé : tu glisses. Bacs de surgelés, blocs de glace, camion frigo. Paie ×1,3.",
     sol: { fond: "#1b2933", joint: "rgba(160,220,255,.12)", allee: "rgba(120,210,255,.45)", texte: "FRIGO", tache: "rgba(220,240,255,.09)", miette: "rgba(220,240,255,.35)" },
@@ -1052,8 +1056,8 @@ function bornerCouloir(o, r) { const C = LL().couloir; if (!C) return; if (C.ver
 /* un colis qui apparaîtrait dans un mur arrive plutôt par le côté de l'écran */
 function placerCouloir(e) {
   const C = LL().couloir; if (!C) return;
-  if (C.vertical) { if (e.x > C.haut + e.r && e.x < C.bas - e.r) return; e.x = clamp(e.x, C.haut + e.r, C.bas - e.r); e.y = S.p.y + (e.y < S.p.y ? -1 : 1) * (H / 2 + 60 + rnd(0, 120)); return }
-  if (e.y > C.haut + e.r && e.y < C.bas - e.r) return; e.y = clamp(e.y, C.haut + e.r, C.bas - e.r); e.x = S.p.x + (e.x < S.p.x ? -1 : 1) * (W / 2 + 60 + rnd(0, 120));
+  if (C.vertical) { if (e.x > C.haut + e.r && e.x < C.bas - e.r) return; e.x = clamp(e.x, C.haut + e.r, C.bas - e.r); e.y = S.p.y + (e.y < S.p.y ? -1 : 1) * (VH() / 2 + 60 + rnd(0, 120)); return }
+  if (e.y > C.haut + e.r && e.y < C.bas - e.r) return; e.y = clamp(e.y, C.haut + e.r, C.bas - e.r); e.x = S.p.x + (e.x < S.p.x ? -1 : 1) * (VW() / 2 + 60 + rnd(0, 120));
 }
 
 let S = null, enJeu = false, enPause = false, choix = false, last = 0;
@@ -1090,7 +1094,7 @@ function spawn(type, elite) {
   spawn_(type, elite); placerCouloir(S.ennemis[S.ennemis.length - 1]);
 }
 function spawn_(type, elite) {
-  const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + 60;
+  const T = TYPES[type], a = Math.random() * Math.PI * 2, d = Math.hypot(VW(), VH()) / 2 + 60;
   const L = LL(), mult = (1 + S.t / EQ.pvTemps) * (T.boss && L.pvBoss ? L.pvBoss : L.pv), hp = T.hp * mult * (elite ? 6 : 1);
   S.ennemis.push({ type, x: S.p.x + Math.cos(a) * d, y: S.p.y + Math.sin(a) * d, r: T.r * (elite ? 1.5 : 1), hp, max: hp, vit: T.vit * (elite ? .85 : 1) * (1 + Math.min(S.t, 900) / EQ.vitTemps), deg: T.deg * EQ.degBase * (1 + S.t / EQ.degTemps) * (elite ? 1.6 : 1) * (1 + (L.pv - 1) * .5) * (L.deg || 1), xp: T.xp * (elite ? 10 : 1), coul: L.coul[type] || T.coul, boss: !!T.boss, elite: !!elite, hit: {}, flash: 0, kb: { x: 0, y: 0 }, ph: Math.random() * 6 });
 }
@@ -1147,13 +1151,16 @@ function vagues(dt) {
   if (!S.chefE && t >= VICTOIRE) spawnChef();   // le boss de fin arrive même pendant un événement
   if (S.ev) return;
   // encerclement : chaque minute, un anneau de colis apparaît autour de toi et se resserre ; immobile, tu te fais écraser
-  if (t >= (S.cercleT ?? EQ.cercle.debut)) {
-    S.cercleT = (S.cercleT ?? EQ.cercle.debut) + EQ.cercle.toutes;
-    const n = Math.min(EQ.cercle.max, Math.round(EQ.cercle.n + t / EQ.cercle.parSec)), R = Math.min(Math.hypot(W, H) / 2 * .8, 520), a0 = rnd(0, 6.28), trou = Math.floor(rnd(0, n));
+  const LC = LL().cercle || {};
+  if (S.cercleTrou) S.cercleTrou.t -= dt;
+  if (t >= (S.cercleT ?? LC.debut ?? EQ.cercle.debut)) {
+    S.cercleT = (S.cercleT ?? LC.debut ?? EQ.cercle.debut) + EQ.cercle.toutes;
+    const n = Math.min(EQ.cercle.max, Math.round((EQ.cercle.n + t / EQ.cercle.parSec) * (LC.n || 1))), R = Math.min(Math.hypot(W, H) / 2 * .8, 520), a0 = rnd(0, 6.28), trou = Math.floor(rnd(0, n)), largeur = LC.trou || 2;
+    S.cercleTrou = { a: a0 + (trou + (largeur - 1) / 2) / n * Math.PI * 2, t: 4 };   // flèche « SORTIE » vers le passage (sur téléphone il peut être hors de l'écran)
     for (let i = 0; i < n; i++) {
-      if (i === trou || i === (trou + 1) % n) continue;   // un passage pour s'échapper
+      if ((i - trou + n) % n < largeur) continue;   // un passage pour s'échapper
       spawn(t > 180 && i % 3 === 0 ? "noye" : "crabe"); const e = S.ennemis[S.ennemis.length - 1], a = a0 + i / n * Math.PI * 2;
-      e.x = S.p.x + Math.cos(a) * R; e.y = S.p.y + Math.sin(a) * R; e.cercle = true; e.hp = e.max = e.hp * EQ.cercle.pv; e.vit *= EQ.cercle.vit;
+      e.x = S.p.x + Math.cos(a) * R; e.y = S.p.y + Math.sin(a) * R; e.cercle = true; e.hp = e.max = e.hp * (LC.pv ?? EQ.cercle.pv); e.vit *= LC.vit ?? EQ.cercle.vit;
     }
     annonce("Ils t'encerclent !");
   }
@@ -1345,7 +1352,7 @@ function machines(dt) {
   if ((S.decorT -= dt) > 0) return;
   S.decorT = rnd(15, 24);
   if (S.ennemis.filter(e => e.decor).length >= 3) return;
-  const a = Math.random() * Math.PI * 2, d = Math.hypot(W, H) / 2 + rnd(30, 260);
+  const a = Math.random() * Math.PI * 2, d = Math.hypot(VW(), VH()) / 2 + rnd(30, 260);
   poserDecor(S.p.x + Math.cos(a) * d, S.p.y + Math.sin(a) * d);
 }
 function casser(e) {
@@ -1869,7 +1876,7 @@ function armes(dt) {
   // fusée de détresse
   if (A.fusee && (S.timers.fusee -= dt) <= 0) {
     const l = A.fusee; S.timers.fusee = (2.6 - .12 * l) * cd;
-    const vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < W / 2 && Math.abs(e.y - p.y) < H / 2);
+    const vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < VW() / 2 && Math.abs(e.y - p.y) < VH() / 2);
     if (l >= EVO) {   // un rack entier qui s'écroule en dominos sur une ligne de colis
       S.timers.fusee = 2.6 * cd;
       const pres = vis.filter(e => Math.hypot(e.x - p.x, e.y - p.y) < 320), liste = pres.length ? pres : vis, c = liste.length ? liste[Math.floor(Math.random() * liste.length)] : { x: p.x + Math.cos(p.dir) * 150, y: p.y + Math.sin(p.dir) * 150 }, a = rnd(0, 6.28);
@@ -1912,7 +1919,7 @@ function armes(dt) {
   // feuillard de cerclage : on lance des bobines (comme la fiole de Vampire Survivors) ; elles se déroulent au sol en un nœud de sangles qui fouettent
   if (A.feuillard && (S.timers.feuillard -= dt) <= 0) {
     const l = A.feuillard, evo = l >= EVO; S.timers.feuillard = (evo ? 3.2 : 2.7 - .12 * l) * cd;
-    const n = evo ? 4 : 1 + Math.floor(l / 3), vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < W / 2 && Math.abs(e.y - p.y) < H / 2 && Math.hypot(e.x - p.x, e.y - p.y) < 340);
+    const n = evo ? 4 : 1 + Math.floor(l / 3), vis = S.ennemis.filter(e => !e.decor && Math.abs(e.x - p.x) < VW() / 2 && Math.abs(e.y - p.y) < VH() / 2 && Math.hypot(e.x - p.x, e.y - p.y) < 340);
     for (let i = 0; i < n; i++) {
       let cx2, cy2;
       if (evo) { const a = p.dir + Math.PI / 4 + i * Math.PI / 2; cx2 = p.x + Math.cos(a) * 130; cy2 = p.y + Math.sin(a) * 130 }
@@ -2268,7 +2275,7 @@ function maj(dt) {
   for (const e of S.ennemis) {
     for (const h in e.hit) e.hit[h] -= dt;
     e.flash -= dt; e.ph += dt;
-    if (e.decor) { if (Math.hypot(p.x - e.x, p.y - e.y) > Math.hypot(W, H) * 1.6) e.parti = true; continue }
+    if (e.decor) { if (Math.hypot(p.x - e.x, p.y - e.y) > Math.hypot(VW(), VH()) * 1.6) e.parti = true; continue }
     if (e.type === "glace" || e.type === "presentoir") {   // fixes ou qui se resserrent vers le centre de l'enclos, sans se bousculer
       const ev = S.ev, gx = ev ? ev.cx - e.x : 0, gy = ev ? ev.cy - e.y : 0, gd = Math.hypot(gx, gy) || 1;
       if (e.type === "glace" && gd > 46) { e.x += gx / gd * e.vit * dt; e.y += gy / gd * e.vit * dt }
@@ -2342,8 +2349,8 @@ function maj(dt) {
     e.kb.x *= Math.pow(.02, dt); e.kb.y *= Math.pow(.02, dt);
     if (d < e.r + p.r && p.inv <= 0 && e.type !== "piege") { p.hp -= e.deg; p.inv = .5; S.fx.push({ x: p.x, y: p.y, coup: true, t: .25 }) }
     // trop loin derrière : on le replace devant (sauf boss)
-    if (e.type === "chasseur" && e.vol > 0 && d > Math.hypot(W, H) * .8) { e.parti = true; if (!S.chasseurFuiVu) { S.chasseurFuiVu = true; annonce("Un chasseur s'est enfui avec tes étiquettes !") } continue }
-    if (!e.boss && !e.cote && d > Math.hypot(W, H)) { const a = Math.random() * Math.PI * 2, dd = Math.hypot(W, H) / 2 + 40; e.x = p.x + Math.cos(a) * dd; e.y = p.y + Math.sin(a) * dd; placerCouloir(e) }
+    if (e.type === "chasseur" && e.vol > 0 && d > Math.hypot(VW(), VH()) * .8) { e.parti = true; if (!S.chasseurFuiVu) { S.chasseurFuiVu = true; annonce("Un chasseur s'est enfui avec tes étiquettes !") } continue }
+    if (!e.boss && !e.cote && d > Math.hypot(VW(), VH())) { const a = Math.random() * Math.PI * 2, dd = Math.hypot(VW(), VH()) / 2 + 40; e.x = p.x + Math.cos(a) * dd; e.y = p.y + Math.sin(a) * dd; placerCouloir(e) }
   }
   let nMorts = 0;
   for (let k = 0; k < 8; k++) { const morts = S.ennemis.filter(e => e.hp <= 0 && !e.mortFait); if (!morts.length) break; nMorts += morts.length; for (const e of morts) { e.mortFait = true; mourir(e) } }
@@ -2447,7 +2454,7 @@ function coupDePouce(id) {
     son("klaxon"); annonce("Alarme incendie !"); S.secousse = Math.max(S.secousse || 0, .4); vibrer(120);
     const dg = 25 * (1 + S.t / EQ.pvTemps) * LL().pv;
     for (const e of S.ennemis) {
-      if (e.decor || e.ev || e.hp <= 0 || Math.abs(e.x - p.x) > W / 2 + 40 || Math.abs(e.y - p.y) > H / 2 + 40) continue;
+      if (e.decor || e.ev || e.hp <= 0 || Math.abs(e.x - p.x) > VW() / 2 + 40 || Math.abs(e.y - p.y) > VH() / 2 + 40) continue;
       const d = Math.hypot(e.x - p.x, e.y - p.y) || 1; blesser(e, dg * (e.boss ? .5 : 1) / p.deg, (e.x - p.x) / d * 16, (e.y - p.y) / d * 16);
     }
     S.fx.push({ x: p.x, y: p.y, mousse: true, t: .6 }); S.alarmeT = 1.2;
@@ -4115,6 +4122,16 @@ function dessinerJeu() {
     const gr = cx.createRadialGradient(gx, gy, 2, gx, gy, 46 + 20 * k); gr.addColorStop(0, `rgba(255,60,40,${.6 + .4 * k})`); gr.addColorStop(1, "rgba(255,42,31,0)");
     cx.fillStyle = gr; cx.beginPath(); cx.arc(gx, gy, 66, 0, 7); cx.fill();
     cx.fillStyle = "#fff"; cx.font = "22px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.fillText("!", gx, gy + 8);
+  }
+  // encerclement : flèche verte vers le passage pendant 4 s
+  if (S.cercleTrou && S.cercleTrou.t > 0 && !S.mort && !S.intro) {
+    const ct = S.cercleTrou, k = .5 + .5 * Math.sin(S.t * 12), al = Math.min(1, ct.t / .6), dd = Math.min(70 + 18 * k, Math.min(W, H) / 2 - 30);
+    cx.save(); cx.globalAlpha = al; cx.translate(px + Math.cos(ct.a) * dd, py + Math.sin(ct.a) * dd); cx.rotate(ct.a);
+    cx.fillStyle = "#5ff07a"; cx.strokeStyle = "rgba(0,0,0,.55)"; cx.lineWidth = 4; cx.lineJoin = "round";
+    for (const o of [0, 16]) { cx.beginPath(); cx.moveTo(-10 + o, -15); cx.lineTo(8 + o, 0); cx.lineTo(-10 + o, 15); cx.lineTo(-4 + o, 0); cx.closePath(); cx.stroke(); cx.fill() }
+    cx.restore(); cx.save(); cx.globalAlpha = al;
+    const tx = px + Math.cos(ct.a) * (dd + 34), ty = py + Math.sin(ct.a) * (dd + 34) + 6;
+    cx.font = "16px 'Luckiest Guy', Impact, sans-serif"; cx.textAlign = "center"; cx.lineWidth = 4; cx.strokeStyle = "rgba(0,0,0,.6)"; cx.strokeText("SORTIE", tx, ty); cx.fillStyle = "#5ff07a"; cx.fillText("SORTIE", tx, ty); cx.restore();
   }
   // vie
   if (!S.mort && !S.intro) barre(px, py + 20, 40, 6, Math.max(0, p.hp / p.max), p.hp / p.max < .3 ? "#ff3b30" : "#5ff07a", p.hp / p.max < .3 ? "#a8231a" : "#1f9e4a");
