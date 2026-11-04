@@ -714,7 +714,7 @@ const EQ = {
   detrempe: { des: 30, toutes: [9, 4.5], max: 6, petits: 3 },   // colis détrempé : se divise en 3 petits colis rapides quand on le tue
   huile: { case: 300, part: .14, rMin: 40, rMax: 66, vitesse: 1.25, traces: 4 },   // atelier : taches d'huile fixes au sol (une case de 300 px sur 7 environ) ; on y glisse tout droit à 125 % de sa vitesse jusqu'à en sortir, puis on laisse des traces de pas pendant 4 s
   batterie: { des: 25, toutes: 10, mini: 5, max: 5 },   // atelier : batterie qui fuit ; dès 0:25, une toutes les 10 s (puis jusqu'à toutes les 5 s), 5 à la fois au plus
-  cercle: { debut: 60, toutes: 60, n: 22, parSec: 10, max: 60, pv: 1.2, vit: 1.15 },   // encerclement : à 1:00 puis chaque minute, 22 colis + 1 toutes les 10 s, un peu plus solides et rapides
+  cercle: { debut: 60, toutes: 60, n: 22, parSec: 10, max: 60, pv: 1.2, vit: 1.15, trou: 4 },   // encerclement : à 1:00 puis chaque minute, 22 colis + 1 toutes les 10 s, un peu plus solides et rapides ; passage de 4 places (repérable sur téléphone)
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -917,7 +917,7 @@ const LIEUX = {
   quai: { nom: "Quai de nuit", img: "premiereheure", info: "Paie normale", prix: 0, desc: "Le quai d'origine. Pas de surprise.",
     sol: { fond: "#2a2c30", joint: "rgba(0,0,0,.28)", allee: "rgba(255,194,26,.55)", texte: "QUAI", tache: "rgba(10,10,12,.35)", miette: "rgba(185,138,82,.5)" },
     ombre: "10,11,13", gain: 1, pv: 1, spawn: 1, tpCoul: "#e8a317", tpNom: "transpalette", tpRate: 1,
-    deg: .85, pvBoss: .65, cercle: { debut: 120, n: .6, trou: 4, pv: 1, vit: 1 },   // lieu de découverte : colis −15 % de dégâts, semis −35 % de vie ; 1er encerclement à 2:00, anneau plus petit (×0,6), ni plus solide ni plus rapide, passage deux fois plus large
+    deg: .85, pvBoss: .65, cercle: { debut: 120, n: .6, pv: 1, vit: 1 },   // lieu de découverte : colis −15 % de dégâts, semis −35 % de vie ; 1er encerclement à 2:00, anneau plus petit (×0,6), ni plus solide ni plus rapide
     boss1: "Semi en retard au quai 7 !", boss2: "Deux semis arrivent en même temps", coul: {} },
   frigo: { nom: "Chambre froide", img: "ludido", info: "Tu glisses · paie ×1,3", ev: "glace", prix: 400, desc: "Sol verglacé : tu glisses. Bacs de surgelés, blocs de glace, camion frigo. Paie ×1,3.",
     sol: { fond: "#1b2933", joint: "rgba(160,220,255,.12)", allee: "rgba(120,210,255,.45)", texte: "FRIGO", tache: "rgba(220,240,255,.09)", miette: "rgba(220,240,255,.35)" },
@@ -1155,7 +1155,7 @@ function vagues(dt) {
   if (S.cercleTrou) S.cercleTrou.t -= dt;
   if (t >= (S.cercleT ?? LC.debut ?? EQ.cercle.debut)) {
     S.cercleT = (S.cercleT ?? LC.debut ?? EQ.cercle.debut) + EQ.cercle.toutes;
-    const n = Math.min(EQ.cercle.max, Math.round((EQ.cercle.n + t / EQ.cercle.parSec) * (LC.n || 1))), R = Math.min(Math.hypot(W, H) / 2 * .8, 520), a0 = rnd(0, 6.28), trou = Math.floor(rnd(0, n)), largeur = LC.trou || 2;
+    const n = Math.min(EQ.cercle.max, Math.round((EQ.cercle.n + t / EQ.cercle.parSec) * (LC.n || 1))), R = Math.min(Math.hypot(W, H) / 2 * .8, 520), a0 = rnd(0, 6.28), trou = Math.floor(rnd(0, n)), largeur = LC.trou ?? EQ.cercle.trou;
     S.cercleTrou = { a: a0 + (trou + (largeur - 1) / 2) / n * Math.PI * 2, t: 4 };   // flèche « SORTIE » vers le passage (sur téléphone il peut être hors de l'écran)
     for (let i = 0; i < n; i++) {
       if ((i - trou + n) % n < largeur) continue;   // un passage pour s'échapper
